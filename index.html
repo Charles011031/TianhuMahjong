@@ -2163,6 +2163,14 @@
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
+  //  v2.13.4  2026-10-11
+  //    + 修【「次日 0:37」被排到最下面】★★★（用户实测）
+  //      根因：timeMinutes 的正则是 /^(\d{1,2}):(\d{2})/ ✗ 要求【开头就是数字】✗
+  //            而"次日 00:37"开头是"次"字 ✗ 匹配失败 ✗ 返回 -1 ✗
+  //            → 被当成【最早】的 ✗ 排到最后 ✗
+  //      修法：正则去掉 ^ ✓ 出现"次日"就 +1440 分钟 ✓
+  //      另外：营业日是 06:00 起算 ✗ 所以 00:00–05:59 也算次日凌晨 ✓
+  //            （不然凌晨 2:40 那场会被排到当天最早 ✗）
   //  v2.13.3  2026-10-11
   //    + 修【云端还是老格式 → 新设备永远看到 00:00:00】★★★
   //      两个问题：
@@ -2317,7 +2325,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v2.13.3";
+  var APP_VER = "v2.13.4";
   var APP_DATE = "2026-10-11";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -2649,8 +2657,27 @@
 
   // "HH:MM" → 分钟数（用来排序；解析不出来返回 -1）
   function timeMinutes(str) {
-    var m = String(str || "").match(/^(\d{1,2}):(\d{2})/);
-    return m ? (Number(m[1]) * 60 + Number(m[2])) : -1;
+    var s2 = String(str || "");
+    // ★ "次日 00:37" 这种要按【第二天的 00:37】算 ✗
+    //   原来正则是 /^(\d{1,2}):(\d{2})/ ✗ 要求开头是数字 ✗
+    //   "次"字开头匹配不上 → 返回 -1 → 被当成【最早】的 ✗
+    //   （用户实测：次日 1:26 排到了最下面 ✗ 应该最上面 ✓）
+    var nextDay = (s2.indexOf("次日") >= 0);
+    var m = s2.match(/(\d{1,2}):(\d{2})/);
+    if (!m) return -1;
+    var mins = Number(m[1]) * 60 + Number(m[2]);
+    // ★ 营业日是【06:00 起算】✗
+    //   所以 00:00–05:59 这些其实都是"第二天凌晨"✗ 不是当天早上 ✗
+    //   （比如 02:40 开台、07:32 结束 ✗ 它排在 23:25 后面 ✗ 不是前面 ✗）
+    var bs = 6 * 60;
+    try {
+      var bstr = (state && state.bizStart) ? String(state.bizStart) : "06:00";
+      var bm = bstr.match(/(\d{1,2}):(\d{2})/);
+      if (bm) bs = Number(bm[1]) * 60 + Number(bm[2]);
+    } catch (x) {}
+    if (mins < bs) mins += 1440;          // 凌晨 → 算第二天
+    if (nextDay) mins += 1440;            // 带"次日"字样 → 再往后（一般不会同时）
+    return mins;
   }
 
   // 星期几（中文）
@@ -10976,11 +11003,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var list = r.txns.slice().sort(function (a, b) {
       // ★ 台费行的时间是 "16:57–19:38" → 按【后半段＝结束时间】排（用户要求）
       //   没有后半段（比如零食单只有开始时间）→ 退回用开始时间
+      // ★ 用 timeMinutes 比 ✗ 不用字符串比 —— 它认识"次日"前缀 ✓
       var ap = String(a.t || "").split("–"), bp = String(b.t || "").split("–");
-      var at = (ap.length > 1 ? ap[ap.length - 1] : ap[0]).trim();
-      var bt = (bp.length > 1 ? bp[bp.length - 1] : bp[0]).trim();
-      // ★ 倒序：刚结算完的排最上面（用户要求，方便二次查看）
-      return at < bt ? 1 : (at > bt ? -1 : 0);
+      var at = timeMinutes((ap.length > 1 ? ap[ap.length - 1] : ap[0]).trim());
+      var bt = timeMinutes((bp.length > 1 ? bp[bp.length - 1] : bp[0]).trim());
+      // ★ 倒序：刚结算完的排最上面（次日 00:37 会排在当天 23:25 前面 ✓）
+      return bt - at;
     });
     var wrap = document.getElementById("stTxnWrap");
     if (!list.length) { wrap.innerHTML = '<div class="empty">这天没有记录</div>'; return; }
