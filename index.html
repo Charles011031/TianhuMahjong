@@ -2163,6 +2163,11 @@
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
+  //  v2.13.2  2026-10-11
+  //    + 员工名片拖动改成【2D】✗ —— 名片是网格横排的 ✗
+  //      原来只判断上下 ✗ 拖左右没反应 ✗ 现在两个方向都能拖 ✓
+  //    + 统计页「当日明细」改成【倒序】✗ 刚结算完的排最上面 ✓（方便二次查看 ✓）
+  //      （结算记录列表本来就是新→旧 ✓ 这次统一了 ✓）
   //  v2.13.1  2026-10-11
   //    + 修【桌台状态同步缺字段】★★★（用户实测：待结算的桌子在新设备上变 00:00:00）
   //      根因：fbTblPayload 只推了 status/sessionStart/elapsedAtPause/…
@@ -2302,7 +2307,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v2.13.1";
+  var APP_VER = "v2.13.2";
   var APP_DATE = "2026-10-11";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -9630,29 +9635,40 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     float.style.width = rect.width + "px";
     float.style.margin = "0";
     float.style.display = "block";
+    float.style.willChange = "left, top";
     document.body.appendChild(float);
     document.body.classList.add("dragging-row");
     eDrag = { id: row.getAttribute("data-empid"), row: row, float: float, ph: ph,
-              grabY: e.clientY - rect.top, lastY: e.clientY };
+              grabY: e.clientY - rect.top, grabX: e.clientX - rect.left,
+              lastY: e.clientY, lastX: e.clientX };
     try { handle.setPointerCapture(e.pointerId); } catch (x) {}
     e.preventDefault();
   }
+  // ★ 员工卡是【网格】排列的（一行好几个）→ 拖动必须同时支持【左右】和【上下】
+  //   做法：浮动卡两个方向都跟着指针走 ✗ 再找"离指针最近的那张别的卡" ✗
+  //   指针落在它右半边 → 插到它后面 ✓ 左半边 → 插到它前面 ✓
   function eDragMove(e) {
     if (!eDrag) return;
     eDrag.lastY = e.clientY;
+    eDrag.lastX = e.clientX;
     eDrag.float.style.top = (e.clientY - eDrag.grabY) + "px";
-    var rows = eRows(), target = null, i, r;
+    eDrag.float.style.left = (e.clientX - eDrag.grabX) + "px";
+    var rows = eRows(), best = null, bestD = Infinity, i, r, cx, cy, d;
     for (i = 0; i < rows.length; i++) {
       if (rows[i] === eDrag.row) continue;
       r = rows[i].getBoundingClientRect();
-      if (r.top + r.height / 2 > e.clientY) { target = rows[i]; break; }
+      cx = r.left + r.width / 2;
+      cy = r.top + r.height / 2;
+      // 竖直方向的"行"权重更大 —— 先定第几行，再定行内第几个
+      d = Math.abs(e.clientY - cy) * 2.2 + Math.abs(e.clientX - cx);
+      if (d < bestD) { bestD = d; best = rows[i]; }
     }
-    if (target) {
-      if (eDrag.ph.nextElementSibling !== target) eDrag.ph.parentNode.insertBefore(eDrag.ph, target);
+    if (!best) return;
+    var br = best.getBoundingClientRect();
+    if (e.clientX > br.left + br.width / 2) {
+      if (eDrag.ph.previousElementSibling !== best) eDrag.ph.parentNode.insertBefore(eDrag.ph, best.nextSibling);
     } else {
-      var last = null;
-      for (i = 0; i < rows.length; i++) if (rows[i] !== eDrag.row) last = rows[i];
-      if (last && last.nextElementSibling !== eDrag.ph) eDrag.ph.parentNode.insertBefore(eDrag.ph, last.nextSibling);
+      if (eDrag.ph.nextElementSibling !== best) eDrag.ph.parentNode.insertBefore(eDrag.ph, best);
     }
   }
   function eDragFinish() {
@@ -10953,7 +10969,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var ap = String(a.t || "").split("–"), bp = String(b.t || "").split("–");
       var at = (ap.length > 1 ? ap[ap.length - 1] : ap[0]).trim();
       var bt = (bp.length > 1 ? bp[bp.length - 1] : bp[0]).trim();
-      return at < bt ? -1 : (at > bt ? 1 : 0);
+      // ★ 倒序：刚结算完的排最上面（用户要求，方便二次查看）
+      return at < bt ? 1 : (at > bt ? -1 : 0);
     });
     var wrap = document.getElementById("stTxnWrap");
     if (!list.length) { wrap.innerHTML = '<div class="empty">这天没有记录</div>'; return; }
