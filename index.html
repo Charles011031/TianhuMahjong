@@ -515,6 +515,17 @@
     box-shadow: 0 14px 30px rgba(12, 38, 26, .22), 0 2px 8px rgba(12, 38, 26, .10);
     opacity: .98; pointer-events: none; will-change: top;
   }
+  /* 员工名片拖动：把手 + 空位 */
+  .emp-dragbtn {
+    flex: 0 0 auto; margin-left: 6px; width: 34px; height: 34px; padding: 0;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    color: var(--muted); font-size: 18px; line-height: 1; cursor: grab; touch-action: none;
+  }
+  .emp-dragbtn:active { cursor: grabbing; background: #f0f5f2; }
+  .emp-card.ph {
+    border: 1px dashed #bfd8c9 !important; border-radius: 12px;
+    background: #f6fbf8 !important; box-shadow: none !important; pointer-events: none;
+  }
   /* 被拖的那行让出来的"空位" */
   .menu-row.ph {
     border: 1px dashed #bfd8c9; border-radius: 12px; background: #f6fbf8;
@@ -2152,6 +2163,11 @@
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
+  //  v2.13.0  2026-10-11
+  //    + 结算记录 / 统计明细 改成按【结束时间】排序（用户要求）
+  //      （原来是按开始时间 ✗ 同一桌上一个客人看到的是开始时间顺序 ✗）
+  //    + 员工名片支持【拖动排序】：每张名片右边一个「≡」把手 ✗
+  //      按住往上/往下拖，松手即生效 ✓ 顺序也跟着工资汇总走 ✓
   //  v2.12.0  2026-10-11
   //    + 【PWA：可以装成手机 App】★
   //      手机上打开网址 → 分享 → "添加到主屏幕"
@@ -2280,7 +2296,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v2.12.0";
+  var APP_VER = "v2.13.0";
   var APP_DATE = "2026-10-10";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -2725,7 +2741,7 @@
     }
     var groups = groupByDate(list0,
       function (h) { return showDateOf(h); },
-      function (h) { return timeMinutes(h.start); });
+      function (h) { return timeMinutes(h.end || h.start); });   // ★ 按【结束时间】排（用户要求）
 
     var rows = "", gi, i, j;
     for (gi = 0; gi < groups.length; gi++) {
@@ -9550,7 +9566,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       for (var i = 0; i < state.employees.length; i++) {
         var e = state.employees[i];
         var open = attOpen(e.name);
-        h += '<div class="emp-card">' +
+        h += '<div class="emp-card" data-empid="' + e.id + '">' +
              '<div class="emp-head">' +
                '<div data-empav="' + e.id + '" style="cursor:pointer;">' + empAvatarHtml(e, 48, "emp-av") + '</div>' +
                '<div style="flex:1;min-width:0;">' +
@@ -9558,6 +9574,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
                  '<div class="emp-status' + (open ? " on" : "") + '">' + (open ? ("上班中：自 " + esc(open.clockIn) + " 起") : "未上班") + '</div>' +
                '</div>' +
                '<button class="emp-editbtn" data-emp="edit" data-id="' + e.id + '" title="改名字 / 换头像">✎</button>' +
+               '<button class="emp-dragbtn drag-h" data-empdrag="' + e.id + '" title="按住拖动 → 调整员工顺序">≡</button>' +
              '</div>' +
              (open ? "" :
                '<div class="emp-inrow">' +
@@ -9580,6 +9597,97 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     renderEmpDatalist();
     renderAttRecords();
   }
+
+  // ============================================================
+  //  ★ 员工名片拖动排序（独立一套，不去碰零食菜单那套 sDrag）
+  //    顺序就存在 state.employees 数组里 → 存档 + 工资汇总都跟着走
+  // ============================================================
+  var eDrag = null;
+  function eRows() {
+    return document.querySelectorAll('#empList .emp-card[data-empid]');
+  }
+  function eDragStart(e, handle) {
+    var row = handle.closest ? handle.closest(".emp-card[data-empid]") : null;
+    if (!row) return;
+    var rect = row.getBoundingClientRect();
+    var ph = document.createElement("div");
+    ph.className = "emp-card ph";
+    ph.style.height = rect.height + "px";
+    ph.style.marginBottom = window.getComputedStyle(row).marginBottom || "10px";
+    row.parentNode.insertBefore(ph, row);
+    row.style.display = "none";
+    var float = row.cloneNode(true);
+    float.className = "emp-card drag-float";
+    float.style.position = "fixed";
+    float.style.left = rect.left + "px";
+    float.style.top = rect.top + "px";
+    float.style.width = rect.width + "px";
+    float.style.margin = "0";
+    float.style.display = "block";
+    document.body.appendChild(float);
+    document.body.classList.add("dragging-row");
+    eDrag = { id: row.getAttribute("data-empid"), row: row, float: float, ph: ph,
+              grabY: e.clientY - rect.top, lastY: e.clientY };
+    try { handle.setPointerCapture(e.pointerId); } catch (x) {}
+    e.preventDefault();
+  }
+  function eDragMove(e) {
+    if (!eDrag) return;
+    eDrag.lastY = e.clientY;
+    eDrag.float.style.top = (e.clientY - eDrag.grabY) + "px";
+    var rows = eRows(), target = null, i, r;
+    for (i = 0; i < rows.length; i++) {
+      if (rows[i] === eDrag.row) continue;
+      r = rows[i].getBoundingClientRect();
+      if (r.top + r.height / 2 > e.clientY) { target = rows[i]; break; }
+    }
+    if (target) {
+      if (eDrag.ph.nextElementSibling !== target) eDrag.ph.parentNode.insertBefore(eDrag.ph, target);
+    } else {
+      var last = null;
+      for (i = 0; i < rows.length; i++) if (rows[i] !== eDrag.row) last = rows[i];
+      if (last && last.nextElementSibling !== eDrag.ph) eDrag.ph.parentNode.insertBefore(eDrag.ph, last.nextSibling);
+    }
+  }
+  function eDragFinish() {
+    if (!eDrag) return;
+    var d = eDrag; eDrag = null;
+    document.body.classList.remove("dragging-row");
+    var n = d.ph.nextElementSibling, beforeId = null;
+    while (n && !(n.getAttribute && n.getAttribute("data-empid"))) n = n.nextElementSibling;
+    if (n) beforeId = n.getAttribute("data-empid");
+    var pr = d.ph.getBoundingClientRect();
+    d.float.style.transition = "top .17s cubic-bezier(.2,.7,.3,1), opacity .17s ease";
+    d.float.style.top = pr.top + "px";
+    d.float.style.opacity = "0";
+    var fl = d.float, ph = d.ph, row = d.row, id = d.id;
+    setTimeout(function () {
+      if (fl.parentNode) fl.parentNode.removeChild(fl);
+      if (ph.parentNode) ph.parentNode.removeChild(ph);
+      row.style.display = "";
+      empReorderByBefore(id, beforeId);
+    }, 175);
+  }
+  function empReorderByBefore(id, beforeId) {
+    var arr = state.employees, from = -1, i;
+    for (i = 0; i < arr.length; i++) if (arr[i].id === id) { from = i; break; }
+    if (from < 0) return;
+    var moved = arr.splice(from, 1)[0];
+    var to = arr.length;
+    if (beforeId) { for (i = 0; i < arr.length; i++) if (arr[i].id === beforeId) { to = i; break; } }
+    if (to === from) { arr.splice(from, 0, moved); return; }    // 没动
+    arr.splice(to, 0, moved);
+    save();
+    renderAttendance(); renderWages(); renderEmpDatalist();
+    logOp("调整员工顺序", (moved.name || "") + " 移到第 " + (to + 1) + " 位");
+  }
+  document.getElementById("empList").addEventListener("pointerdown", function (e) {
+    var h = e.target.closest ? e.target.closest("[data-empdrag]") : null;
+    if (h) eDragStart(e, h);
+  });
+  document.addEventListener("pointermove", function (e) { if (eDrag) eDragMove(e); });
+  document.addEventListener("pointerup", function () { if (eDrag) eDragFinish(); });
+  document.addEventListener("pointercancel", function () { if (eDrag) eDragFinish(); });
 
   function renderAttRecords() {
     var wrap = document.getElementById("attWrap");
@@ -10834,8 +10942,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     renderTxnFilter();
 
     var list = r.txns.slice().sort(function (a, b) {
-      // 台费行的时间可能是 "16:57–19:38"，取前半段排序
-      var at = String(a.t || "").split("–")[0], bt = String(b.t || "").split("–")[0];
+      // ★ 台费行的时间是 "16:57–19:38" → 按【后半段＝结束时间】排（用户要求）
+      //   没有后半段（比如零食单只有开始时间）→ 退回用开始时间
+      var ap = String(a.t || "").split("–"), bp = String(b.t || "").split("–");
+      var at = (ap.length > 1 ? ap[ap.length - 1] : ap[0]).trim();
+      var bt = (bp.length > 1 ? bp[bp.length - 1] : bp[0]).trim();
       return at < bt ? -1 : (at > bt ? 1 : 0);
     });
     var wrap = document.getElementById("stTxnWrap");
