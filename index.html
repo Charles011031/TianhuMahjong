@@ -2163,6 +2163,16 @@
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
+  //  v2.13.3  2026-10-11
+  //    + 修【云端还是老格式 → 新设备永远看到 00:00:00】★★★
+  //      两个问题：
+  //      ① 云端存的是改动前的老格式（没 endedAt/extras/carry）✗
+  //         而推送逻辑是"状态没变就不推"✗ → 永远补不上去 ✗
+  //      ② 老格式云端还会把本机的好数据【覆盖掉】✗ → 越修越坏 ✗
+  //      修法：
+  //      · applyTableStates：云端缺字段时【不覆盖本机】✓
+  //      · 加一次性迁移：任何一台有数据的设备打开一次 ✗
+  //        就把 6 张桌的完整状态重推一遍 ✓（localStorage 打标记，只做一次 ✓）
   //  v2.13.2  2026-10-11
   //    + 员工名片拖动改成【2D】✗ —— 名片是网格横排的 ✗
   //      原来只判断上下 ✗ 拖左右没反应 ✗ 现在两个方向都能拖 ✓
@@ -2307,7 +2317,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v2.13.2";
+  var APP_VER = "v2.13.3";
   var APP_DATE = "2026-10-11";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -11800,6 +11810,8 @@ function fbArr(v) {
   return out;
 }
 
+var fbTblNeedRepush = false;   // 云端是老格式 → 需要重推一次（把新字段补上去）
+
 function fbTblSig(no) {
   var t = state.tables[no] || {};
   return [t.status || "idle", t.sessionStart || 0, t.elapsedAtPause || 0,
@@ -11840,11 +11852,19 @@ function applyTableStates(rows) {
       t.sessionStart = r.sessionStart || 0;
       t.elapsedAtPause = r.elapsedAtPause || 0;
       // ★ 结束时间 / 未付款 / 挂在桌上的零食 也要套用（以前漏了 ✗）
-      t.endedAt = r.endedAt || 0;
-      t.carry = Number(r.carry) || 0;
+      // ⚠️ 但要注意：云端可能是【老格式】（还没这几个字段 ✗）
+      //    那种情况下【不能用它把本机的好数据覆盖掉】✗ 否则永远修不好 ✗
+      var cloudNew = (r.endedAt !== undefined || r.extras !== undefined || r.carry !== undefined);
+      if (r.endedAt !== undefined) t.endedAt = r.endedAt || 0;
+      if (r.carry !== undefined) t.carry = Number(r.carry) || 0;
       if (r.extras !== undefined && r.extras !== null) t.extras = fbArr(r.extras);
       if (r.mahjongType) t.mahjongType = r.mahjongType;
       if (r.note !== undefined && r.note !== null) t.note = r.note;
+      if (!cloudNew) {
+        // 云端是老格式 → 清掉"已同步"标记 ✗ 让它被重推一次（一次性迁移 ✓）
+        fbTblSynced[no] = null;
+        fbTblNeedRepush = true;
+      }
       fbTblSynced[no] = fbTblSig(no);      // ★ 记下"这个状态来自云端"，免得又推回去
       n++;
     }
@@ -11853,6 +11873,33 @@ function applyTableStates(rows) {
     fbTblApplying = false;
   }
   return n;
+}
+
+// ★ 一次性迁移：云端存的还是"老格式"（缺 endedAt / extras / carry）✗
+//   以前只靠一个内存标志去重推 ✗ 不可靠（时序、开关页面都会错过 ✗）
+//   改成用 localStorage 记住"这台设备做过迁移没有"✗ 做完就打勾 ✓
+//   任何一台"手上有好数据"的设备打开一次 ✗ 就会把完整状态补上去 ✓
+var FB_TBL_MIGRATE_KEY = "tianhu_tbl_migrate_v2";
+function fbMaybeMigrateTableStates() {
+  try {
+    if (fbRestMode) return;
+    var done = false;
+    try { done = (localStorage.getItem(FB_TBL_MIGRATE_KEY) === "1"); } catch (x) {}
+    if (done) return;
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries++;
+      if (fbReady && fbTblReady) {
+        clearInterval(timer);
+        // 全部重推一遍（把新字段补上 ✓）
+        for (var i = 1; i <= TABLE_COUNT; i++) fbTblSynced[i] = null;
+        try { pushTableStates(); } catch (x) {}
+        try { localStorage.setItem(FB_TBL_MIGRATE_KEY, "1"); } catch (x) {}
+      } else if (tries > 40) {
+        clearInterval(timer);      // 20 秒还没连上 → 放弃，下次打开再来
+      }
+    }, 500);
+  } catch (x) {}
 }
 
 // 覆盖原版：任何 save() 都会走到这里
@@ -12406,6 +12453,13 @@ function fbMemberRowsAll() {
   }
   return out;
 }
+
+// ============================================================
+//  ★ 模块加载时就开始"一次性迁移"的轮询 ✓
+//    （之前误插进了"手动上传"那个函数里 ✗ 只有点按钮才会跑 ✗）
+//    它会自己等着 Firebase 连上，然后把桌台的完整状态补推一次 ✓
+// ============================================================
+try { fbMaybeMigrateTableStates(); } catch (x) {}
 
   // 网页版：用部署网址自动填好同步地址
   var selfUrl = detectSelfUrl();
