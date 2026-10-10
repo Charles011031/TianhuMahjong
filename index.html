@@ -2163,6 +2163,12 @@
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
+  //  v2.13.1  2026-10-11
+  //    + 修【桌台状态同步缺字段】★★★（用户实测：待结算的桌子在新设备上变 00:00:00）
+  //      根因：fbTblPayload 只推了 status/sessionStart/elapsedAtPause/…
+  //           漏了 endedAt（结束时间）、extras（挂在桌上的零食）、carry（未付款）
+  //      ★ 比看到的更严重：零食和未付款也从来没同步过 ✗
+  //        另一台设备上那些零食是看不到的 ✗ 一结算就【丢了】✗
   //  v2.13.0  2026-10-11
   //    + 结算记录 / 统计明细 改成按【结束时间】排序（用户要求）
   //      （原来是按开始时间 ✗ 同一桌上一个客人看到的是开始时间顺序 ✗）
@@ -2296,7 +2302,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v2.13.0";
+  var APP_VER = "v2.13.1";
   var APP_DATE = "2026-10-11";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -11768,9 +11774,21 @@ var fbTblSynced = {};        // 每张桌"最后已知与云端一致"的签名
 var fbTblRecent = {};        // 我刚动过的桌（20 秒内不接受远端覆盖）
 var fbTblTimer = null, fbTblApplying = false;
 
+// Firebase 存数组会变成 {"0":..,"1":..} 这样的对象 → 读回来要还原成数组
+function fbArr(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  var out = [], k;
+  for (k in v) if (Object.prototype.hasOwnProperty.call(v, k)) out.push(v[k]);
+  return out;
+}
+
 function fbTblSig(no) {
   var t = state.tables[no] || {};
   return [t.status || "idle", t.sessionStart || 0, t.elapsedAtPause || 0,
+          t.endedAt || 0,                                  // ★ 结束时间
+          Number(t.carry) || 0,                            // ★ 未付款
+          JSON.stringify(t.extras || []),                  // ★ 挂在桌上的零食
           t.mahjongType || "108", t.name || "", t.note || ""].join("|");
 }
 function fbTblPayload(no) {
@@ -11778,6 +11796,11 @@ function fbTblPayload(no) {
   return { id: "table_" + no, no: no, name: t.name || (no + " 号桌"),
            status: t.status || "idle", sessionStart: t.sessionStart || 0,
            elapsedAtPause: t.elapsedAtPause || 0,
+           // ★ 这三个以前漏了 —— 结果新设备上"待结算"的桌子没有结束时间 ✗
+           //   而且桌上挂的零食、未付款也看不到 ✗（那台设备一结算零食就丢了 ✗）
+           endedAt: t.endedAt || 0,
+           carry: Number(t.carry) || 0,
+           extras: t.extras || [],
            mahjongType: t.mahjongType || "108", note: t.note || "" };
 }
 
@@ -11799,6 +11822,10 @@ function applyTableStates(rows) {
       t.status = r.status || "idle";
       t.sessionStart = r.sessionStart || 0;
       t.elapsedAtPause = r.elapsedAtPause || 0;
+      // ★ 结束时间 / 未付款 / 挂在桌上的零食 也要套用（以前漏了 ✗）
+      t.endedAt = r.endedAt || 0;
+      t.carry = Number(r.carry) || 0;
+      if (r.extras !== undefined && r.extras !== null) t.extras = fbArr(r.extras);
       if (r.mahjongType) t.mahjongType = r.mahjongType;
       if (r.note !== undefined && r.note !== null) t.note = r.note;
       fbTblSynced[no] = fbTblSig(no);      // ★ 记下"这个状态来自云端"，免得又推回去
