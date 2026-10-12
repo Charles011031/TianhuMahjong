@@ -2164,6 +2164,16 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.1.3  2026-10-13
+  //    + 修【挂桌零食的明细看不到】★★★（用户实测）
+  //      三个问题串在一起：
+  //      ① cleanPulled() 不认 extras ✗ 同步一圈回来就被删掉了 ✗✓✓（主因）
+  //      ② recordPayload 存的是字符串 "可乐×3、薯片×1"（表格格式）
+  //         cleanPulled 又没解析回数组 ✗ 两边格式对不上 ✗
+  //      ③ renderSnackHistory 的空判断只看 snackHistory ✗
+  //         只挂桌、没单独结算过时整个列表变"暂无"✗✓✓
+  //      修法：cleanPulled 解析 extras（数组/字符串都认）✓
+  //            + 空判断改成"两者都没有才算空"✓
   //  v3.1.2  2026-10-13
   //    + 修【列表分组标题用的是真实日期 ✗ 应该用营业日】★★★（用户实测）
   //      现象：10-12 凌晨 00:16 / 01:44 那两笔被归到「10-12」✗
@@ -2362,7 +2372,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.1.2";
+  var APP_VER = "v3.1.3";
   var APP_DATE = "2026-10-13";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6214,7 +6224,19 @@ function pullTableStates() {
       balanceUsed: numOr(r.balanceUsed, 0),
       collected: numOr(r.collected, grand - numOr(r.balanceUsed, 0)),
       rmbActual: numOr(r.rmbActual, 0),
-      parts: textToParts(r.payDetail)      // 解析回分账明细（老数据没有 → null）
+      parts: textToParts(r.payDetail),     // 解析回分账明细（老数据没有 → null）
+      // ★ 桌上挂了哪些零食 —— 必须解析回来 ✗ 否则同步一圈就丢了 ✗✓✓
+      //   两个来源：本机存的本来就是数组 ✗ 云/表格拉回来的是字符串 ✓
+      extras: (function () {
+        if (Array.isArray(r.extras)) return r.extras;
+        var s2 = r.extras == null ? "" : String(r.extras).trim();
+        if (!s2) return [];
+        return s2.split("、").map(function (x) {
+          var m = String(x).match(/^(.*?)×\s*(\d+)$/);
+          return m ? { name: m[1], qty: Number(m[2]), price: 0 }
+                   : { name: String(x), qty: 1, price: 0 };
+        });
+      })()
     };
   }
 
@@ -7505,9 +7527,23 @@ jsonpGet(t, onRes);
     return (mins < bs) ? ("次日 " + str) : str;
   }
 
+  // 有没有"桌上挂了零食、随桌费结掉"的记录（列表的"空"判断要用 ✓）
+  function fbHasTableSnacks() {
+    for (var i = 0; i < (state.history || []).length; i++) {
+      if (Number(state.history[i].other) > 0.005) return true;
+    }
+    return false;
+  }
+
   function renderSnackHistory() {
     var wrap = document.getElementById("snackHistoryWrap");
-    if (!state.snackHistory.length) { wrap.innerHTML = '<div class="empty">暂无零食饮料结算记录</div>'; return; }
+    // ⚠️ 这个"空"判断【不能】只看 snackHistory ✗
+    //    因为挂到桌台随桌结掉的零食不写进 snackHistory ✗
+    //    只挂桌、没单独结算过的时候 ✗ 列表本来该有内容 ✗ 早退就没了 ✗✓✓
+    if (!state.snackHistory.length && !fbHasTableSnacks()) {
+      wrap.innerHTML = '<div class="empty">暂无零食饮料结算记录</div>';
+      return;
+    }
 
     var showFee = state.showFeeDetail !== false;      // 「显示手续费明细」开关
     // ★ 把【挂在桌上、随桌费一起结掉】的零食也列出来 ✗
