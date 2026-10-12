@@ -2350,7 +2350,7 @@
   //  v2.6.1  之前的版本
   // ============================================================
   var APP_VER = "v3.1.0";
-  var APP_DATE = "2026-10-11";
+  var APP_DATE = "2026-10-13";
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
@@ -7524,8 +7524,8 @@ jsonpGet(t, onRes);
             '<td><span style="display:inline-block;padding:1px 7px;margin-right:6px;border-radius:6px;' +
               'background:#e6f4ec;color:var(--green-dark);font-size:12px;font-weight:700;">' + esc(tn) + "</span>" +
               esc(items) + "</td>" +
-            '<td class="money">—</td>' +
-            '<td class="grand">$' + Number(h.grand || 0).toFixed(2) +
+            '<td style="text-align:right;color:var(--muted);">—</td>' +
+            '<td style="text-align:right;font-weight:800;">$' + Number(h.grand || 0).toFixed(2) +
               '<div class="cell-note">已随桌费一起收</div></td>' +
             '<td class="pay-cell"><span style="font-size:12px;color:var(--muted);">见该桌收款</span></td>' +
             '<td style="white-space:nowrap;color:var(--muted);font-size:12px;">—</td>' +
