@@ -2164,6 +2164,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.1.0  2026-10-13
+  //    + 零食结算记录里也能看到【挂到桌台、随桌费一起结掉】的零食了 ✓
+  //      · 带「🀄 X 号桌 结算」标记 + 明细 + 金额 + 「已随桌费一起收」
+  //      · 不参与编辑/删除（那是零食记录专用 ✗）
+  //      · 结算记录里开始保存 extras 明细（老记录没有 ✗ 优雅降级 ✓）
+  //    + 零食结算记录的排序跟台费记录统一（都按结束时间 ✗ 次日排最上 ✓）
   //  v3.0.0  2026-10-11   ★ 里程碑
   // ------------------------------------------------------------
   //  这次换的不是"功能"✗ 而是【交付方式】✗ —— 所以进大版本 ✓
@@ -2343,7 +2349,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.0.0";
+  var APP_VER = "v3.1.0";
   var APP_DATE = "2026-10-11";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -3902,6 +3908,11 @@
       tableFee: b.tableFee,
       tableAll: b.tableAll,
       other: other,
+      // ★ 桌上挂了哪些零食 —— 存下来 ✗ 零食结算记录里才能显示出明细 ✓
+      //   （老记录没这个字段 ✗ 显示时优雅降级 ✓）
+      extras: (t.extras || []).map(function (x) {
+        return { name: x.name, price: x.price, qty: x.qty };
+      }),
       total: b.full,
       fee: feeSum,
       grand: round2(b.full + feeSum),
@@ -5052,6 +5063,8 @@
         hours: h.hours,
         tableFee: h.tableFee != null ? h.tableFee : h.total,
         other: h.other != null ? h.other : 0,
+        // ★ 桌上挂的零食明细 —— 带上它 ✗ 别的设备才能在零食结算记录里看到明细 ✓
+        extras: h.extras || [],
         total: h.total != null ? h.total : 0,
         grand: h.grand != null ? h.grand : h.total
       });
@@ -5193,6 +5206,7 @@
       hours: isNaN(h) ? "" : h,
       tableFee: rec.tableFee != null ? rec.tableFee : "",
       other: rec.other != null ? rec.other : 0,
+      extras: (rec.extras || []).map(function (x) { return x.name + "×" + x.qty; }).join("、"),
       total: rec.total != null ? rec.total : "",
       grand: rec.grand != null ? rec.grand : "",
       payType: rec.payType === "cash" ? "现金" : (rec.payType === "rmb" ? "人民币" : (rec.payType === "mixed" ? "混合" : "刷卡")),
@@ -7455,7 +7469,34 @@ jsonpGet(t, onRes);
     if (!state.snackHistory.length) { wrap.innerHTML = '<div class="empty">暂无零食饮料结算记录</div>'; return; }
 
     var showFee = state.showFeeDetail !== false;      // 「显示手续费明细」开关
-    var groups = groupByDate(state.snackHistory,
+    // ★ 把【挂在桌上、随桌费一起结掉】的零食也列出来 ✗
+    //   它们不在 snackHistory 里（挂桌时只写进了桌台的 extras ✗）
+    //   用户需求：挂桌结算之后 ✗ 在零食结算记录里也要能看到 ✓
+    // ⚠️ 注意：groupByDate 会把每个元素包成 {h: 元素, idx: 序号} ✗
+    //    所以这里必须【直接推记录本身】✗ 不能再包一层 ✗（包两层会让 h 变成包装对象 ✗）
+    var list0 = [];
+    for (var si = 0; si < state.snackHistory.length; si++) {
+      state.snackHistory[si]._fromTable = false;
+      list0.push(state.snackHistory[si]);
+    }
+    for (var ri = 0; ri < state.history.length; ri++) {
+      var rr = state.history[ri];
+      if (!(Number(rr.other) > 0.005)) continue;      // 这桌没挂零食 → 跳过
+      list0.push({
+        id: "tbl_" + (rr.id || ri),
+        _fromTable: true, _recId: rr.id,
+        _tableNo: rr.tableNo, _tableName: rr.name,
+        realDate: rr.realDate || rr.date || "",
+        date: rr.date || "",
+        time: rr.end || rr.start || "",
+        items: rr.extras || [],
+        other: Number(rr.other) || 0,
+        subtotal: Number(rr.other) || 0,
+        grand: Number(rr.other) || 0,
+        fee: 0, discount: 0, payType: ""
+      });
+    }
+    var groups = groupByDate(list0,
       function (h) { return showDateOf(h); },
       function (h) { return timeMinutes(h.time); });
 
@@ -7463,14 +7504,33 @@ jsonpGet(t, onRes);
     for (gi = 0; gi < groups.length; gi++) {
       var g = groups[gi], daySum = 0;
       for (i = 0; i < g.items.length; i++) daySum += Number(g.items[i].h.grand) || 0;
+      var tblSum = 0;
+      for (i = 0; i < g.items.length; i++) if (g.items[i].h._fromTable) tblSum += Number(g.items[i].h.grand) || 0;
       rows += dayGroupRow("🍜", g.date, g.items.length, daySum, 6);
 
       for (i = 0; i < g.items.length; i++) {
-        var h = g.items[i].h, idx = g.items[i].idx;
+        var h = g.items[i].h, idx = g.items[i].idx, fromTable = !!h._fromTable;
         var items = "";
         for (var j = 0; j < h.items.length; j++) {
           if (j) items += "、";
           items += h.items[j].name + "×" + h.items[j].qty;
+        }
+        if (fromTable) {
+          // ★ 挂桌结算的：标出是哪张桌 ✗ 明细没有就写个提示 ✓
+          var tn = "🀄 " + (h._tableName || (h._tableNo + " 号桌")) + " 结算";
+          items = (items ? items : "（挂桌零食，随桌费一起结）");
+          rows += "<tr style=\"background:#f7fbf8;\">" +
+            '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(h.time || "—") + "</td>" +
+            '<td><span style="display:inline-block;padding:1px 7px;margin-right:6px;border-radius:6px;' +
+              'background:#e6f4ec;color:var(--green-dark);font-size:12px;font-weight:700;">' + esc(tn) + "</span>" +
+              esc(items) + "</td>" +
+            '<td class="money">—</td>' +
+            '<td class="grand">$' + Number(h.grand || 0).toFixed(2) +
+              '<div class="cell-note">已随桌费一起收</div></td>' +
+            '<td class="pay-cell"><span style="font-size:12px;color:var(--muted);">见该桌收款</span></td>' +
+            '<td style="white-space:nowrap;color:var(--muted);font-size:12px;">—</td>' +
+            "</tr>";
+          continue;
         }
         // 应收下面的小字：手续费 / 抹零
         var notes = [];
