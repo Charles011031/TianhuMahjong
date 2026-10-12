@@ -2164,6 +2164,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.1.1  2026-10-13
+  //    + 零食饮料 / 电子烟 记录的时间也标「次日」✗ 跟台费记录统一 ✓
+  //      凌晨那几笔显示成「次日 00:16」✗ 而不是光秃秃的 00:16 ✓
+  //      判定规则跟别处一致：营业日 06:00 之前算第二天凌晨 ✓
+  //      在【显示时】统一处理 ✗ 所以老记录也一起修好了 ✓
   //  v3.1.0  2026-10-13
   //    + 零食结算记录里也能看到【挂到桌台、随桌费一起结掉】的零食了 ✓
   //      · 带「🀄 X 号桌 结算」标记 + 明细 + 金额 + 「已随桌费一起收」
@@ -2349,7 +2354,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.1.0";
+  var APP_VER = "v3.1.1";
   var APP_DATE = "2026-10-13";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -7464,6 +7469,24 @@ jsonpGet(t, onRes);
     renderSnackHistory();
   }
 
+  // ★ 零食/电子烟记录的时间显示：凌晨那几笔要标「次日」✗
+  //   跟台费记录统一（台费记录的时间是"起–止"✗ 由 fmtEndHM 标 ✓）
+  //   判定规则跟别处一致：营业日（默认 06:00）之前 → 算第二天凌晨 ✓
+  function recTimeTxt(t) {
+    var str = String(t || "");
+    if (!str) return "—";
+    if (str.indexOf("次日") >= 0) return str;       // 已经带了就不重复加
+    var m = str.match(/(\d{1,2}):(\d{2})/);
+    if (!m) return str;
+    var mins = Number(m[1]) * 60 + Number(m[2]);
+    var bs = 6 * 60;
+    try {
+      var bm = String(state.bizStart || "06:00").match(/(\d{1,2}):(\d{2})/);
+      if (bm) bs = Number(bm[1]) * 60 + Number(bm[2]);
+    } catch (e) {}
+    return (mins < bs) ? ("次日 " + str) : str;
+  }
+
   function renderSnackHistory() {
     var wrap = document.getElementById("snackHistoryWrap");
     if (!state.snackHistory.length) { wrap.innerHTML = '<div class="empty">暂无零食饮料结算记录</div>'; return; }
@@ -7520,7 +7543,7 @@ jsonpGet(t, onRes);
           var tn = "🀄 " + (h._tableName || (h._tableNo + " 号桌")) + " 结算";
           items = (items ? items : "（挂桌零食，随桌费一起结）");
           rows += "<tr style=\"background:#f7fbf8;\">" +
-            '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(h.time || "—") + "</td>" +
+            '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
             '<td><span style="display:inline-block;padding:1px 7px;margin-right:6px;border-radius:6px;' +
               'background:#e6f4ec;color:var(--green-dark);font-size:12px;font-weight:700;">' + esc(tn) + "</span>" +
               esc(items) + "</td>" +
@@ -7539,7 +7562,7 @@ jsonpGet(t, onRes);
         var armed = armGet("snack-del") === idx;
 
         rows += "<tr>" +
-          '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(h.time || "—") + "</td>" +
+          '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
           "<td>" + esc(items) + "</td>" +
           '<td class="money">$' + Number(h.subtotal || 0).toFixed(2) + "</td>" +
           '<td class="grand">$' + Number(h.grand || 0).toFixed(2) +
@@ -8542,7 +8565,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
         var armed = armGet("vape-del") === idx;
 
         rows += "<tr>" +
-          '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(h.time || "—") + "</td>" +
+          '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
           "<td>" + esc(items) + "</td>" +
           '<td class="money">$' + Number(h.subtotal || 0).toFixed(2) + "</td>" +
           '<td class="grand">$' + Number(h.grand || 0).toFixed(2) +
