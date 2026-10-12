@@ -1137,7 +1137,14 @@
         </div>
         <div class="hint" style="margin:6px 0 0;" id="sQuickInfo">点一下 → 整单走这个方式；要分开付就点下面的「分开付」<br>
           <span style="color:#b45309;">注意：会员余额只能抵台费 ✗ 有零食饮料的话，那部分要另付（刷卡/现金/人民币）✓</span></div>
-        <button type="button" class="btn-ghost sm" id="sSplitToggle" style="margin-top:8px;">▸ 分开付 / 多人各付各的</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+          <button type="button" class="btn-ghost sm" id="sSplitToggle">▸ 分开付 / 多人各付各的</button>
+          <span style="font-size:12px;color:var(--muted);">台费分：</span>
+          <button type="button" class="btn-ghost sm" data-sharefee="2">2 人</button>
+          <button type="button" class="btn-ghost sm" data-sharefee="3">3 人</button>
+          <button type="button" class="btn-start sm" data-sharefee="4">4 人</button>
+          <button type="button" class="btn-ghost sm" data-sharefee="5">5 人</button>
+        </div>
       </div>
       <div class="field" id="sSplitWrap" style="display:none;">
         <label style="font-weight:400;font-size:13px;color:var(--muted);">收款明细</label>
@@ -2164,6 +2171,13 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.2.0  2026-10-13
+  //    + 结算弹窗里加了【台费按 N 人分】的快捷按钮 ★（用户要求：4 人分最常用）
+  //      位置：紧挨着「分开付 / 多人各付各的」✗ 一眼就能看到 ✓
+  //      选项：2 人 / 3 人 / 4 人★ / 5 人
+  //      行为：只分【台费】✗ 不碰零食（零食谁喝的加在谁那笔上 ✓）
+  //            每笔保留原来选好的收款方式 ✓ 台费为 0 时不会乱动 ✓
+  //      注：原来就有"台费按 4 人分"✗ 但藏在「⋯ 更多选项」里 ✗ 所以没人找得到 ✓
   //  v3.1.3  2026-10-13
   //    + 修【挂桌零食的明细看不到】★★★（用户实测）
   //      三个问题串在一起：
@@ -2372,7 +2386,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.1.3";
+  var APP_VER = "v3.2.0";
   var APP_DATE = "2026-10-13";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -3826,6 +3840,28 @@
   document.getElementById("sAllOne").addEventListener("click", function () {
     var b = settleBill();
     setSettleParts([{ amount: b.due, payType: "card", rmb: null, label: "" }]);
+  });
+  // ★ 台费按 N 人各一份（快捷按钮 ✗ 用户说 4 人最常用 ✓）
+  //   只分【台费】✗ 不碰零食 —— 零食谁喝的加在谁那笔上 ✓
+  //   每笔保留原来选好的收款方式 ✓
+  function shareFeeByN(n) {
+    n = Math.max(1, Math.min(20, parseInt(n, 10) || 4));
+    var b = settleBill();
+    var each = round2(b.tableAll / n);
+    var parts = [];
+    for (var i = 0; i < n; i++) {
+      parts.push({
+        amount: each,                                          // 最后一笔的零头在 setSettleParts 里会对齐
+        payType: (settleParts[i] && settleParts[i].payType) || "card",
+        rmb: null, label: ""
+      });
+    }
+    setSettleParts(parts);
+  }
+  document.querySelectorAll("[data-sharefee]").forEach(function (el) {
+    el.addEventListener("click", function () {
+      shareFeeByN(el.getAttribute("data-sharefee"));
+    });
   });
   // 台费按 4 人各一份（零食不自动分，谁喝的加在谁那笔上）
   document.getElementById("sFourShare").addEventListener("click", function () {
