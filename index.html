@@ -1139,11 +1139,7 @@
           <span style="color:#b45309;">注意：会员余额只能抵台费 ✗ 有零食饮料的话，那部分要另付（刷卡/现金/人民币）✓</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;">
           <button type="button" class="btn-ghost sm" id="sSplitToggle">▸ 分开付 / 多人各付各的</button>
-          <span style="font-size:12px;color:var(--muted);">台费分：</span>
-          <button type="button" class="btn-ghost sm" data-sharefee="2">2 人</button>
-          <button type="button" class="btn-ghost sm" data-sharefee="3">3 人</button>
-          <button type="button" class="btn-start sm" data-sharefee="4">4 人</button>
-          <button type="button" class="btn-ghost sm" data-sharefee="5">5 人</button>
+          <button type="button" class="btn-start sm" id="sShareFee4">👥 台费 4 人分</button>
         </div>
       </div>
       <div class="field" id="sSplitWrap" style="display:none;">
@@ -1166,7 +1162,6 @@
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button type="button" class="btn-ghost sm" id="sEven">平分（按现有笔数）</button>
             <button type="button" class="btn-ghost sm" id="sAllOne">一人全付</button>
-            <button type="button" class="btn-ghost sm" id="sFourShare">台费按 4 人分</button>
           </div>
         </div>
         <div id="splitPanel" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#f8fafc;">
@@ -2171,6 +2166,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.2.1  2026-10-13
+  //    + 「台费 4 人分」改成【只留这一个】✗ 并【点完自动展开收款明细】★★
+  //      用户反馈：原来点完只填了数据 ✗ 明细那块还收着 ✗ 看起来像没反应 ✗✓✓
+  //      现在：点一下 → 台费平分 4 笔 + 收款明细自动展开 ✓
+  //            每笔清清楚楚写着要付多少 ✓ 手机上还会自动滚过去 ✓
+  //      同时删掉「⋯ 更多选项」里那个重复的入口（只留一个 ✓）
   //  v3.2.0  2026-10-13
   //    + 结算弹窗里加了【台费按 N 人分】的快捷按钮 ★（用户要求：4 人分最常用）
   //      位置：紧挨着「分开付 / 多人各付各的」✗ 一眼就能看到 ✓
@@ -2386,7 +2387,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.2.0";
+  var APP_VER = "v3.2.1";
   var APP_DATE = "2026-10-13";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -3858,19 +3859,17 @@
     }
     setSettleParts(parts);
   }
-  document.querySelectorAll("[data-sharefee]").forEach(function (el) {
-    el.addEventListener("click", function () {
-      shareFeeByN(el.getAttribute("data-sharefee"));
-    });
-  });
-  // 台费按 4 人各一份（零食不自动分，谁喝的加在谁那笔上）
-  document.getElementById("sFourShare").addEventListener("click", function () {
-    var b = settleBill();
-    var parts = [];
-    for (var i = 0; i < 4; i++) {
-      parts.push({ amount: b.perShare, payType: (settleParts[i] && settleParts[i].payType) || "card", rmb: null, label: "" });
-    }
-    setSettleParts(parts);
+  // ★ 点「台费 4 人分」= 分好 + 【自动打开收款明细】✗
+  //   用户要求：点完要直接看到"四个人分别付多少钱"✓
+  //   （原来只填了数据 ✗ 明细那块还是收着的 ✗ 所以看起来像没反应 ✗✓✓）
+  var sf4 = document.getElementById("sShareFee4");
+  if (sf4) sf4.addEventListener("click", function () {
+    shareFeeByN(4);
+    var w = document.getElementById("sSplitWrap");
+    var stg = document.getElementById("sSplitToggle");
+    if (w) w.style.display = "block";                        // 展开收款明细
+    if (stg) stg.textContent = "▾ 收起收款明细";              // 箭头也跟着变
+    try { if (w) w.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) {}
   });
   document.getElementById("sAddRow").addEventListener("click", function () {
     var b = settleBill();
