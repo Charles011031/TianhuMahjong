@@ -11,8 +11,11 @@
 
 | 地址 | 说明 |
 |---|---|
-| **https://charles011031.github.io/TianhuMahjong/** | ⚡ **平时用这个**（推荐） |
-| [Apps Script 备用地址][old] | 🔁 新地址打不开时的备用，**数据是同一份** |
+| **https://charles011031.github.io/TianhuMahjong/** | ⚡ **唯一在维护的地址** —— 平时就用这个 |
+| [Apps Script 旧地址][old] | 🧊 **已冻结**（2026-10-13 起不再更新）<br>只是留个兜底，**数据还是同一份**，但功能会停在旧版本 |
+
+> **v3.1.3 起的约定**：以后所有改动**只发 GitHub 版**。
+> 旧地址不再部署，保持当时的版本不动。
 
 [old]: https://script.google.com/macros/s/AKfycbwVkGJRHdVRlKCuKsAM7SQk0wZIhuPiJwDul2eJT8UepNqyrZWC_-bV27VESy71uCku/exec
 
