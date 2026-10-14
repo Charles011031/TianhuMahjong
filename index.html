@@ -1141,6 +1141,14 @@
           <button type="button" class="btn-ghost sm" id="sSplitToggle">▸ 分开付 / 多人各付各的</button>
           <button type="button" class="btn-start sm" id="sShareFee4">👥 台费 4 人分</button>
         </div>
+        <!-- ★ 罚款：算进【台费】✗ 所以「台费 4 人分」会自动把它一起平摊 ✓ -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;
+                    padding:8px 10px;border:1px solid #f0d9b5;border-radius:10px;background:#fffbf3;">
+          <span style="font-size:13px;font-weight:700;color:#92400e;">⚖️ 罚款</span>
+          <input type="number" id="sFine" min="0" step="0.5" value="0"
+                 style="width:100px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
+          <span style="font-size:12px;color:var(--muted);">按【台费】算 ✗ 4 人分会一起平摊 ✓　会员余额也能抵 ✓</span>
+        </div>
       </div>
       <div class="field" id="sSplitWrap" style="display:none;">
         <label style="font-weight:400;font-size:13px;color:var(--muted);">收款明细</label>
@@ -2166,6 +2174,16 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.3.0  2026-10-15
+  //    + 【罚款】选项 ★（用户要求：罚款算进台费，可以平摊）
+  //      · 结算弹窗加「⚖️ 罚款」输入框（显眼位置 ✗ 不用展开更多选项 ✓）
+  //      · 罚款计入【台费】（tableAll）✗ 不是"其它费用"✓
+  //        → 所以自动满足：跟台费一起被平分 ✓
+  //          「台费 4 人分」/「按人分账」都自动带上 ✓
+  //          会员余额抵台费时也一起抵 ✓
+  //      · 改动罚款会整块重算（应收合计 / 账单明细实时联动 ✓）
+  //      · 结算记录里单独留一份 fine ✗ 列表显示"含罚款 $X"✓
+  //        详情弹窗、桌台卡片、CSV 导出、同步 payload 全都带上 ✓
   //  v3.2.1  2026-10-13
   //    + 「台费 4 人分」改成【只留这一个】✗ 并【点完自动展开收款明细】★★
   //      用户反馈：原来点完只填了数据 ✗ 明细那块还收着 ✗ 看起来像没反应 ✗✓✓
@@ -2387,7 +2405,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.2.1";
+  var APP_VER = "v3.3.0";
   var APP_DATE = "2026-10-13";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -2709,6 +2727,7 @@
         var grand = lr.grand != null ? lr.grand : lr.total;
         html += '  <div class="result"><div class="total">' + fmtMoney(grand) + '</div>';
         html += '    <div class="detail">' + esc(lr.name) + ' · 台费 ' + fmtMoney(lr.tableFee != null ? lr.tableFee : lr.total) +
+                (Number(lr.fine) > 0.005 ? ' ＋ 罚款 ' + fmtMoney(lr.fine) : "") +
                 ' · 其它 ' + fmtMoney(lr.other || 0) + ' · 含手续费 ' + fmtMoney(grand) + '（≈' + fmtRmb(grand) + '）</div></div>';
       }
       html += '</div>';
@@ -2887,7 +2906,11 @@
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(timeTxt) + "</td>" +
           '<td style="font-weight:700;">' + esc((h.tableNo != null) ? h.tableNo : h.name) + "</td>" +
           '<td style="font-size:13px;color:var(--muted);">' + esc(hours) + "</td>" +
-          '<td class="money">' + fmtMoney(tableFee) + "</td>" +
+          '<td class="money">' + fmtMoney(tableFee) +
+            (Number(h.fine) > 0.005
+              ? '<div class="cell-note" style="color:#b45309;">含罚款 $' + Number(h.fine).toFixed(2) + "</div>"
+              : "") +
+          "</td>" +
           '<td class="money"' + (other > 0.005 ? ' style="color:#b45309;"' : ' style="color:#c8ccd0;"') + ">" +
             (other > 0.005 ? fmtMoney(other) : "—") + "</td>" +
           '<td class="grand">' + fmtMoney(grand) +
@@ -3344,6 +3367,7 @@
       "小时数：<b>" + fmtHours(endTs - startTs) + " 小时</b>" +
       (extraLine ? "<br>" + extraLine : "");
     document.getElementById("sOther").value = exSum;
+    var fe = document.getElementById("sFine"); if (fe) fe.value = 0;   // ★ 罚款每次从 0 开始
     fillSettleSelects(id);
     settleParts = [];
     refreshSettle();
@@ -3374,13 +3398,20 @@
     var mg = mergeInfo();
     var mgSum = mg ? mg.sum : 0;
     var tableFee = tableFeeOf(ms);
-    var tableAll = round2(tableFee + mgSum);            // 台费总额（含合并桌）
+    // ★ 罚款：按【台费】算 ✗ 不是"其它费用"✓
+    //   所以它会跟着台费一起被平分（「台费 4 人分」/ 按人分账 都自动带上 ✓）
+    //   会员余额抵台费时也会把它一起抵掉 ✓
+    var fineEl = document.getElementById("sFine");
+    var fine = fineEl ? (parseFloat(fineEl.value) || 0) : 0;
+    if (fine < 0) fine = 0;
+    var tableAll = round2(tableFee + mgSum + fine);     // 台费总额（含合并桌 + 罚款）
     var full = round2(tableAll + other);                // 这一场的全额
     var carry = round2(Number(state.tables[settleData.id].carry) || 0);  // 这张桌上次没付的
     var total = round2(full + carry);                   // 本次一共要收（含上次未付）
 
     return {
       ms: ms, other: other, mg: mg, mgSum: mgSum, tableFee: tableFee,
+      fine: fine,
       tableAll: tableAll, full: full, carry: carry, total: total,
       perTable: round2(tableAll / 4), perShare: round2(tableAll / 4),
       balanceUse: 0, due: total
@@ -3712,14 +3743,17 @@
 
     document.getElementById("sBreakdown").innerHTML =
       "台费：<b>" + fmtMoney(b.tableFee) + "</b>" +
-      (b.mg ? ("　＋ 合并 " + esc(b.mg.table.name) + " <b>" + fmtMoney(b.mg.sum) + "</b>") : "") + "<br>" +
+      (b.mg ? ("　＋ 合并 " + esc(b.mg.table.name) + " <b>" + fmtMoney(b.mg.sum) + "</b>") : "") +
+      (b.fine > 0.005 ? ("　＋ ⚖️ 罚款 <b style='color:#b45309;'>" + fmtMoney(b.fine) + "</b>") : "") + "<br>" +
+      (b.fine > 0.005 ? ("台费合计（含罚款）：<b>" + fmtMoney(b.tableAll) + "</b><br>") : "") +
       "零食等其它：<b>" + fmtMoney(b.other) + "</b><br>" +
       "本场全额：<b>" + fmtMoney(b.full) + "</b>" +
       (b.carry > 0.005 ? ("<br>上次未付（本桌）：<b style='color:#b45309;'>+" + fmtMoney(b.carry) + "</b>　合计 <b>$" + b.total.toFixed(2) + "</b>") : "") +
       (t.feeSum > 0 ? ("<br>刷卡手续费（" + state.feeRate + "%）：<b>" + fmtMoney(t.feeSum) + "</b>") : "");
 
     document.getElementById("sRef").innerHTML =
-      "台费 <b>" + fmtMoney(b.tableAll) + "</b> ÷ 4 人 = <b>$" + b.perShare.toFixed(2) + "/人</b>" +
+      "台费" + (b.fine > 0.005 ? "（含罚款）" : "") + " <b>" + fmtMoney(b.tableAll) +
+      "</b> ÷ 4 人 = <b>$" + b.perShare.toFixed(2) + "/人</b>" +
       (b.carry > 0.005 ? "　＋ 上次未付 <b>$" + b.carry.toFixed(2) + "</b>" : "") +
       "　<span style='color:var(--green-dark);'>（会员余额可抵）</span>" +
       (b.other > 0.005 ? "　｜　零食饮料 <b>" + fmtMoney(b.other) + "</b>　<span style='color:#b45309;'>（只能用 现金/刷卡/人民币，会员余额不能抵）</span>" : "");
@@ -3832,6 +3866,8 @@
   };
 
   document.getElementById("sOther").addEventListener("input", refreshSettle);
+  // ★ 罚款一改就要整块重算 ✗ 否则"应收合计 / 账单明细"不会跟着变 ✗✓✓
+  document.getElementById("sFine").addEventListener("input", refreshSettle);
   document.getElementById("sMerge").addEventListener("change", refreshSettle);
   function setSettleParts(parts) {
     settleParts = parts;
@@ -3975,6 +4011,7 @@
       hours: fmtHours(ms),
       tableFee: b.tableFee,
       tableAll: b.tableAll,
+      fine: b.fine || 0,                             // ★ 罚款（按台费算 ✗ 记录里单独留一份方便看 ✓）
       other: other,
       // ★ 桌上挂了哪些零食 —— 存下来 ✗ 零食结算记录里才能显示出明细 ✓
       //   （老记录没这个字段 ✗ 显示时优雅降级 ✓）
@@ -4976,6 +5013,7 @@
     if (rec.date) html += "日期：<b>" + esc(rec.date) + "</b>　" + esc(rec.start) + " – " + esc(rec.end) + "<br>";
     if (rec.hours != null) html += "小时数：<b>" + rec.hours + " 小时</b><br>";
     html += "台费：<b>" + fmtMoney(rec.tableFee != null ? rec.tableFee : rec.total) + "</b>";
+    if (Number(rec.fine) > 0.005) html += "　＋ ⚖️ 罚款 <b style='color:#b45309;'>" + fmtMoney(rec.fine) + "</b>";
     if (rec.perTable != null) html += "（4 人平分，每人 " + fmtMoney(rec.perTable) + "）";
     html += "<br>";
     html += "零食等其它：<b>" + fmtMoney(rec.other != null ? rec.other : 0) + "</b><br>";
@@ -5130,6 +5168,7 @@
         end: h.end || "",
         hours: h.hours,
         tableFee: h.tableFee != null ? h.tableFee : h.total,
+        fine: h.fine != null ? h.fine : 0,             // ★ 罚款（算进台费 ✓）
         other: h.other != null ? h.other : 0,
         // ★ 桌上挂的零食明细 —— 带上它 ✗ 别的设备才能在零食结算记录里看到明细 ✓
         extras: h.extras || [],
@@ -5141,8 +5180,8 @@
   }
 
   function buildSheetXml() {
-    var cols = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
-    var headers = ["日期", "桌号", "开始时间", "结束时间", "小时数", "台费", "零食饮料钱(其它费用)", "总价", "总价(手续费后)"];
+    var cols = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+    var headers = ["日期", "桌号", "开始时间", "结束时间", "小时数", "台费", "罚款(算进台费)", "零食饮料钱(其它费用)", "总价", "总价(手续费后)"];
     var xml = "<" + '?xml version="1.0" encoding="UTF-8" standalone="yes"' + "?>";
     xml += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
     xml += '<row r="1">';
@@ -5162,9 +5201,10 @@
       if (rec.hours != null && !isNaN(hn)) xml += cellNum("E" + r, hn);
       else xml += cellStr("E" + r, "");
       xml += cellNum("F" + r, rec.tableFee);
-      xml += cellNum("G" + r, rec.other);
-      xml += cellNum("H" + r, rec.total);
-      xml += cellNum("I" + r, rec.grand);
+      xml += cellNum("G" + r, rec.fine || 0);        // ★ 罚款（算进台费 ✓）
+      xml += cellNum("H" + r, rec.other);
+      xml += cellNum("I" + r, rec.total);
+      xml += cellNum("J" + r, rec.grand);
       xml += '</row>';
     }
     xml += '</sheetData></worksheet>';
@@ -5273,6 +5313,7 @@
       end: rec.end || "",
       hours: isNaN(h) ? "" : h,
       tableFee: rec.tableFee != null ? rec.tableFee : "",
+      fine: rec.fine != null ? rec.fine : 0,
       other: rec.other != null ? rec.other : 0,
       extras: (rec.extras || []).map(function (x) { return x.name + "×" + x.qty; }).join("、"),
       total: rec.total != null ? rec.total : "",
@@ -6250,6 +6291,7 @@ function pullTableStates() {
       end: end || start,
       hours: (r.hours == null || r.hours === "") ? "" : String(numOr(r.hours, "")),
       tableFee: numOr(r.tableFee, total),
+      fine: numOr(r.fine, 0),                      // ★ 罚款（老数据没有 → 0 ✓）
       other: numOr(r.other, 0),
       total: total,
       fee: round2(grand - total),
