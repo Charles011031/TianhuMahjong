@@ -2174,6 +2174,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.3.4  2026-10-15
+  //    + 统计卡片去掉括号说明（用户要求：只留"5 场 / 1 笔 / 1 单"）
+  //      台费 / 罚款 / 鸭嘴兽 三张卡的括号都去掉 ✓
+  //      零食饮料那行「单独结算 X ＋ 挂桌上 Y」没有括号 ✗ 保留 ✓
   //  v3.3.3  2026-10-15
   //    + 统计里【台费不含罚款】★（用户要求）
   //      台费卡 = 纯台费 ✗ 罚款单独一张卡 ✓ 两个都算进总额 ✓
@@ -2438,7 +2442,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.3.3";
+  var APP_VER = "v3.3.4";
   var APP_DATE = "2026-10-15";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -11281,13 +11285,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("stTxnTitle").textContent = scopeTxt + " · 明细";
 
     document.getElementById("stCards").innerHTML =
-      statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场（不含罚款 ✗ 已含刷卡手续费）") +
+      statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场") +
       // ★ 罚款单独一张卡 ✗ 和台费并列 ✓ 两个都算进下面的总额 ✓
-      statCard("⚖️ 罚款", fmtMoney(round2(r.fineGrand)),
-        r.fineCount + " 笔（算在总额里 ✓ 不含在台费里）") +
+      statCard("⚖️ 罚款", fmtMoney(round2(r.fineGrand)), r.fineCount + " 笔") +
       statCard("零食饮料", fmtMoney(round2(r.snackGrand + r.snackFromTable)),
         "单独结算 " + fmtMoney(round2(r.snackGrand)) + " ＋ 挂桌上 " + fmtMoney(round2(r.snackFromTable))) +
-      statCard("鸭嘴兽", fmtMoney(round2(r.vapeGrand)), r.vapeCount + " 单（已含加价和手续费）") +
+      statCard("鸭嘴兽", fmtMoney(round2(r.vapeGrand)), r.vapeCount + " 单") +
       statCard("总额", fmtMoney(round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand)),
         "台费 ＋ ⚖️ 罚款 ＋ 零食饮料 ＋ 鸭嘴兽<br>" +
         "<span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
