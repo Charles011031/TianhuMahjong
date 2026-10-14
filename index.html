@@ -2174,6 +2174,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.3.3  2026-10-15
+  //    + 统计里【台费不含罚款】★（用户要求）
+  //      台费卡 = 纯台费 ✗ 罚款单独一张卡 ✓ 两个都算进总额 ✓
+  //      手续费按【台费:罚款】金额比例拆到两张卡上（谁都不吃亏 ✓）
   //  v3.3.2  2026-10-15
   //    + 同步审计 + 统计罚款 ★
   //      【审计发现并修掉的】
@@ -2434,7 +2438,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.3.2";
+  var APP_VER = "v3.3.3";
   var APP_DATE = "2026-10-15";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -11086,7 +11090,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       recharge: 0, rechargeBonus: 0, rechargeRmb: 0, rechargePay: 0, rechargeFee: 0, balanceUsed: 0, manualDeduct: 0,
       vapeGrand: 0, vapeCount: 0,
       cash: 0, card: 0, rmb: 0, rmbActual: 0, unpaid: 0, tableCount: 0, snackCount: 0, snackFromTable: 0,
-      fineSum: 0, fineCount: 0,                    // ★ 罚款单独累计（用户要求单列 ✓）
+      fineSum: 0, fineCount: 0, fineGrand: 0,      // ★ 罚款单独累计（含它那部分手续费 ✓）
       txns: []
     };
     var i;
@@ -11102,18 +11106,23 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       // ★ 罚款：按【台费】算 ✗ 所以要并到"台费侧"一起摊手续费 ✓
       //   并且单独累计一份（用户要求：统计里单独罗列罚款 ✓）
       var fine = Number(h.fine) || 0;
-      var tfAll = round2(tf + fine);                  // 台费 + 罚款（手续费分摊基数）
+      var tfAll = round2(tf + fine);                  // 台费 + 罚款（手续费按这个基数摊 ✓）
       var base = round2(tfAll + ot);
-      var feeTable = base > 0.005 ? round2(hfee * tfAll / base) : hfee;
-      var feeSnack = round2(hfee - feeTable);
+      var feeTF = base > 0.005 ? round2(hfee * tfAll / base) : (ot > 0.005 ? 0 : hfee);
+      var feeSnack = round2(hfee - feeTF);
+      // ★ 台费和罚款【在统计里分开显示】✗（用户要求 ✓）
+      //   但它俩那部分手续费要按金额比例拆开 ✗ 不然谁都不准 ✓
+      var feeOnFine = tfAll > 0.005 ? round2(feeTF * fine / tfAll) : 0;
+      var feeOnTable = round2(feeTF - feeOnFine);
       r.tableFee += tf;
       r.fineSum += fine;                              // ★ 罚款单列 ✓
+      r.fineGrand += round2(fine + feeOnFine);        // ★ 罚款（含它那部分手续费 ✓）
       if (fine > 0.005) r.fineCount++;
       r.tableOther += ot;
       r.tableTotal += Number(h.total) || 0;
       r.tableFeeCharge += hfee;
-      // ★ tableGrand 要含罚款 ✗ 否则总额里漏掉这笔收入 ✗✓✓
-      r.tableGrand += round2(tfAll + feeTable);       // 台费+罚款（含台费那部分手续费）
+      // ★ 台费卡【不含罚款】✗ 罚款单独一张卡 ✓ 两张加起来才等于原来的口径 ✓
+      r.tableGrand += round2(tf + feeOnTable);        // 台费（含台费那部分手续费）
       r.snackFromTable += round2(ot + feeSnack);      // 桌上零食（含零食那部分手续费）
       var bu = Number(h.balanceUsed) || 0;
       r.balanceUsed += bu;
@@ -11272,15 +11281,15 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("stTxnTitle").textContent = scopeTxt + " · 明细";
 
     document.getElementById("stCards").innerHTML =
-      statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场（含罚款 ＋ 刷卡手续费）") +
-      // ★ 罚款单独罗列（用户要求 ✓）—— 它【已经算在台费里】✗ 所以总额不会重复计 ✓
-      statCard("⚖️ 罚款", fmtMoney(round2(r.fineSum)),
-        r.fineCount + " 笔（已算进上面的台费和总额）") +
+      statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场（不含罚款 ✗ 已含刷卡手续费）") +
+      // ★ 罚款单独一张卡 ✗ 和台费并列 ✓ 两个都算进下面的总额 ✓
+      statCard("⚖️ 罚款", fmtMoney(round2(r.fineGrand)),
+        r.fineCount + " 笔（算在总额里 ✓ 不含在台费里）") +
       statCard("零食饮料", fmtMoney(round2(r.snackGrand + r.snackFromTable)),
         "单独结算 " + fmtMoney(round2(r.snackGrand)) + " ＋ 挂桌上 " + fmtMoney(round2(r.snackFromTable))) +
       statCard("鸭嘴兽", fmtMoney(round2(r.vapeGrand)), r.vapeCount + " 单（已含加价和手续费）") +
-      statCard("总额", fmtMoney(round2(r.tableGrand + r.snackGrand + r.snackFromTable + r.vapeGrand)),
-        "台费（含罚款）＋ 零食饮料 ＋ 鸭嘴兽<br>" +
+      statCard("总额", fmtMoney(round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand)),
+        "台费 ＋ ⚖️ 罚款 ＋ 零食饮料 ＋ 鸭嘴兽<br>" +
         "<span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
       statCard("其中人民币", "¥" + round2(r.rmbActual).toFixed(2),
         "折合 " + fmtMoney(round2(r.rmb)) + " 澳币<br><span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
