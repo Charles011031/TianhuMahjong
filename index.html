@@ -2174,6 +2174,23 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.3.2  2026-10-15
+  //    + 同步审计 + 统计罚款 ★
+  //      【审计发现并修掉的】
+  //      ① 5 个真业务设置【一直没同步】✗ 两台设备可以不一致 ✗
+  //         busyThreshold 忙日阈值 / busyBonus 忙日加成 / rechargePct 充值提成 /
+  //         wageMode 工资周期 / vapeStaffOn 员工价开关
+  //      ② 充值档位 rechargeTiers：【apply 侧早就支持解析】✗ 但推送侧从来没发过 ✗✓✓
+  //         → 这个设置永远同步不过去 ✗ 补上 ✓
+  //      （审计过没问题的：7 个集合的字段覆盖 ✓ 会员流水 15 字段 ✓
+  //        设置 label 映射 ✓ 预约/待结算整个对象推送 ✓
+  //        删除同步 fbMergeCol 尊重"云端没有=别人删了"✓ 不会复活 ✓）
+  //      【统计】
+  //      ③ ★ 罚款原来【根本没进营业额】★ ✗✓✓
+  //         统计用的是 h.tableFee ✗ 而罚款是单独字段 ✗
+  //         → 现在罚款并入"台费侧"（含手续费分摊 ✓）+ 单独一张卡罗列 ✓
+  //           台费卡 / 总额 都正确含罚款 ✗ 且不重复计 ✓
+  //           明细里标出哪笔有罚款 ✓
   //  v3.3.1  2026-10-15
   //    + 修【在别的设备结算完、清了挂桌零食 ✗ 这台设备还留着】★★★（用户实测）
   //      根因：★ 火库(Firebase)不保存空数组 ★
@@ -2417,7 +2434,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.3.1";
+  var APP_VER = "v3.3.2";
   var APP_DATE = "2026-10-15";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -5493,13 +5510,22 @@ function inventoryPayloads() {
   }
   // 设置项：key = 状态字段名，value = 值（数组/对象存成 JSON）
   var SETTING_KEYS = ["globalRate", "feeRate", "fxRate", "bizStart", "dayRate", "nightRate", "nightAt",
-                      "vapeCardAdd", "vapeCardPer", "autoSyncMin"];
+                      "vapeCardAdd", "vapeCardPer", "autoSyncMin",
+                      // ★ v3.3.2：这几个以前漏了 ✗ 导致两台设备的"忙日加成 / 充值提成 /
+                      //   工资周期 / 员工价"可能不一致 ✓
+                      "busyThreshold", "busyBonus", "rechargePct", "wageMode", "vapeStaffOn"];
   function settingPayloads() {
     var out = [], i;
     for (i = 0; i < SETTING_KEYS.length; i++) {
       var k = SETTING_KEYS[i];
       out.push({ id: "set_" + k, key: SETTING_LABEL[k] || k, value: String(state[k] == null ? "" : state[k]) });
     }
+    // ★ 充值档位：apply 侧早就支持解析了 ✗ 但这里从来没发过 ✗✓✓
+    //   → 结果这个设置永远同步不过去 ✗ 补上 ✓
+    try {
+      out.push({ id: "set_tiers", key: "充值档位",
+                 value: JSON.stringify(state.rechargeTiers || []) });
+    } catch (e) {}
     // 电子烟阶梯价 + 员工价
     var g1 = state.vapePrice.g1 || {}, g2 = state.vapePrice.g2 || {};
     out.push({ id: "set_vp1r", key: "一代零售价", value: String(g1.retail || 0) });
@@ -5517,7 +5543,10 @@ function inventoryPayloads() {
   var SETTING_LABEL = {
     globalRate: "每小时价格", feeRate: "刷卡手续费%", fxRate: "汇率(人民币/澳币)",
     bizStart: "营业日起算", dayRate: "白班时薪", nightRate: "晚班时薪", nightAt: "晚班判定时间",
-    vapeCardAdd: "电子烟刷卡加价", vapeCardPer: "电子烟加价方式", autoSyncMin: "自动同步间隔(分钟)"
+    vapeCardAdd: "电子烟刷卡加价", vapeCardPer: "电子烟加价方式", autoSyncMin: "自动同步间隔(分钟)",
+    // ★ v3.3.2 补上的 —— 这几个以前【有 UI 但没同步】✗ 两台设备会不一致 ✗
+    busyThreshold: "忙日营业额阈值", busyBonus: "忙日每小时加成", rechargePct: "充值提成%",
+    wageMode: "工资结算周期", vapeStaffOn: "员工价开关"
   };
   var CFG_MIN_V = 8;   // 商品库存/员工名单/系统设置 需要脚本 v8
   function pushConfigToGoogle(opts) {
@@ -5681,6 +5710,12 @@ function verifyConfigPush(done) {
     if (byLabel["电子烟刷卡加价"] != null) state.vapeCardAdd = num("电子烟刷卡加价", state.vapeCardAdd);
     if (byLabel["电子烟加价方式"] != null) state.vapeCardPer = byLabel["电子烟加价方式"] === "order" ? "order" : "stick";
     if (byLabel["自动同步间隔(分钟)"] != null) state.autoSyncMin = num("自动同步间隔(分钟)", state.autoSyncMin);
+    // ★ v3.3.2 补上的一批设置 ✓
+    if (byLabel["忙日营业额阈值"] != null) state.busyThreshold = num("忙日营业额阈值", state.busyThreshold);
+    if (byLabel["忙日每小时加成"] != null) state.busyBonus = num("忙日每小时加成", state.busyBonus);
+    if (byLabel["充值提成%"] != null) state.rechargePct = num("充值提成%", state.rechargePct);
+    if (byLabel["工资结算周期"] != null) state.wageMode = (byLabel["工资结算周期"] === "week") ? "week" : "month";
+    if (byLabel["员工价开关"] != null) state.vapeStaffOn = (byLabel["员工价开关"] === "true");
     state.vapePrice.g1.retail = num("一代零售价", state.vapePrice.g1.retail);
     state.vapePrice.g1.t3 = num("一代满3根", state.vapePrice.g1.t3);
     state.vapePrice.g1.t5 = num("一代满5根", state.vapePrice.g1.t5);
@@ -11050,7 +11085,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       snackSub: 0, snackFee: 0, snackGrand: 0,
       recharge: 0, rechargeBonus: 0, rechargeRmb: 0, rechargePay: 0, rechargeFee: 0, balanceUsed: 0, manualDeduct: 0,
       vapeGrand: 0, vapeCount: 0,
-      cash: 0, card: 0, rmb: 0, rmbActual: 0, unpaid: 0, tableCount: 0, snackCount: 0, snackFromTable: 0, txns: []
+      cash: 0, card: 0, rmb: 0, rmbActual: 0, unpaid: 0, tableCount: 0, snackCount: 0, snackFromTable: 0,
+      fineSum: 0, fineCount: 0,                    // ★ 罚款单独累计（用户要求单列 ✓）
+      txns: []
     };
     var i;
     function match(d) { return useMonth ? (d || "").slice(0, 7) === mth : d === day; }
@@ -11062,14 +11099,21 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var tf = Number(h.tableFee) || 0;
       var ot = Number(h.other) || 0;
       var hfee = Number(h.fee) || 0;
-      var base = round2(tf + ot);
-      var feeTable = base > 0.005 ? round2(hfee * tf / base) : hfee;
+      // ★ 罚款：按【台费】算 ✗ 所以要并到"台费侧"一起摊手续费 ✓
+      //   并且单独累计一份（用户要求：统计里单独罗列罚款 ✓）
+      var fine = Number(h.fine) || 0;
+      var tfAll = round2(tf + fine);                  // 台费 + 罚款（手续费分摊基数）
+      var base = round2(tfAll + ot);
+      var feeTable = base > 0.005 ? round2(hfee * tfAll / base) : hfee;
       var feeSnack = round2(hfee - feeTable);
       r.tableFee += tf;
+      r.fineSum += fine;                              // ★ 罚款单列 ✓
+      if (fine > 0.005) r.fineCount++;
       r.tableOther += ot;
       r.tableTotal += Number(h.total) || 0;
       r.tableFeeCharge += hfee;
-      r.tableGrand += round2(tf + feeTable);          // 台费（含台费那部分手续费）
+      // ★ tableGrand 要含罚款 ✗ 否则总额里漏掉这笔收入 ✗✓✓
+      r.tableGrand += round2(tfAll + feeTable);       // 台费+罚款（含台费那部分手续费）
       r.snackFromTable += round2(ot + feeSnack);      // 桌上零食（含零食那部分手续费）
       var bu = Number(h.balanceUsed) || 0;
       r.balanceUsed += bu;
@@ -11122,7 +11166,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       }
       r.txns.push({
         kind: "table", t: tTxt,
-        d: (h.name || "") + "（" + (h.hours || "") + " 小时）" + (h.mergedTable ? " + 并" + h.mergedTable + "号桌" : ""),
+        d: (h.name || "") + "（" + (h.hours || "") + " 小时）" + (h.mergedTable ? " + 并" + h.mergedTable + "号桌" : "") +
+           (Number(h.fine) > 0.005 ? "　⚖️ 含罚款 $" + Number(h.fine).toFixed(2) : ""),
         a: (h.collected != null ? Number(h.collected) : (Number(h.grand) || 0)),
         chips: chips,
         info: ""
@@ -11227,12 +11272,16 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("stTxnTitle").textContent = scopeTxt + " · 明细";
 
     document.getElementById("stCards").innerHTML =
-      statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场（已含刷卡手续费）") +
+      statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场（含罚款 ＋ 刷卡手续费）") +
+      // ★ 罚款单独罗列（用户要求 ✓）—— 它【已经算在台费里】✗ 所以总额不会重复计 ✓
+      statCard("⚖️ 罚款", fmtMoney(round2(r.fineSum)),
+        r.fineCount + " 笔（已算进上面的台费和总额）") +
       statCard("零食饮料", fmtMoney(round2(r.snackGrand + r.snackFromTable)),
         "单独结算 " + fmtMoney(round2(r.snackGrand)) + " ＋ 挂桌上 " + fmtMoney(round2(r.snackFromTable))) +
       statCard("鸭嘴兽", fmtMoney(round2(r.vapeGrand)), r.vapeCount + " 单（已含加价和手续费）") +
       statCard("总额", fmtMoney(round2(r.tableGrand + r.snackGrand + r.snackFromTable + r.vapeGrand)),
-        "台费 ＋ 零食饮料 ＋ 鸭嘴兽<br><span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
+        "台费（含罚款）＋ 零食饮料 ＋ 鸭嘴兽<br>" +
+        "<span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
       statCard("其中人民币", "¥" + round2(r.rmbActual).toFixed(2),
         "折合 " + fmtMoney(round2(r.rmb)) + " 澳币<br><span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
       statCard("会员充值", fmtMoney(round2(r.recharge)),
