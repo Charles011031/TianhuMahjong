@@ -2174,6 +2174,18 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.3.1  2026-10-15
+  //    + 修【在别的设备结算完、清了挂桌零食 ✗ 这台设备还留着】★★★（用户实测）
+  //      根因：★ 火库(Firebase)不保存空数组 ★
+  //            extras = [] 会被火库直接删掉这个键 ✗
+  //            于是"云端没有 extras"有两种含义：
+  //              ① 新格式：桌上真的没零食了 → 本机也该清 ✓
+  //              ② 老格式：从来没存过 → 不能动本机（否则丢数据 ✗）
+  //            原来的判断只看 r.extras !== undefined ✗ 两种都跳过 ✗
+  //            → 别的设备清空了 ✗ 本机却一直留着旧零食 ✗
+  //      修法：用 endedAt / carry 判断是不是"新格式"（新格式一定带这两个键 ✓）
+  //            新格式 + 没有 extras → 说明被清空了 → 本机也清成 [] ✓
+  //            老格式 → 保持原样（保护本机数据 ✓）
   //  v3.3.0  2026-10-15
   //    + 【罚款】选项 ★（用户要求：罚款算进台费，可以平摊）
   //      · 结算弹窗加「⚖️ 罚款」输入框（显眼位置 ✗ 不用展开更多选项 ✓）
@@ -2405,7 +2417,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.3.0";
+  var APP_VER = "v3.3.1";
   var APP_DATE = "2026-10-15";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -12117,7 +12129,20 @@ function applyTableStates(rows) {
       var cloudNew = (r.endedAt !== undefined || r.extras !== undefined || r.carry !== undefined);
       if (r.endedAt !== undefined) t.endedAt = r.endedAt || 0;
       if (r.carry !== undefined) t.carry = Number(r.carry) || 0;
-      if (r.extras !== undefined && r.extras !== null) t.extras = fbArr(r.extras);
+      // ★★ 空数组的坑 ★★
+      //   火库【不保存空数组】✗ extras=[] 会被直接删键 ✗
+      //   于是云端"没有 extras"有两种情况：
+      //     ① 新格式 ✗ 桌上真的没零食了（应该清成 []）✓
+      //     ② 老格式 ✗ 从来没存过（不能动本机 ✗ 否则丢数据 ✓）
+      //   用 endedAt 区分：新格式的推送【一定】带 endedAt（哪怕是 0 ✓）
+      //   所以：是"新格式 + 没有 extras" → 说明被清空了 → 本机也要清 ✓✓✓
+      //   （用户实测：别的设备结算完清了零食 ✗ 这台还留着 $26.50 ✗）
+      var cloudIsNew = (r.endedAt !== undefined || r.carry !== undefined);
+      if (r.extras !== undefined && r.extras !== null) {
+        t.extras = fbArr(r.extras);
+      } else if (cloudIsNew) {
+        t.extras = [];               // ★ 新格式但没这个键 = 已经清空了 ✓
+      }
       if (r.mahjongType) t.mahjongType = r.mahjongType;
       if (r.note !== undefined && r.note !== null) t.note = r.note;
       if (!cloudNew) {
