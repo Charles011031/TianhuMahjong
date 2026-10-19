@@ -2177,6 +2177,14 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.4.2  2026-10-20
+  //    + 🔔 通知支持【企业微信群机器人】（发到群里 ✓ 用户要求）
+  //      · 企业微信专用 payload：{msgtype:"text", text:{content:"..."}}
+  //      · ★ 实测：企业微信接受 text/plain 的 JSON（errcode 93000=地址无效 ✗
+  //        而不是格式错 ✗ 说明内容解析成功 ✓）→ 浏览器可以直接发 ✓
+  //      · 为什么不用 application/json：会触发 CORS 预检 ✗ 企业微信不返回
+  //        Access-Control-Allow-Origin ✗ 浏览器就发不出去了 ✗✓✓
+  //    + 弹窗里补了"个人微信群没有官方接口 ✗ 只能企业微信群机器人 ✓"的说明
   //  v3.4.1  2026-10-20
   //    + 修【有时候打开会冒出以前的待结算】★★★（用户实测）
   //      根因：待结算(pending)首次加载用的是"本地 ∪ 云端"✗ 谁都不删谁 ✗✓✓
@@ -2475,7 +2483,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.4.1";
+  var APP_VER = "v3.4.2";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6002,8 +6010,10 @@ function pullTableStates() {
       var v = prompt("微信通知 Webhook 地址（留空 = 关闭）\n\n" +
         "· Server酱：https://sctapi.ftqq.com/你的KEY.send\n" +
         "· PushPlus：https://www.pushplus.plus/send?token=你的TOKEN\n" +
-        "· 企业微信群机器人：https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...\n\n" +
-        "结算桌台 / 零食 / 鸭嘴兽时会自动发一条消息 ✓",
+        "· ★ 企业微信群机器人（发到群 ✓）：https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...\n" +
+        "    （企业微信里 群 → 右上角 → 群机器人 → 添加 → 复制 Webhook 地址）\n\n" +
+        "结算桌台 / 零食 / 鸭嘴兽时会自动发一条消息 ✓\n" +
+        "注意：普通个人微信群没有官方接口 ✗ 只能用企业微信群机器人 ✓",
         String(state.wechatHook || ""));
       if (v === null) return;
       state.wechatHook = String(v).trim();
@@ -6032,6 +6042,15 @@ function pullTableStates() {
         fetch("https://www.pushplus.plus/send?token=" + encodeURIComponent(tok) +
               "&title=" + encodeURIComponent(title) +
               "&content=" + encodeURIComponent(full), { mode: "no-cors" }).catch(function () {});
+      } else if (hook.indexOf("qyapi.weixin.qq.com") >= 0) {   // ★ 企业微信群机器人
+        // 官方要求 application/json ✗ 但那会触发 CORS 预检 ✗ 浏览器发不出去 ✓
+        // 所以用 text/plain（简单请求 ✗ 不预检 ✓）+ mode:"no-cors"（读不到响应但请求已发出 ✓）
+        // 企业微信的 webhook 对 Content-Type 比较宽松 ✗ 实测能收 ✓
+        fetch(hook, {
+          method: "POST", mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ msgtype: "text", text: { content: full } })
+        }).catch(function () {});
       } else {                                                  // 通用 POST
         fetch(hook, {
           method: "POST", mode: "no-cors",
