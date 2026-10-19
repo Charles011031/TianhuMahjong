@@ -731,6 +731,8 @@
           <span class="cur">点</span>
         </div>
       </div>
+      <button type="button" class="btn-ghost sm" id="wechatBtn" title="结算时发一条微信/手机通知"
+              style="margin-left:8px;white-space:nowrap;">🔔 通知</button>
     </div>
   </header>
 
@@ -1819,7 +1821,8 @@
       lastSyncOk: 0, stockLogs: [], autoPullOnOpen: false,
       rechargeTiers: [{ id: "t1", pay: 500, bonus: 100 }],
       localKeepMonths: 12,          // 本机只保留最近多少个月的结算记录（0 = 永久保留）
-      dayRate: 16, nightRate: 18, nightAt: "22:00", opLogs: [], showFeeDetail: true,
+      dayRate: 16, nightRate: 18, nightAt: "21:00", opLogs: [], showFeeDetail: true,
+      wechatHook: "",                  // ★ 微信通知 webhook（空=不通知 ✓）
       wageMode: "month",              // 工资汇总按【按月】还是【按周】结算
       busyThreshold: 800,             // 当天营业额超过这个数 → 员工时薪 +busyBonus
       busyBonus: 1,                   // 忙日每小时的加成（澳币）
@@ -1896,7 +1899,7 @@
     if (typeof s.localKeepMonths !== "number" || s.localKeepMonths < 0) s.localKeepMonths = 12;
     if (typeof s.dayRate !== "number") s.dayRate = 16;
     if (typeof s.nightRate !== "number") s.nightRate = 18;
-    if (typeof s.nightAt !== "string" || !parseTimeStr(s.nightAt)) s.nightAt = "22:00";
+    if (typeof s.nightAt !== "string" || !parseTimeStr(s.nightAt)) s.nightAt = "21:00";
     if (typeof s.memberDetailId !== "string") s.memberDetailId = "";
     return s;
   }
@@ -2174,6 +2177,19 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.4.0  2026-10-20
+  //    + ① 盘点记录改成【从新到旧】的 30 条 ★（原来取的是最旧的 30 条 ✗）
+  //    + ② 🔔 微信 / 手机通知 ★
+  //         结算桌台 / 零食 / 鸭嘴兽时自动发一条消息 ✓
+  //         设置：点右上角「🔔 通知」填 webhook（Server酱 / PushPlus / 企业微信机器人 ✓）
+  //         空着 = 不通知 ✓ 出错静默 ✓ 绝不阻塞结算 ✓
+  //         地址存在本机 localStorage ✗ 跟着设置同步 ✗ 不进 GitHub 仓库 ✓
+  //    + ③ 白班/晚班改成【按分界点拆分】★★（用户要求）
+  //         原来"整段一个价"✗ 15:00 上到次日 02:00 → 整段算晚班 ✗✓✓
+  //         现在自动拆：白班 15:00–21:00（6h）+ 晚班 21:00–02:00（5h）✓
+  //         分界点 = 「晚班判定时间」(默认改成 21:00 ✓)
+  //         白班区间 = [营业日起算, 分界点) ✗ 晚班 = [分界点, 次日营业日起算) ✓
+  //         同步更新了 6 条工资测试的期望值 ✓
   //  v3.3.5  2026-10-15
   //    + 明细里【挂桌零食 / 罚款 各自独立成组】★★（用户要求）
   //      原来台费明细行的金额 = h.collected ✗ 那个数【含挂桌零食和罚款】✗✓✓
@@ -2452,7 +2468,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.3.5";
+  var APP_VER = "v3.4.0";
   var APP_DATE = "2026-10-15";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4131,6 +4147,12 @@
     renderMembers();
     closeSettleModal();
     showResult(rec);
+    notifyWeChat("🀄 桌台结算 · " + rec.name,
+      rec.name + "  " + rec.hours + " 小时（" + rec.start + "–" + rec.end + "）\n" +
+      "台费 " + fmtMoney(rec.tableFee || 0) +
+      (Number(rec.fine) > 0.005 ? " ＋ 罚款 " + fmtMoney(rec.fine) : "") +
+      (Number(rec.other) > 0.005 ? " ＋ 零食 " + fmtMoney(rec.other) : "") +
+      "\n实收 " + fmtMoney(rec.collected != null ? rec.collected : rec.grand));
     logOp("结算", rec.name + "　" + fmtHours(rec.hours) + "h　应收 " + fmtMoney(rec.grand) +
           "　实收 " + fmtMoney(rec.collected) + (rec.balanceUsed > 0.005 ? "（会员扣款 " + fmtMoney(rec.balanceUsed) + "）" : ""));
     postToGoogle("records", [recordPayload(rec)]);
@@ -5531,7 +5553,7 @@ function inventoryPayloads() {
                       "vapeCardAdd", "vapeCardPer", "autoSyncMin",
                       // ★ v3.3.2：这几个以前漏了 ✗ 导致两台设备的"忙日加成 / 充值提成 /
                       //   工资周期 / 员工价"可能不一致 ✓
-                      "busyThreshold", "busyBonus", "rechargePct", "wageMode", "vapeStaffOn"];
+                      "busyThreshold", "busyBonus", "rechargePct", "wageMode", "vapeStaffOn", "wechatHook"];
   function settingPayloads() {
     var out = [], i;
     for (i = 0; i < SETTING_KEYS.length; i++) {
@@ -5564,7 +5586,7 @@ function inventoryPayloads() {
     vapeCardAdd: "电子烟刷卡加价", vapeCardPer: "电子烟加价方式", autoSyncMin: "自动同步间隔(分钟)",
     // ★ v3.3.2 补上的 —— 这几个以前【有 UI 但没同步】✗ 两台设备会不一致 ✗
     busyThreshold: "忙日营业额阈值", busyBonus: "忙日每小时加成", rechargePct: "充值提成%",
-    wageMode: "工资结算周期", vapeStaffOn: "员工价开关"
+    wageMode: "工资结算周期", vapeStaffOn: "员工价开关", wechatHook: "微信通知Webhook"
   };
   var CFG_MIN_V = 8;   // 商品库存/员工名单/系统设置 需要脚本 v8
   function pushConfigToGoogle(opts) {
@@ -5734,6 +5756,7 @@ function verifyConfigPush(done) {
     if (byLabel["充值提成%"] != null) state.rechargePct = num("充值提成%", state.rechargePct);
     if (byLabel["工资结算周期"] != null) state.wageMode = (byLabel["工资结算周期"] === "week") ? "week" : "month";
     if (byLabel["员工价开关"] != null) state.vapeStaffOn = (byLabel["员工价开关"] === "true");
+    if (byLabel["微信通知Webhook"] != null) state.wechatHook = txt("微信通知Webhook", state.wechatHook);
     state.vapePrice.g1.retail = num("一代零售价", state.vapePrice.g1.retail);
     state.vapePrice.g1.t3 = num("一代满3根", state.vapePrice.g1.t3);
     state.vapePrice.g1.t5 = num("一代满5根", state.vapePrice.g1.t5);
@@ -5953,6 +5976,63 @@ function pullTableStates() {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ target: target, v: 3, items: items })
       }).catch(function () {});
+    } catch (e) {}
+  }
+
+  // ============================================================
+  //  🔔 微信 / 手机通知（可配置 webhook ✗ 空着就不发 ✓）
+  //   支持三种：
+  //     · Server酱   https://sctapi.ftqq.com/<KEY>.send          （GET）
+  //     · PushPlus   https://www.pushplus.plus/send?token=<T>    （GET）
+  //     · 企业微信机器人等  直接 POST（浏览器可能被 CORS 挡 ✗ 但请求已发出 ✓）
+  //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
+  // ============================================================
+  // 🔔 通知按钮：点一下填 webhook 地址 ✗ 填完会发一条测试消息 ✓
+  (function () {
+    var wb = document.getElementById("wechatBtn");
+    if (!wb) return;
+    wb.addEventListener("click", function () {
+      var v = prompt("微信通知 Webhook 地址（留空 = 关闭）\n\n" +
+        "· Server酱：https://sctapi.ftqq.com/你的KEY.send\n" +
+        "· PushPlus：https://www.pushplus.plus/send?token=你的TOKEN\n" +
+        "· 企业微信群机器人：https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...\n\n" +
+        "结算桌台 / 零食 / 鸭嘴兽时会自动发一条消息 ✓",
+        String(state.wechatHook || ""));
+      if (v === null) return;
+      state.wechatHook = String(v).trim();
+      save();
+      if (state.wechatHook) {
+        notifyWeChat("✅ 天胡麻将馆 · 通知已开启",
+          "收到这条就说明配置成功了 ✓\n" + new Date().toLocaleString("zh-CN"));
+        try { toast("已开启通知 ✓ 稍等应该会收到一条测试消息", "var(--green-dark)"); } catch (e) {}
+      } else {
+        try { toast("已关闭通知", "#6b7280"); } catch (e) {}
+      }
+    });
+  })();
+
+  function notifyWeChat(title, content) {
+    var hook = String(state.wechatHook || "").trim();
+    if (!hook) return;
+    try {
+      var full = title + "\n" + content;
+      if (hook.indexOf("ftqq.com") >= 0) {                     // Server酱
+        fetch(hook + (hook.indexOf("?") >= 0 ? "&" : "?") +
+              "title=" + encodeURIComponent(title) +
+              "&desp=" + encodeURIComponent(full), { mode: "no-cors" }).catch(function () {});
+      } else if (hook.indexOf("pushplus") >= 0) {              // PushPlus
+        var tok = (hook.match(/token=([^&]+)/) || [])[1] || hook.replace(/\/\+$/, "").split("/").pop();
+        fetch("https://www.pushplus.plus/send?token=" + encodeURIComponent(tok) +
+              "&title=" + encodeURIComponent(title) +
+              "&content=" + encodeURIComponent(full), { mode: "no-cors" }).catch(function () {});
+      } else {                                                  // 通用 POST
+        fetch(hook, {
+          method: "POST", mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ msgtype: "text", text: { content: full },
+                                 title: title, content: full, desp: full })
+        }).catch(function () {});
+      }
     } catch (e) {}
   }
 
@@ -7884,8 +7964,9 @@ jsonpGet(t, onRes);
   function renderStockLogs() {
     var wrap = document.getElementById("slList");
     if (!state.stockLogs.length) { wrap.innerHTML = '<div class="empty-mini">还没有盘点记录</div>'; return; }
+    // ★ 从【最新】往前取 30 条 ✗（原来是从 0 开始 ✗ 拿到的是最旧的那 30 条 ✓）
     var rows = "", n = Math.min(30, state.stockLogs.length);
-    for (var i = 0; i < n; i++) {
+    for (var i = state.stockLogs.length - 1; i >= state.stockLogs.length - n; i--) {
       var L = state.stockLogs[i];
       rows += '<div class="res-row">' +
         '<span class="rt">' + esc(L.date) + " " + esc(L.time) + "</span>" +
@@ -8493,6 +8574,9 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     document.getElementById("snackCustom").value = "";
     document.getElementById("snackRmb").value = "";
     save(); renderSnacks();
+    notifyWeChat("🍜 零食结算",
+      (rec.items || []).map(function (x) { return x.name + "×" + x.qty; }).join("、") +
+      "\n实收 " + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
     logOp("零食结算", (rec.items || []).map(function (x) { return x.name + "×" + x.qty; }).join("、") +
           "　" + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
     postToGoogle("snacks", [snackPayload(rec)]);
@@ -9243,6 +9327,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("vapeCash").value = "";
     document.getElementById("vapeAud").value = "";
     save(); renderVapes(); renderStats();
+    notifyWeChat("🦆 鸭嘴兽结算",
+      (rec.items || []).map(function (x) { return (x.gen === 2 ? "二代" : "一代") + x.name + "×" + x.qty; }).join("、") +
+      "\n实收 " + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
     logOp("鸭嘴兽结算", (rec.items || []).map(function (x) { return (x.gen === 2 ? "二代" : "一代") + x.name + "×" + x.qty; }).join("、") +
           "　" + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
     postToGoogle("vapes", [vapePayload(rec)]);
@@ -10566,10 +10653,13 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   // ============================================================
   //  员工工资
   // ============================================================
-  // 判断一段工时属于白班还是晚班（整段一个价，不拆分）
-  // 规则：只要「晚班判定时间」(默认 22:00) 时还在上班，
-  //       或者该时间之后才来上班、凌晨时段来上班 → 整段算晚班；否则整段算白班。
-  // override: ""=自动  "day"=整段白班  "night"=整段晚班
+  // ★ 判断一段工时属于白班还是晚班 —— 现在【按分界点拆开算】★★
+  //   用户要求：15:00 上到次日 02:00 ✗ 要自动分成
+  //            白班 15:00–21:00（6h）+ 晚班 21:00–02:00（5h）✓
+  //   分界点用「晚班判定时间」(state.nightAt ✗ 用户要求 21:00 ✓)
+  //   白班区间 = [营业日起算, 分界点) ✗ 晚班区间 = [分界点, 次日营业日起算) ✓
+  //   （营业日起算默认 06:00 ✗ 所以白班是 06:00–21:00 ✗ 晚班是 21:00–次日06:00 ✓）
+  // override: ""=自动拆分  "day"=整段白班  "night"=整段晚班
   function splitShift(clockIn, clockOut, nightAtStr, override) {
     var a = parseTimeStr(clockIn), b = parseTimeStr(clockOut), na = parseTimeStr(nightAtStr);
     if (!a || !b || !na) return null;
@@ -10580,11 +10670,20 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (override === "day") return { day: total, night: 0 };
     if (override === "night") return { day: 0, night: total };
 
-    var ws = na.h * 60 + na.min;            // 晚班起点（22:00）
-    var we = ws + 480;                      // 深夜段结束（次日 06:00）
-    // 上班时段与「22:00~次日06:00」有任何重叠 → 晚班
-    var hit = (start < we && end > ws) || ((start + 1440) < we && (end + 1440) > ws);
-    return hit ? { day: 0, night: total } : { day: total, night: 0 };
+    var ws = na.h * 60 + na.min;                       // 分界点（21:00）
+    var bs = parseTimeStr(state.bizStart) || { h: 6, min: 0 };
+    var dayStart = bs.h * 60 + bs.min;                 // 营业日起算（06:00）
+    // 白班长度 = 分界点 − 营业日起算（06:00→21:00 = 15 小时 = 900 分 ✓）
+    var dayLen = ((ws - dayStart) + 1440) % 1440;
+    if (dayLen === 0) dayLen = 1440;                   // 刚好相等 → 全算白班
+    var dayMin = 0, nightMin = 0, m, p;
+    for (m = start; m < end; m++) {
+      // 把"当天第几分钟"映射到【营业日时间轴】✗ 06:00 之后算 0 ✓
+      p = (((m % 1440) + 1440) % 1440) - dayStart;
+      if (p < 0) p += 1440;
+      if (p < dayLen) dayMin++; else nightMin++;
+    }
+    return { day: dayMin, night: nightMin };
   }
 
   // 现在支持两种周期：按月、按周（周一到周日）
