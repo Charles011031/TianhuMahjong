@@ -2177,6 +2177,13 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.4.1  2026-10-20
+  //    + 修【有时候打开会冒出以前的待结算】★★★（用户实测）
+  //      根因：待结算(pending)首次加载用的是"本地 ∪ 云端"✗ 谁都不删谁 ✗✓✓
+  //        某台设备本地还留着已被别人删掉的旧待结算 ✗
+  //        一打开就合并回来 ✗ 再推回云端 ✗ 别的设备又看到 ✗
+  //      修法：首次加载也走 fbMergeCol ✗ 规则是"云端没有 = 别人删了 → 丢掉"✓
+  //        但"我刚写的"(fbMarkWrite 保护) 会留着 ✗ 不会误删刚建的 ✓
   //  v3.4.0  2026-10-20
   //    + ① 盘点记录改成【从新到旧】的 30 条 ★（原来取的是最旧的 30 条 ✗）
   //    + ② 🔔 微信 / 手机通知 ★
@@ -2468,7 +2475,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.4.0";
+  var APP_VER = "v3.4.1";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -12839,18 +12846,14 @@ function fbAttachPendingListener() {
       o.id = o.id || k;
       rows.push(o);
     }
-    var first2 = !fbPendingReady;
-    var merged;
-    if (first2) {
-      var byId2 = {}, list2 = [], j2, p2;
-      var lp = Array.isArray(state.pending) ? state.pending : [];
-      for (j2 = 0; j2 < lp.length; j2++) { p2 = lp[j2]; if (p2 && p2.id) byId2[p2.id] = p2; }
-      for (j2 = 0; j2 < rows.length; j2++) { p2 = rows[j2]; if (p2 && p2.id) byId2[p2.id] = p2; }
-      for (var kk2 in byId2) { if (byId2.hasOwnProperty(kk2)) list2.push(byId2[kk2]); }
-      merged = list2;
-    } else {
-      merged = fbMergeCol("pending", rows, function () { return state.pending; });
-    }
+    // ★★ v3.4.1 修：首次加载【也】必须走 fbMergeCol ★★
+    //   原来首次是"本地 ∪ 云端"✗ 谁都不删谁 ✗✓✓
+    //   → 某台设备本地留着已被别人删掉的旧待结算 ✗
+    //     一打开就合并回来 ✗ 再推回云端 ✗ 别的设备又看到 ✗
+    //     → 用户说的"有时候打开会有奇怪的以前的待结算"✓
+    //   fbMergeCol 的规则：云端没有 = 别人删了 → 丢掉 ✓
+    //     但"我刚写的"(fbMarkWrite 保护) 会留着 ✓ 不会误删刚建的 ✓
+    var merged = fbMergeCol("pending", rows, function () { return state.pending; });
     state.pending = merged;
     fbPendingReady = true;
     fbPendingCloud = {};
