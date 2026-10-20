@@ -1212,6 +1212,81 @@
     #tierList .menu-row:not(.menu-head) > span:nth-child(4)::before { content: "到账"; color: var(--muted); font-size: 11px; font-weight: 400; }
   }
 
+  /* ============================================================
+     小屏手机（≤400px，例如 iPhone SE / Surface Duo 折叠单屏 / 手机分屏）
+     再紧凑一档：字号、间距、卡片、按钮一起缩，一屏能多放内容
+     ============================================================ */
+  @media (max-width: 400px) {
+    body { padding: 10px; }
+    header { padding: 12px 12px; gap: 8px; border-radius: 12px; }
+    header h1 { font-size: 17px; }
+    .ver { font-size: 10px; padding: 1px 7px; }
+    .settings { gap: 6px; }
+    .rate-box { padding: 6px 8px; gap: 5px; }
+    .rate-box label { font-size: 11px; }
+    .rate-box input { width: 52px; padding: 5px; font-size: 14px; }
+    .rate-box .cur { font-size: 11px; }
+    .fx-btn { padding: 6px 7px; font-size: 11px; }
+    .tabs { gap: 6px; margin-bottom: 10px; }
+    .tab { flex: 1 1 84px; padding: 8px 4px; font-size: 12px; border-radius: 10px; }
+
+    .box-head h2 { font-size: 14px; }
+    .btn-ghost.sm, .btn-start.sm { padding: 6px 9px; font-size: 12px; }
+    .snack-tools { gap: 5px; }
+    .snack-tab { padding: 5px 9px; font-size: 11px; }
+    .snack-search { padding: 6px 9px; font-size: 12px; }
+
+    /* 商品卡：3 张一排（320 宽也放得下） */
+    .snack-cards { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+    .snack-col { padding: 7px; }
+    .snack-col h3 { font-size: 11px; margin-bottom: 6px; }
+    .snack-card { padding: 7px 4px 5px; border-radius: 10px; }
+    .snack-card .snack-thumb { height: 56px; margin: 6px 0 3px; }
+    .snack-card .snack-thumb .em { font-size: 22px; }
+    .snack-card .snack-nm { font-size: 11.5px; line-height: 1.2; }
+    .snack-card .snack-pr { font-size: 14px; margin-top: 3px; }
+    .snack-card .snack-st { font-size: 9.5px; }
+    .snack-card .snack-count { font-size: 8.5px; padding: 1px 3px; }
+    .snack-card .snack-tag { font-size: 8px; padding: 0 3px; }
+    .snack-card .snack-drag { width: 16px; height: 16px; font-size: 11px; }
+    .snack-card .snack-step { gap: 4px; min-height: 20px; }
+    .snack-card .snack-step button { width: 24px; height: 20px; font-size: 13px; }
+    .snack-card .snack-step .n { min-width: 12px; font-size: 12px; }
+    .vape-tier { font-size: 9px; }
+
+    /* 记录摘要卡 */
+    .rec-t1 { font-size: 13px; }
+    .rec-t2, .rec-sub { font-size: 11px; }
+    .rec-amt { font-size: 16px; }
+    .rec-card .chip { font-size: 10.5px; padding: 1px 6px; }
+    .rec-acts .row-edit, .rec-acts .btn-ghost { padding: 6px 9px; font-size: 12px; }
+    .rec-day { font-size: 11px; padding: 6px 9px; }
+    .history-head h2 { font-size: 15px; }
+    .history-wrap-scroll { max-height: 60vh; }
+
+    /* 员工打卡一行式 */
+    .emp-card { padding: 8px 10px; }
+    .emp-main .emp-name { font-size: 14px; }
+    .emp-main .emp-status { font-size: 10px; }
+    .emp-punch button { height: 32px; padding: 0 6px; font-size: 11.5px; }
+    .emp-more { width: 30px; height: 30px; font-size: 16px; }
+
+    /* 购物车浮标 / 弹窗 */
+    .snack-pill { right: 10px; bottom: 10px; padding: 9px 12px; font-size: 12px; }
+    .snack-pill b { font-size: 16px; }
+    .modal { padding: 18px 16px; border-radius: 16px; }
+    .modal h3 { font-size: 16px; }
+
+    /* 员工打卡的「姓名 / 添加 / 工资汇总」在 320 宽下折两行，别挤成一字一行 */
+    .inline-add { flex-wrap: wrap; width: 100%; margin-left: 0; gap: 6px; }
+    #empName { flex: 1 1 100%; width: auto; }
+    #empAdd, #wageToggle { flex: 1 1 calc(50% - 3px); }
+  }
+  /* 超小屏（≤350px）：顶部单位文字先藏起来，让「每小时价格 / 手续费」并排 */
+  @media (max-width: 350px) {
+    .rate-box .cur { display: none; }
+  }
+
 </style>
 </head>
 <body>
@@ -2753,7 +2828,7 @@
   (function () {
     function uiScale() {
       var w = window.innerWidth, h = window.innerHeight;
-      if (w < 861 || w > 1400) return 1;
+      if (w < 641 || w > 1400) return 1;   // ≤640 走手机版；>1400（13 寸宽屏）不缩放
       if (h <= 740) return 0.85;
       if (h <= 800) return 0.89;
       if (h <= 880) return 0.94;
@@ -2777,6 +2852,14 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.10.7  2026-10-21
+  //    + 📱 小屏手机适配（≤400px，如 iPhone SE / 手机分屏 / Surface Duo 折叠单屏）
+  //      · 320~400 宽：字号/间距/卡片/按钮再缩一档；商品卡 320 宽也能 3 张一排
+  //      · 记录摘要卡更紧凑；员工打卡工具条折两行（姓名一行、按钮一行）
+  //      · ≤350 宽：顶部单位文字先藏起来，让「每小时价格 / 手续费」并排
+  //    + 🖥️ 双屏 / 折叠屏（Surface Duo 这类）也纳入整体缩放：
+  //      · 641~860 宽也按比例缩；折叠单屏 ~540×720 走手机版；
+  //        展开 ~1114×720 用桌面版 + 0.85 缩放
   //  v3.10.5  2026-10-21
   //    + 🖥️ 小屏电脑 / 平板适配（用户：13 寸完美，店里 11 寸电脑 + 11 寸 iPad 装不下）
   //      · 按「宽度 ≤1400 且 高度不够」整体等比缩放（图标/字体/卡片一起缩）
@@ -3265,7 +3348,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.6";
+  var APP_VER = "v3.10.7";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
