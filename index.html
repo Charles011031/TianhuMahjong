@@ -2177,6 +2177,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.4.5  2026-10-20
+  //    + PushPlus 也能读到响应了（CORS 实测完全放行 ✓）✗ token 错会提示 ✓
+  //    + 额度记录（官方口径）：
+  //        PushPlus 实名免费 = 微信渠道【200 次/天】✓
+  //          200~2000 → 当日停推 ✗ 次日恢复 ✓；≥1万 → 永久禁用 ✗
+  //        Server酱 Turbo 免费额度很小（约 5 条/天 ✗ 具体看官网 ✓）
   //  v3.4.4  2026-10-20
   //    + Server酱：同时支持 Turbo(sctapi.ftqq.com) 和 Server酱³(xxx.push.ft07.com) ✓
   //      两者参数兼容（?title=&desp= ✓）✗ 只是域名不同 ✓
@@ -2496,7 +2502,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.4.4";
+  var APP_VER = "v3.4.5";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6069,9 +6075,18 @@ function pullTableStates() {
           .catch(function () {});
       } else if (hook.indexOf("pushplus") >= 0) {              // PushPlus
         var tok = (hook.match(/token=([^&]+)/) || [])[1] || hook.replace(/\/\+$/, "").split("/").pop();
+        // ★ PushPlus 的 CORS 完全放行（实测 ✓）→ 能读响应 ✗ token 错会提示 ✓
+        //   免费额度：实名用户【微信渠道 200 次/天】✓（官方口径 ✗ 会员更高 ✓）
         fetch("https://www.pushplus.plus/send?token=" + encodeURIComponent(tok) +
               "&title=" + encodeURIComponent(title) +
-              "&content=" + encodeURIComponent(full), { mode: "no-cors" }).catch(function () {});
+              "&content=" + encodeURIComponent(full))
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j && j.code && j.code !== 200) {
+              try { toast("PushPlus 发送失败：" + (j.msg || j.data || "token 不对？"), "#b45309"); } catch (e) {}
+            }
+          })
+          .catch(function () {});
       } else if (hook.indexOf("api.telegram.org") >= 0) {      // ★ Telegram 群/个人
         // Telegram 的 Bot API【完全支持 CORS】✗ 所以浏览器能直接发 ✓ 还能读到错误 ✓
         // 地址形式：https://api.telegram.org/bot<TOKEN>/sendMessage?chat_id=<CHAT_ID>
