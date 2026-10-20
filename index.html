@@ -2177,6 +2177,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.4.6  2026-10-20
+  //    + 通知【只发纯文字】★★（用户要求）
+  //      · PushPlus 默认 template=html ✗ 换行会被吃掉 ✗ 显示成一坨 ✓
+  //        → 加 &template=txt ✓ 纯文本 ✓ 换行正常 ✓
+  //      · 企业微信 / Telegram 本来就是 msgtype:"text" ✓ 纯文字 ✓
+  //      · Server酱的 desp 支持 Markdown ✗ 但我们发的是纯文字 ✓ 不受影响 ✓
   //  v3.4.5  2026-10-20
   //    + PushPlus 也能读到响应了（CORS 实测完全放行 ✓）✗ token 错会提示 ✓
   //    + 额度记录（官方口径）：
@@ -2502,7 +2508,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.4.5";
+  var APP_VER = "v3.4.6";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6077,7 +6083,11 @@ function pullTableStates() {
         var tok = (hook.match(/token=([^&]+)/) || [])[1] || hook.replace(/\/\+$/, "").split("/").pop();
         // ★ PushPlus 的 CORS 完全放行（实测 ✓）→ 能读响应 ✗ token 错会提示 ✓
         //   免费额度：实名用户【微信渠道 200 次/天】✓（官方口径 ✗ 会员更高 ✓）
+        // ★ 只发【纯文字】✗ 加 template=txt ✓
+        //   PushPlus 默认是 html ✗ 我们的 \n 换行会被吃掉 ✗ 显示成一坨 ✓
+        //   template=txt 就是纯文本 ✓ 换行正常 ✓
         fetch("https://www.pushplus.plus/send?token=" + encodeURIComponent(tok) +
+              "&template=txt" +
               "&title=" + encodeURIComponent(title) +
               "&content=" + encodeURIComponent(full))
           .then(function (r) { return r.json(); })
