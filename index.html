@@ -732,6 +732,9 @@
   }
   .snack-pill.show { display: inline-flex; }
   .snack-pill b { font-size: 18px; }
+  /* 点右下角购物车 → 滚到结算按钮并闪两下 */
+  @keyframes scFlash { 0%, 100% { box-shadow: 0 0 0 0 rgba(29,122,79,0); } 40% { box-shadow: 0 0 0 5px rgba(29,122,79,.35); } }
+  .settle-flash { animation: scFlash .7s ease 2; }
   .cart-thumb {
     width: 30px; height: 30px; border-radius: 8px; background: #f7f9f8; flex: 0 0 30px;
     display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 16px;
@@ -1069,8 +1072,8 @@
       <div class="history-head"><h2>零食饮料结算记录</h2></div>
       <div class="history-wrap-scroll" id="snackHistoryWrap"></div>
     </section>
-    <button type="button" class="snack-pill" id="snackPill" title="点一下跳到点单">
-      🛒 已选 <b id="snackPillN">0</b> 件 · <span id="snackPillSum">$0.00</span>
+    <button type="button" class="snack-pill" id="snackPill" title="点一下跳到结算按钮">
+      🛒 已选 <b id="snackPillN">0</b> 件 · 应收 <span id="snackPillSum">$0.00</span>
     </button>
   </div>
 
@@ -1175,6 +1178,9 @@
       <div class="history-head"><h2>鸭嘴兽销售记录</h2></div>
       <div class="history-wrap-scroll" id="vapeHistoryWrap"></div>
     </section>
+    <button type="button" class="snack-pill" id="vapePill" title="点一下跳到结算按钮">
+      🛒 已选 <b id="vapePillN">0</b> 根 · 应收 <span id="vapePillSum">$0.00</span>
+    </button>
   </div>
 
   <!-- ===== 会员充值 ===== -->
@@ -2456,6 +2462,13 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.9.0  2026-10-21
+  //    + 右下角购物车浮标两页统一（用户要求）★
+  //      · 零食：已选 N 件 · 应收 $X（应收 = 含手续费/抹零，跟实际收款一致）
+  //      · 鸭嘴兽：也加了同样的浮标（已选 N 根 · 应收 $X）—— 之前只有零食页有
+  //      · 点浮标 → 直接滚到「单独结算 / 结算收款」按钮，并让按钮闪两下
+  //        （原来只滚到点单面板顶部，手机上还要再滑一段）
+  //      · 没选东西时浮标自动隐藏
   //  v3.8.0  2026-10-21
   //    + 🦆 鸭嘴兽页加分类 tab：全部 / 一代 / 二代（用户要求，跟零食页一样）
   //      · tab 上带数量；点「一代」只看一代并变成单栏，点「全部」恢复两栏
@@ -2897,7 +2910,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.8.0";
+  var APP_VER = "v3.9.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -8560,7 +8573,21 @@ jsonpGet(t, onRes);
     for (var i = 0; i < state.snackCart.length; i++) n += Number(state.snackCart[i].qty) || 0;
     return n;
   }
-  // 右下角悬浮购物车（已选 N 件 · 合计）
+  // 点右下角购物车 → 滚到结算按钮，并让按钮闪两下（提示"在这里结账"）
+  function flashSettle(el) {
+    if (!el) return;
+    el.classList.remove("settle-flash");
+    void el.offsetWidth;
+    el.classList.add("settle-flash");
+    setTimeout(function () { el.classList.remove("settle-flash"); }, 1700);
+  }
+  function jumpToSettle(btn, fallback) {
+    var t = btn || fallback;
+    if (!t) return;
+    if (t.scrollIntoView) t.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (btn) flashSettle(btn);
+  }
+  // 右下角悬浮购物车（已选 N 件 · 应收 $X —— 用应收，和实际收款一致）
   function updateSnackPill() {
     var el = document.getElementById("snackPill");
     if (!el) return;
@@ -8570,7 +8597,7 @@ jsonpGet(t, onRes);
     var nEl = document.getElementById("snackPillN");
     var sEl = document.getElementById("snackPillSum");
     if (nEl) nEl.textContent = n;
-    if (sEl) sEl.textContent = "$" + snackCartSubtotal().toFixed(2);
+    if (sEl) sEl.textContent = "$" + snackCharges().grand.toFixed(2);
   }
   // 当前点单面板：看得到选了啥 / 改数量 / 删除（商品缩略图 + 单价 + 库存）
   function renderSnackCart() {
@@ -9285,12 +9312,16 @@ function snackReorderByBefore(fromId, cat, beforeId) {
     snackQuery = this.value.trim();
     renderSnacks();
   });
-  // 右下角悬浮购物车 → 滚到点单
+  // 右下角悬浮购物车 → 滚到「单独结算」并闪一下
   document.getElementById("snackPill").addEventListener("click", function () {
-    var cart = document.getElementById("snackCart");
-    if (!cart) return;
-    var box = cart.closest(".card-box") || cart;
-    if (box.scrollIntoView) box.scrollIntoView({ behavior: "smooth", block: "center" });
+    var fallback = document.getElementById("snackCart");
+    if (fallback) fallback = fallback.closest(".card-box") || fallback;
+    jumpToSettle(document.getElementById("snackSettle"), fallback);
+  });
+  document.getElementById("vapePill").addEventListener("click", function () {
+    var fallback = document.getElementById("vapeCart");
+    if (fallback) fallback = fallback.closest(".card-box") || fallback;
+    jumpToSettle(document.getElementById("vapeSettle"), fallback);
   });
 document.getElementById("snackCart").addEventListener("click", function (e) {
     var btn = e.target.closest("button[data-cart]");
@@ -9756,6 +9787,19 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     for (var i = 0; i < state.vapeCart.length; i++) n += Number(state.vapeCart[i].qty) || 0;
     return n;
   }
+  // 右下角悬浮购物车（鸭嘴兽：已选 N 根 · 应收 $X）
+  function updateVapePill() {
+    var el = document.getElementById("vapePill");
+    if (!el) return;
+    var n = vapeCartSticks();
+    if (!n) { el.className = "snack-pill"; return; }
+    el.className = "snack-pill show";
+    var nEl = document.getElementById("vapePillN");
+    var sEl = document.getElementById("vapePillSum");
+    if (nEl) nEl.textContent = n;
+    if (sEl) sEl.textContent = "$" + vapeCharges().grand.toFixed(2);
+  }
+
   // 点单行的小缩略图（有照片用照片，没有用 emoji）
   function vapeThumbHtml(gen, name) {
     var v = null, i;
@@ -9899,7 +9943,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     document.getElementById("vapeTotal").innerHTML = line;
     document.getElementById("vapeRmbWrap").style.display = (ch.payType === "rmb") ? "block" : "none";
     document.getElementById("vapeCashWrap").style.display = (ch.payType === "cash") ? "block" : "none";
-
+    updateVapePill();
   }
 
   function renderVapeHistory() {
