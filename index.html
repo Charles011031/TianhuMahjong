@@ -2177,6 +2177,14 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.4.7  2026-10-20
+  //    + 通知【标题带上关键金额】★★（用户反馈：微信服务号卡片只显示标题 ✗
+  //      内容要点"查看详情"才看得到 ✗ 不方便复制 ✓）
+  //      · 卡片格式是微信模板消息定的 ✗ 改不了 ✗ 但 title 可以自己写 ✓
+  //      · 所以：🀄 1号桌 收 $49.00 / 🍜 零食 收 $8.00 / 🦆 鸭嘴兽 收 $45.00
+  //      · 完整明细仍在正文里（点"查看详情"✓）
+  //    【结论】服务号卡片没法变"纯文字"✗ 想真正纯文字可复制 ✗
+  //      要换渠道：企业微信群 / Telegram / 邮件 ✓
   //  v3.4.6  2026-10-20
   //    + 通知【只发纯文字】★★（用户要求）
   //      · PushPlus 默认 template=html ✗ 换行会被吃掉 ✗ 显示成一坨 ✓
@@ -2508,7 +2516,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.4.6";
+  var APP_VER = "v3.4.7";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4187,7 +4195,9 @@
     renderMembers();
     closeSettleModal();
     showResult(rec);
-    notifyWeChat("🀄 桌台结算 · " + rec.name,
+    // ★ 标题里塞关键信息（金额/桌号）✗ 因为微信服务号的卡片只显示 title ✓
+    //   （卡片格式是微信定的 ✗ 改不了 ✗ 但 title 可以自己写 ✓）
+    notifyWeChat("🀄 " + rec.name + " 收 $" + Number(rec.collected != null ? rec.collected : rec.grand).toFixed(2),
       rec.name + "  " + rec.hours + " 小时（" + rec.start + "–" + rec.end + "）\n" +
       "台费 " + fmtMoney(rec.tableFee || 0) +
       (Number(rec.fine) > 0.005 ? " ＋ 罚款 " + fmtMoney(rec.fine) : "") +
@@ -8667,7 +8677,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     document.getElementById("snackCustom").value = "";
     document.getElementById("snackRmb").value = "";
     save(); renderSnacks();
-    notifyWeChat("🍜 零食结算",
+    notifyWeChat("🍜 零食 收 $" + Number(rec.grand || 0).toFixed(2),
       (rec.items || []).map(function (x) { return x.name + "×" + x.qty; }).join("、") +
       "\n实收 " + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
     logOp("零食结算", (rec.items || []).map(function (x) { return x.name + "×" + x.qty; }).join("、") +
@@ -9420,7 +9430,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("vapeCash").value = "";
     document.getElementById("vapeAud").value = "";
     save(); renderVapes(); renderStats();
-    notifyWeChat("🦆 鸭嘴兽结算",
+    notifyWeChat("🦆 鸭嘴兽 收 $" + Number(rec.grand || 0).toFixed(2),
       (rec.items || []).map(function (x) { return (x.gen === 2 ? "二代" : "一代") + x.name + "×" + x.qty; }).join("、") +
       "\n实收 " + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
     logOp("鸭嘴兽结算", (rec.items || []).map(function (x) { return (x.gen === 2 ? "二代" : "一代") + x.name + "×" + x.qty; }).join("、") +
