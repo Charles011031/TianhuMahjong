@@ -2177,6 +2177,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.4.4  2026-10-20
+  //    + Server酱：同时支持 Turbo(sctapi.ftqq.com) 和 Server酱³(xxx.push.ft07.com) ✓
+  //      两者参数兼容（?title=&desp= ✓）✗ 只是域名不同 ✓
+  //    + Turbo 返回 ACAO:* ✗ 所以能读到响应 ✗ Key 错会弹提示 ✓
+  //    + 弹窗里把"怎么拿 SendKey"写清楚了 ✓
   //  v3.4.3  2026-10-20
   //    + 🔔 通知支持【Telegram 群】（用户问"有没有不用企业微信的办法"）
   //      · Telegram Bot API【完全支持 CORS】(Access-Control-Allow-Origin: * ✓)
@@ -2491,7 +2496,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.4.3";
+  var APP_VER = "v3.4.4";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6016,7 +6021,9 @@ function pullTableStates() {
     if (!wb) return;
     wb.addEventListener("click", function () {
       var v = prompt("微信通知 Webhook 地址（留空 = 关闭）\n\n" +
-        "· Server酱：https://sctapi.ftqq.com/你的KEY.send\n" +
+        "· ★ Server酱（发到个人微信 ✓ 最省事）：\n" +
+        "   https://sctapi.ftqq.com/你的SendKey.send\n" +
+        "    （https://sct.ftqq.com/ 微信扫码登录 → 首页复制 SendKey）\n" +
         "· PushPlus：https://www.pushplus.plus/send?token=你的TOKEN\n" +
         "· ★ 企业微信群机器人（发到群 ✓）：https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...\n" +
         "    （企业微信里 群 → 右上角 → 群机器人 → 添加 → 复制 Webhook 地址）\n\n" +
@@ -6045,10 +6052,21 @@ function pullTableStates() {
     if (!hook) return;
     try {
       var full = title + "\n" + content;
-      if (hook.indexOf("ftqq.com") >= 0) {                     // Server酱
+      if (hook.indexOf("ftqq.com") >= 0 || hook.indexOf("ft07.com") >= 0) {
+        // ★ Server酱（Turbo: sctapi.ftqq.com / Server酱³: xxx.push.ft07.com）
+        //   两者的参数兼容 ✗ 都是 ?title=&desp= ✓
+        //   Turbo 返回 ACAO:* ✓ 能读到响应 ✓ 这里用 no-cors 兼容两种 ✓
+        // Turbo 返回 ACAO:* ✗ 所以能读响应 → 失败时能给提示 ✓（不用 no-cors ✓）
         fetch(hook + (hook.indexOf("?") >= 0 ? "&" : "?") +
               "title=" + encodeURIComponent(title) +
-              "&desp=" + encodeURIComponent(full), { mode: "no-cors" }).catch(function () {});
+              "&desp=" + encodeURIComponent(full))
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j && j.code && j.code !== 0) {
+              try { toast("Server酱 发送失败：" + (j.message || j.info || "Key 不对？"), "#b45309"); } catch (e) {}
+            }
+          })
+          .catch(function () {});
       } else if (hook.indexOf("pushplus") >= 0) {              // PushPlus
         var tok = (hook.match(/token=([^&]+)/) || [])[1] || hook.replace(/\/\+$/, "").split("/").pop();
         fetch("https://www.pushplus.plus/send?token=" + encodeURIComponent(tok) +
