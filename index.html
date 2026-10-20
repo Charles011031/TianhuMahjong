@@ -618,6 +618,8 @@
   .snack-tab.on { background: var(--green); border-color: var(--green); color: #fff; }
   .snack-tab[data-snackcat="snack"].on { background: #b45309; border-color: #b45309; }
   .snack-tab[data-snackcat="drink"].on { background: #1d4ed8; border-color: #1d4ed8; }
+  .snack-tab[data-vapegen="g1"].on { background: var(--green); border-color: var(--green); }
+  .snack-tab[data-vapegen="g2"].on { background: #7c3aed; border-color: #7c3aed; }
   .snack-tab .cnt { opacity: .72; font-weight: 400; margin-left: 3px; }
   .snack-search {
     margin-left: auto; width: 230px; padding: 8px 12px; font-size: 14px;
@@ -1125,6 +1127,11 @@
           <button class="btn-ghost sm" id="vapeEditBtn" style="margin-left:6px;" title="改代别 / 口味名称 / 库存（弹窗里改，平时改不动）">✎ 编辑</button>
         </div>
                 <div class="error" id="vapeMsg" style="display:none;"></div>
+        <div class="snack-tools" id="vapeTools">
+          <button type="button" class="snack-tab on" data-vapegen="">全部</button>
+          <button type="button" class="snack-tab" data-vapegen="g1">🟢 一代</button>
+          <button type="button" class="snack-tab" data-vapegen="g2">🟣 二代</button>
+        </div>
         <div id="vapeStockSum" class="vape-sum"></div>
         <div id="vapeMenu"></div>
       </section>
@@ -2449,6 +2456,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.8.0  2026-10-21
+  //    + 🦆 鸭嘴兽页加分类 tab：全部 / 一代 / 二代（用户要求，跟零食页一样）
+  //      · tab 上带数量；点「一代」只看一代并变成单栏，点「全部」恢复两栏
   //  v3.7.1  2026-10-21
   //    + 卡片高度改成【按内容自适应】（用户反馈：名字和价格之间有一大块空白）
   //      · 去掉写死的高度 + 名字固定两行的高度 → 名字一行就只占一行
@@ -2887,7 +2897,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.7.1";
+  var APP_VER = "v3.8.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -9787,15 +9797,32 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
             '" title="盘点：按实际数量修正库存">盘点</button></div>') +
       "</div>";
   }
+  var vapeGenFilter = "";      // "" 全部 ／ "g1" 一代 ／ "g2" 二代
   function renderVapeMenu() {
     var wrap = document.getElementById("vapeMenu");
+    // 分类 tab：数量 + 选中态（跟零食页一样）
+    var n1 = 0, n2 = 0, ti;
+    for (ti = 0; ti < state.vapes.length; ti++) {
+      if (Number(state.vapes[ti].gen) === 2) n2++; else n1++;
+    }
+    var tabEls = document.querySelectorAll("#vapeTools .snack-tab");
+    for (ti = 0; ti < tabEls.length; ti++) {
+      var ck = tabEls[ti].getAttribute("data-vapegen") || "";
+      var cnt = ck === "g1" ? n1 : (ck === "g2" ? n2 : n1 + n2);
+      tabEls[ti].innerHTML = (ck === "g1" ? "🟢 一代" : (ck === "g2" ? "🟣 二代" : "全部")) +
+                             '<span class="cnt">' + cnt + "</span>";
+      tabEls[ti].className = "snack-tab" + (ck === vapeGenFilter ? " on" : "");
+    }
     if (!state.vapes.length) {
       wrap.innerHTML = '<div class="empty-mini">还没有口味，点右上角「✎ 编辑」→「＋ 快速添加」，或者去「📋 盘点记录」看看。</div>';
       return;
     }
     var sticks = vapeCartSticks();
-    var gens = [{ g: 1, title: "🟢 一代" }, { g: 2, title: "🟣 二代" }];
-    var h = '<div class="snack-cols">';
+    var allGens = [{ g: 1, title: "🟢 一代" }, { g: 2, title: "🟣 二代" }];
+    var gens = vapeGenFilter
+      ? allGens.filter(function (x) { return (x.g === 2 ? "g2" : "g1") === vapeGenFilter; })
+      : allGens;
+    var h = '<div class="snack-cols' + (gens.length === 1 ? " one" : "") + '">';
     for (var gi = 0; gi < gens.length; gi++) {
       var glist = [];
       for (var k = 0; k < state.vapes.length; k++) {
@@ -10052,6 +10079,15 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     if (nc) { nc.classList.remove("pop"); void nc.offsetWidth; nc.classList.add("pop"); }
     if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} }
   }
+
+  // 分类 tab：全部 / 一代 / 二代
+  var vapeToolsEl = document.getElementById("vapeTools");
+  if (vapeToolsEl) vapeToolsEl.addEventListener("click", function (e) {
+    var t = e.target && e.target.closest ? e.target.closest(".snack-tab") : null;
+    if (!t) return;
+    vapeGenFilter = t.getAttribute("data-vapegen") || "";
+    renderVapeMenu();
+  });
 
   // 菜单：改名字 / 改库存 / 加入点单 / 删除
   document.getElementById("vapeMenu").addEventListener("input", function (e) {
