@@ -645,14 +645,16 @@
   /* 卡片区：限高 + 框内滚动（和原来一样，页面不会被 30 个商品撑长） */
   .snack-cards {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px;
+    align-items: stretch;      /* 同一行的卡片自动等高，不同行按内容自适应 */
     max-height: min(52vh, 540px); overflow-y: auto; overflow-x: hidden;
     padding: 2px; overscroll-behavior-y: auto; border-radius: 10px;
   }
   .snack-cards.drag-scrolling { box-shadow: inset 0 0 0 2px rgba(29,122,79,.25); }
-  /* ★ 卡片高度统一：所有卡片同高（--sc-h），名字固定两行（--sc-nm）★ */
-  :root { --sc-h: 196px; --sc-thumb: 88px; --sc-nm: 34px; }
+  /* ★ 卡片不再写死高度：按内容自适应（同一行由 grid 自动等高），
+       这样名字只有一行时不会在名字和价格之间留一大块空白 ★ */
+  :root { --sc-thumb: 88px; }
   .snack-card {
-    height: var(--sc-h); position: relative; display: flex; flex-direction: column;
+    position: relative; display: flex; flex-direction: column;
     align-items: center; text-align: center; padding: 10px 8px 8px;
     background: #fff; border: 1px solid var(--line); border-radius: 14px;
     cursor: pointer; user-select: none; -webkit-user-select: none;
@@ -682,13 +684,13 @@
   .snack-card .snack-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
   .snack-card .snack-thumb .em { font-size: 34px; line-height: 1; }
   .snack-card .snack-nm {
-    width: 100%; font-size: 13.5px; font-weight: 700; line-height: 1.25; height: var(--sc-nm);
+    width: 100%; font-size: 13.5px; font-weight: 700; line-height: 1.25;
     overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    word-break: break-all;
+    word-break: break-all; min-height: 0;
   }
   .snack-card .snack-x { color: var(--green-dark); font-weight: 800; }
   .snack-card .snack-pr {
-    font-size: 16px; font-weight: 800; color: var(--green-dark); margin-top: auto;
+    font-size: 16px; font-weight: 800; color: var(--green-dark); margin-top: 4px;
     font-variant-numeric: tabular-nums;
   }
   .snack-card .snack-st {
@@ -771,7 +773,7 @@
     .snack-cols { grid-template-columns: 1fr; }
   }
   @media (max-width: 640px) {
-    :root { --sc-h: 158px; --sc-thumb: 66px; --sc-nm: 30px; }
+    :root { --sc-thumb: 66px; }
     .box-head { gap: 6px; }
     .box-head h2 { font-size: 15px; }
     .snack-tools { gap: 6px; margin-bottom: 9px; }
@@ -2447,6 +2449,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.7.1  2026-10-21
+  //    + 卡片高度改成【按内容自适应】（用户反馈：名字和价格之间有一大块空白）
+  //      · 去掉写死的高度 + 名字固定两行的高度 → 名字一行就只占一行
+  //      · 同一行由 grid 自动等高（看着还是整齐），不同行按内容自然变矮
+  //      · 一屏能多显示 1~2 排商品
   //  v3.7.0  2026-10-21
   //    + 🦆 鸭嘴兽页改版（和零食页同一套卡片模板）★★
   //      · 口味与库存改成卡片：照片 / 口味名 / 当前单价 / 库存
@@ -2880,7 +2887,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.7.0";
+  var APP_VER = "v3.7.1";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
