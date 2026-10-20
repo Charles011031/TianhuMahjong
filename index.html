@@ -757,8 +757,8 @@
     <div class="res-form">
       <input type="date" id="resDate">
       <input type="text" id="resTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
-      <input type="text" id="resName" placeholder="姓名（电话二选一）">
-      <input type="text" id="resPhone" placeholder="电话（姓名二选一）">
+      <input type="text" id="resName" placeholder="姓名">
+      <input type="text" id="resPhone" placeholder="电话">
       <input type="text" id="resNote" placeholder="备注（如：要包间 / 老朋友 / 带小孩）" style="flex:1;min-width:170px;">
       <select id="resTable"></select>
       <button id="resAdd" class="btn-start sm">+ 添加预约</button>
@@ -2193,6 +2193,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.5.7  2026-10-20
+  //    + 预约输入框的占位提示改回原来的「姓名」「电话」（用户要求 ✓）
+  //      "姓名/电话至少填一个"的校验保留 ✓
   //  v3.5.5b 2026-10-20
   //    + 预约：姓名和电话【至少填一个】就行 ★（用户要求）
   //      原来姓名硬必填 ✗ 有电话也得写名字 ✓
@@ -2583,7 +2586,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.5.6";
+  var APP_VER = "v3.5.7";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
