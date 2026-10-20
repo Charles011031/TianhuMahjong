@@ -1185,8 +1185,8 @@
           <span class="cur">点</span>
         </div>
       </div>
-      <button type="button" class="btn-ghost sm" id="wechatBtn" title="结算时发一条微信/手机通知"
-              style="margin-left:8px;white-space:nowrap;">🔔 通知</button>
+      <button type="button" class="btn-ghost sm" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）"
+              style="margin-left:8px;white-space:nowrap;">🔄 刷新</button>
     </div>
   </header>
 
@@ -2678,6 +2678,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.10.2  2026-10-21
+  //    + 顶部加【🔄 刷新】按钮（用户要求：手机不用退出后台重进）
+  //      · 点一下 = 带时间戳参数重新加载页面（绕过缓存），等于退出重进
+  //    + 🔔 通知按钮和功能【暂时停用】（用户：暂时用不上）
+  //      · 顶部「🔔 通知」按钮已换成「🔄 刷新」
+  //      · 发送逻辑保留但 NOTIFY_ENABLED=false（以后要开回来改这个开关即可）
   //  v3.10.1  2026-10-21
   //    + 手机记录改成【摘要卡】（用户反馈：一行一个标签太高、像表单）
   //      · 每笔压缩成 3 行：桌号/品名 + 时间 + 金额（金额突出）
@@ -3143,7 +3149,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.1";
+  var APP_VER = "v3.10.2";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6894,6 +6900,17 @@ function pullTableStates() {
   //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
   // ============================================================
   // 🔔 通知按钮：点一下填 webhook 地址 ✗ 填完会发一条测试消息 ✓
+  // 🔄 顶部刷新按钮：重新加载页面（带一个时间戳参数，绕过缓存）→ 等于退出重进
+  (function () {
+    var rb = document.getElementById("refreshBtn");
+    if (!rb) return;
+    rb.addEventListener("click", function () {
+      try { toast("正在刷新…", "var(--muted)"); } catch (e) {}
+      var base = location.href.split("#")[0].split("?")[0];
+      setTimeout(function () { location.replace(base + "?r=" + Date.now()); }, 120);
+    });
+  })();
+
   (function () {
     var wb = document.getElementById("wechatBtn");
     if (!wb) return;
@@ -6925,7 +6942,11 @@ function pullTableStates() {
     });
   })();
 
+  // ★ v3.10.2：通知功能暂时停用（用户：用不上）。以后要开回来把 NOTIFY_ENABLED 改成 true 即可。
+  //   顶部「🔔 通知」按钮已经换成了「🔄 刷新」，所以也没有地方配置 webhook 了。
+  var NOTIFY_ENABLED = false;
   function notifyWeChat(title, content) {
+    if (!NOTIFY_ENABLED) return;
     var hook = String(state.wechatHook || "").trim();
     if (!hook) return;
     try {
