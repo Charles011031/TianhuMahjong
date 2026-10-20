@@ -2193,6 +2193,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.5.5  2026-10-20
+  //    + 删掉桌台卡片上的「上次结果」黄块（用户要求 ✗ 觉得多余 ✓）
+  //      记录在「统计」和「结算记录」里都能查到 ✓ 不缺信息 ✓
   //  v3.5.4  2026-10-20
   //    + 结算完成弹窗：删掉「会员余额抵扣：-$X」那一行 ✗
   //      改成在【分账收款】的会员扣款那一行【后面】显示：
@@ -2574,7 +2577,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.5.4";
+  var APP_VER = "v3.5.5";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -2891,14 +2894,9 @@
       }
       html += '  </div>';
       html += '  <button class="btn-manual" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
-      if (t.lastResult) {
-        var lr = t.lastResult;
-        var grand = lr.grand != null ? lr.grand : lr.total;
-        html += '  <div class="result"><div class="total">' + fmtMoney(grand) + '</div>';
-        html += '    <div class="detail">' + esc(lr.name) + ' · 台费 ' + fmtMoney(lr.tableFee != null ? lr.tableFee : lr.total) +
-                (Number(lr.fine) > 0.005 ? ' ＋ 罚款 ' + fmtMoney(lr.fine) : "") +
-                ' · 其它 ' + fmtMoney(lr.other || 0) + ' · 含手续费 ' + fmtMoney(grand) + '（≈' + fmtRmb(grand) + '）</div></div>';
-      }
+      // ★ v3.5.5：桌台卡片上的「上次结果」整块删掉了 ★（用户要求）
+      //   原来空闲的桌子下面会挂一个"$131.87 · 台费 $130.67 · 其它 …"的黄色块 ✗
+      //   用户觉得多余 ✗ 删掉 ✓（记录在「统计」和「结算记录」里都能查 ✓）
       html += '</div>';
     }
     grid.innerHTML = html;
