@@ -723,6 +723,7 @@
           <span class="cur">人民币/澳币</span>
         </div>
         <button type="button" class="fx-btn" id="fxRefresh">实时</button>
+        <button type="button" class="fx-btn" id="fxCompare" title="看每天"支付宝手动汇率"和"API 市场汇率"的差值" style="margin-left:4px;">📊</button>
       </div>
       <div class="rate-box">
         <label>营业日起算</label>
@@ -1082,6 +1083,16 @@
 
   <!-- 右下角轻提示（"已同步到表格" 之类）-->
   <div class="toast" id="toast"></div>
+
+  <!-- 📊 汇率对照弹窗 -->
+  <div class="overlay" id="fxLogOverlay">
+    <div class="modal" style="max-width:640px;width:92vw;">
+      <h3>📊 汇率对照</h3>
+      <div class="hint" style="margin:0 0 10px;">每天自动记录「API 市场价」和「你手填的支付宝汇率」✗ 用来看差值到底多少 %</div>
+      <div id="fxLogBody" style="max-height:58vh;overflow:auto;"></div>
+      <button type="button" class="btn-ghost" id="fxLogClose" style="margin-top:12px;width:100%;">关闭</button>
+    </div>
+  </div>
 
   <!-- 结算结果弹窗 -->
   <div class="overlay" id="overlay">
@@ -1810,6 +1821,9 @@
       fbPath: "tianhu-3ib4hdz526dyjp", fbSeeded: false,   // 数据路径密钥（随机串）+ 是否已上传过本机数据
       // ★ 汇率加点%（模拟支付宝的加点 ✗ 实测黄金会员 = 0.33% ✓ 普通会员 0.5~0.8% ✓）
       fxMarkup: 0.33, fxMarket: 0,
+      // ★ 汇率对照记录：每天一条 ✓
+      //   { d:"2026-10-20", at:"17:33", market:4.6662, markup:0.33, auto:4.6816, manual:4.6814 }
+      fxLog: [],
       tables: tables, history: [],
       snackMenu: [], snackCart: [], snackHistory: [],
       vapes: [], vapeCart: [], vapeHistory: [],
@@ -2179,6 +2193,14 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.5.1  2026-10-20
+  //    + 📊 汇率对照记录 ★（用户要求：每天对比"支付宝汇率" vs "API 自动价"）
+  //      · 自动：点「实时」时记一条（市场价 / 加点 / 自动价 ✓）
+  //      · 手动：你手填汇率框时记一条（= 你查到的支付宝价 ✓ 防抖 1.5 秒 ✓）
+  //      · 每天合并成一条 ✗ 只留最近 365 天 ✓
+  //      · 点汇率框旁边那个「📊」按钮 → 看表格 + 平均差值% ✓
+  //        差值 = (支付宝 − 自动价) ÷ 自动价 ✗ 正数=支付宝更高 ✓
+  //      · 记录跟着设置同步（set_fxlog JSON ✓ 换设备不丢 ✓）
   //  v3.5.0  2026-10-20
   //    + 汇率【自动模拟支付宝的加点】★★（用户要"支付宝那个汇率"）
   //      · 支付宝汇率没有公开 API ✗（Antom inquireExchangeRate 需商户签约+签名 ✓）
@@ -2528,7 +2550,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.5.0";
+  var APP_VER = "v3.5.1";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -3282,6 +3304,84 @@
   }
   function fxAutoTick() { if (fxNeedsRefresh()) fetchFxRate(); }
 
+  // ============================================================
+  //  📊 汇率对照记录（用户要求 ✗ 每天记一条 ✓）
+  //    每天记：API 市场价 / 加点后的自动价 / 你手填的支付宝价
+  //    过一段时间就能统计出「支付宝实际比市场价高多少 %」✓
+  // ============================================================
+  function fxLogPut(which, val) {
+    try {
+      var d = fmtDate(Date.now());
+      var now = new Date();
+      var at = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+      if (!Array.isArray(state.fxLog)) state.fxLog = [];
+      var e = null;
+      for (var i = 0; i < state.fxLog.length; i++) {
+        if (state.fxLog[i] && state.fxLog[i].d === d) { e = state.fxLog[i]; break; }
+      }
+      if (!e) { e = { d: d }; state.fxLog.push(e); }
+      e.at = at;
+      if (which === "auto") {
+        e.market = Number(state.fxMarket) || 0;
+        e.markup = Number(state.fxMarkup) || 0;
+        e.auto = Number(state.fxRate) || 0;
+      } else {
+        e.manual = Number(val) || 0;
+      }
+      // 只留最近 365 天（防无限膨胀 ✓）
+      if (state.fxLog.length > 365) state.fxLog = state.fxLog.slice(-365);
+      state.fxLog.sort(function (a, b) { return String(a.d) < String(b.d) ? -1 : 1; });
+      save();
+    } catch (x) {}
+  }
+
+  // 📊 汇率对照：渲染 + 统计
+  function renderFxLog() {
+    var body = document.getElementById("fxLogBody");
+    if (!body) return;
+    var list = (state.fxLog || []).slice().sort(function (a, b) { return String(b.d) < String(a.d) ? -1 : 1; });
+    if (!list.length) { body.innerHTML = '<div class="empty">还没有记录 ✗ 每天点一次「实时」✗ 再填一次支付宝汇率 ✓ 过几天就有数据了 ✓</div>'; return; }
+    var rows = "", diffs = [], n = 0;
+    for (var i = 0; i < list.length && i < 90; i++) {
+      var e = list[i];
+      var mk = Number(e.markup), au = Number(e.auto) || 0, ma = Number(e.manual) || 0;
+      var diff = (ma > 0 && au > 0) ? ((ma - au) / au * 100) : null;
+      if (diff != null) { diffs.push(diff); n++; }
+      rows += "<tr>" +
+        '<td style="white-space:nowrap;font-size:12px;color:var(--muted);">' + esc(e.d || "") + "</td>" +
+        '<td class="num">' + (Number(e.market) > 0 ? Number(e.market).toFixed(4) : "—") + "</td>" +
+        '<td class="num">' + (au > 0 ? au.toFixed(4) : "—") + "</td>" +
+        '<td class="num">' + (ma > 0 ? '<b>' + ma.toFixed(4) + "</b>" : "—") + "</td>" +
+        '<td class="num" style="color:' + (diff == null ? "var(--muted)" : (diff >= 0 ? "var(--green-dark)" : "var(--red)")) + ';">' +
+          (diff == null ? "—" : (diff >= 0 ? "+" : "") + diff.toFixed(3) + "%") + "</td>" +
+        "</tr>";
+    }
+    // 统计
+    var head = "";
+    if (n > 0) {
+      var sum = 0; for (var j = 0; j < diffs.length; j++) sum += diffs[j];
+      var avg = sum / diffs.length;
+      var mn = Math.min.apply(null, diffs), mx = Math.max.apply(null, diffs);
+      head = '<div style="padding:10px 12px;margin-bottom:10px;border-radius:10px;background:#f0f7f3;border:1px solid #cfe6d9;">' +
+        "<b>已记录 " + n + " 天</b>　平均值 <b style='color:var(--green-dark);'>" +
+        (avg >= 0 ? "+" : "") + avg.toFixed(3) + "%</b>　" +
+        "<span style='font-size:12px;color:var(--muted);'>最低 " + mn.toFixed(3) + "%　最高 " + mx.toFixed(3) + "%</span>" +
+        "<div style='font-size:12px;color:var(--muted);margin-top:4px;'>" +
+        "差值 = (你填的支付宝价 − API自动价) ÷ API自动价　正数 = 支付宝比自动价高 ✓</div></div>";
+    }
+    body.innerHTML = head +
+      '<table><thead><tr><th>日期</th><th class="num">市场价</th><th class="num">自动价</th>' +
+      '<th class="num">支付宝</th><th class="num">差值%</th></tr></thead><tbody>' + rows + "</tbody></table>";
+  }
+  (function () {
+    var bc = document.getElementById("fxCompare");
+    var ov = document.getElementById("fxLogOverlay");
+    var cl = document.getElementById("fxLogClose");
+    if (bc) bc.addEventListener("click", function () { renderFxLog(); ov.classList.add("show"); });
+    if (cl) cl.addEventListener("click", function () { ov.classList.remove("show"); });
+    if (ov) ov.addEventListener("click", function (e) { if (e.target === ov) ov.classList.remove("show"); });
+  })();
+
   function fetchFxRate() {
     fetch(FX_API)
       .then(function (r) { return r.json(); })
@@ -3297,6 +3397,7 @@
           state.fxFetchedAt = Date.now();
           save();
           updateFxInput();
+          fxLogPut("auto", 0);                          // ★ 记一条：API 价
           try {
             toast("汇率 " + state.fxRate + " = 市场 " + state.fxMarket +
                   " × " + (1 + mk / 100).toFixed(4) + "（含 " + mk + "% 加点）", "var(--green-dark)");
@@ -3306,12 +3407,19 @@
       .catch(function () {});
   }
 
+  var fxManualTimer = null;
   document.getElementById("fxRate").addEventListener("input", function () {
     var v = parseFloat(this.value);
     if (!isNaN(v) && v > 0) {
       state.fxRate = v;
       state.fxUpdatedAt = "";
       save();
+      // ★ 手动输入的 = 你查到的【支付宝汇率】✗ 防抖后记一条 ✓
+      if (fxManualTimer) clearTimeout(fxManualTimer);
+      fxManualTimer = setTimeout(function () {
+        fxManualTimer = null;
+        if (Number(state.fxRate) > 0) fxLogPut("manual", state.fxRate);
+      }, 1500);
     }
   });
 
@@ -5660,6 +5768,11 @@ function inventoryPayloads() {
       out.push({ id: "set_tiers", key: "充值档位",
                  value: JSON.stringify(state.rechargeTiers || []) });
     } catch (e) {}
+    // ★ 汇率对照记录（每天一条 ✗ 最多 365 天 ✓ JSON 存 ✓）
+    try {
+      out.push({ id: "set_fxlog", key: "汇率对照记录",
+                 value: JSON.stringify(state.fxLog || []) });
+    } catch (e) {}
     // 电子烟阶梯价 + 员工价
     var g1 = state.vapePrice.g1 || {}, g2 = state.vapePrice.g2 || {};
     out.push({ id: "set_vp1r", key: "一代零售价", value: String(g1.retail || 0) });
@@ -5852,6 +5965,12 @@ function verifyConfigPush(done) {
     if (byLabel["员工价开关"] != null) state.vapeStaffOn = (byLabel["员工价开关"] === "true");
     if (byLabel["微信通知Webhook"] != null) state.wechatHook = txt("微信通知Webhook", state.wechatHook);
     if (byLabel["汇率加点%"] != null) state.fxMarkup = num("汇率加点%", state.fxMarkup);
+    if (byLabel["汇率对照记录"]) {
+      try {
+        var fl = JSON.parse(byLabel["汇率对照记录"]);
+        if (Array.isArray(fl)) state.fxLog = fl;
+      } catch (e) {}
+    }
     state.vapePrice.g1.retail = num("一代零售价", state.vapePrice.g1.retail);
     state.vapePrice.g1.t3 = num("一代满3根", state.vapePrice.g1.t3);
     state.vapePrice.g1.t5 = num("一代满5根", state.vapePrice.g1.t5);
