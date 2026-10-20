@@ -479,12 +479,18 @@
   .me-modal.me-vape .me-head,
   .me-modal.me-vape .me-row { grid-template-columns: 84px minmax(130px, 1fr) 92px 40px; }
 
+  /* 电子烟编辑弹窗（多一列照片） */
+  .me-modal.me-vape.me-hasphoto .me-head,
+  .me-modal.me-vape.me-hasphoto .me-row { grid-template-columns: 48px 84px minmax(130px, 1fr) 92px 40px; }
+
   /* 小屏适配：把单价/库存缩一点，名称仍然占大头 */
   @media (max-width: 620px) {
     .me-modal { width: 96vw; }
     .me-head, .me-row { grid-template-columns: 72px minmax(80px, 1fr) 76px 72px 36px; gap: 6px; }
     .me-modal.me-vape .me-head,
     .me-modal.me-vape .me-row { grid-template-columns: 72px minmax(80px, 1fr) 72px 36px; }
+    .me-modal.me-vape.me-hasphoto .me-head,
+    .me-modal.me-vape.me-hasphoto .me-row { grid-template-columns: 40px 66px minmax(60px, 1fr) 62px 32px; }
     .me-row input, .me-row select { padding: 7px 7px; font-size: 13px; }
     .me-head { font-size: 11px; }
   }
@@ -626,6 +632,15 @@
   .snack-col h3 { font-size: 13px; font-weight: 800; margin: 0 0 9px; display: flex; align-items: center; gap: 6px; }
   .snack-col.c-snack h3 { color: #b45309; }
   .snack-col.c-drink h3 { color: #1d4ed8; }
+  /* 电子烟：一代绿 / 二代紫（卡片版沿用同一套卡片样式） */
+  .snack-col.c-g1 { background: #f7fbf8; border-color: #cfe8da; }
+  .snack-col.c-g2 { background: #fbf8ff; border-color: #e6dcfb; }
+  .snack-col.c-g1 h3 { color: var(--green-dark); }
+  .snack-col.c-g2 h3 { color: #6b21a8; }
+  .snack-card .snack-tag.t-g1 { background: #eef7f1; color: var(--green-dark); border-color: #b6dcc8; }
+  .snack-card .snack-tag.t-g2 { background: #f3e8ff; color: #6b21a8; border-color: #ddd6fe; }
+  /* 阶梯价档位小字（满3根 / 满5根 / 满10根八折 / 员工价） */
+  .snack-card .vape-tier { font-size: 10px; font-weight: 700; color: #b45309; margin-left: 3px; }
   .snack-col h3 .cnt { font-size: 11px; font-weight: 400; opacity: .7; }
   /* 卡片区：限高 + 框内滚动（和原来一样，页面不会被 30 个商品撑长） */
   .snack-cards {
@@ -786,11 +801,24 @@
       order: 2; width: 38px; height: 38px; font-size: 16px; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
     }
-    .cart-row .qty-btn[data-cart=minus] { order: 3; }
-    .cart-row .qty-btn[data-cart=plus] { order: 5; }
+    .cart-row .qty-btn[data-cart=minus],
+    .cart-row .qty-btn[data-vapecart=minus] { order: 3; }
+    .cart-row .qty-btn[data-cart=plus],
+    .cart-row .qty-btn[data-vapecart=plus] { order: 5; }
     .cart-row .qty-btn { width: 40px; height: 38px; font-size: 19px; }
     .cart-row .qty { order: 4; min-width: 26px; font-size: 16px; }
     .cart-row .csum { order: 6; margin-left: auto; font-size: 15px; min-width: 0; }
+    /* 电子烟「价格设置」在手机上别被挤出屏幕：标签 + 输入框竖着排，自动换行 */
+    .vp-grid { grid-template-columns: 44px repeat(3, minmax(0, 1fr)); gap: 7px 7px; }
+    .vp-grid2 { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 7px 7px; }
+    .vp-gen { font-size: 12px; }
+    .vp-cell { flex-wrap: wrap; white-space: normal; font-size: 11px; gap: 3px; }
+    .vp-grid .vp-cell { flex-direction: column; align-items: stretch; }
+    .vp-cell label { white-space: nowrap; }
+    /* 刷卡的「每根 / 每单」那一格占满后两列，别把字挤成竖排 */
+    .vp-grid2 > .vp-cell:last-child { grid-column: 2 / -1; }
+    .vp-cell input,
+    #tierList .vp-cell input { width: 100% !important; min-width: 0; padding: 6px 5px; font-size: 13px; }
     .snack-card .snack-step { gap: 5px; }
     .snack-card .snack-step button { width: 28px; height: 26px; font-size: 16px; }
     .snack-card .snack-step .n { min-width: 14px; font-size: 13px; }
@@ -1823,7 +1851,7 @@
       </div>
       <div class="hint" style="margin-top:8px;">
         平时列表里不能改名字和库存，点「✎ 编辑」才进到这里来改 —— 避免手滑改错。<br>
-        左边 <b>📷</b> 传商品照片（可裁剪），照片右上角 <b>✕</b> 删掉照片；标记 <b>✕</b> 的行会在保存时删掉。
+        左边 <b>📷</b> 传照片（可裁剪），照片右上角 <b>✕</b> 删掉照片；标记 <b>✕</b> 的行会在保存时删掉。
       </div>
     </div>
   </div>
@@ -2419,6 +2447,18 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.7.0  2026-10-21
+  //    + 🦆 鸭嘴兽页改版（和零食页同一套卡片模板）★★
+  //      · 口味与库存改成卡片：照片 / 口味名 / 当前单价 / 库存
+  //        一代在左（绿色）/ 二代在右（紫色）；库存合计数保留
+  //      · 点卡片 = 加一根；已选卡片底部 − N ＋；减到 0 自动移出点单
+  //      · ★阶梯价自动显示：点单里一二代合计到 3 / 5 / 10 根时，
+  //        卡片单价【自动换成折后价】+ 档位小字（满3根 / 满5根 / 满10根八折）
+  //        勾「员工价」也立刻显示员工价
+  //      · 拖动排序：按住卡片右上角 ⠿ 调顺序（同代别内，只改本机显示）
+  //      · 「✎ 编辑」统一编辑里能传/删口味照片（和零食一样裁剪成 200×200 JPEG）
+  //      · 手机端：卡片按比例缩小、点单按钮加大、价格设置自动换行不再被挤出屏幕
+  //    + 口味照片跟着「商品库存」一起同步（老表格没有照片列时保留本机照片）
   //  v3.6.2  2026-10-21
   //    + 减少/删除不再依赖双击：已选的商品卡片底部变成「− N ＋」步进器
   //      · 手机上单击 − 就能减一份，减到 0 自动移出点单（不用跑回点单面板）
@@ -2840,7 +2880,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.6.2";
+  var APP_VER = "v3.7.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6049,8 +6089,11 @@ function inventoryPayloads() {
   }
   for (i = 0; i < state.vapes.length; i++) {
     var v = state.vapes[i];
+    var vph = String(v.photo || "");
+    if (vph.length > 46000) vph = "";
     out.push({ id: v.id, cat: v.gen === 2 ? "二代" : "一代",
-               name: v.name, price: 0, stock: Number(v.stock) || 0 });
+               name: v.name, price: 0, stock: Number(v.stock) || 0,
+               photo: vph.length > 40 ? vph : "" });
   }
   // 按 零食 → 饮料 → 一代 → 二代 归位（同类挨在一起，新加的就落在同类下面）
   // 同分类内部保持"录入的先后"（稳定排序）
@@ -6182,6 +6225,17 @@ function verifyConfigPush(done) {
     }
     return "";
   }
+  // 老表格没有「照片」列 → 拉回来时别把本机电子烟照片冲掉
+  function vapePhotoFromLocal(id, name, gen) {
+    var i;
+    for (i = 0; i < state.vapes.length; i++) if (id && state.vapes[i].id === id) return String(state.vapes[i].photo || "");
+    for (i = 0; i < state.vapes.length; i++) {
+      if (name && state.vapes[i].name === name && (Number(state.vapes[i].gen) === 2 ? 2 : 1) === gen) {
+        return String(state.vapes[i].photo || "");
+      }
+    }
+    return "";
+  }
   function applyInventoryRows(rows) {
     var menu = [], vapes = [];
     for (var i = 0; i < rows.length; i++) {
@@ -6194,7 +6248,10 @@ function verifyConfigPush(done) {
       var price = Number(r.price) || 0;
       var id = String(r.id || "").trim() || genId();
       if (cat === "一代" || cat === "二代") {
-        vapes.push({ id: id, gen: cat === "二代" ? 2 : 1, name: name, stock: stock });
+        var vg = cat === "二代" ? 2 : 1;
+        var vph2 = String(r.photo || "").trim();
+        if (!vph2) vph2 = vapePhotoFromLocal(id, name, vg);
+        vapes.push({ id: id, gen: vg, name: name, stock: stock, photo: vph2 });
       } else {
         var c2 = cat === "饮料" ? "drink" : "snack";
         var ph2 = String(r.photo || "").trim();
@@ -6224,8 +6281,15 @@ function verifyConfigPush(done) {
         for (var v = 0; v < state.vapes.length; v++) {
           if (state.vapes[v].name === name && state.vapes[v].gen === gen) { hv = state.vapes[v]; break; }
         }
-        if (hv) { hv.stock = stock; updV++; }
-        else { state.vapes.push({ id: rid || genId(), gen: gen, name: name, stock: stock }); addV++; }
+        var vphm = String(r.photo || "").trim();
+        if (hv) {
+          hv.stock = stock;
+          if (vphm) hv.photo = vphm;           // 云端没带照片（老表格）→ 保留本机照片
+          updV++;
+        } else {
+          state.vapes.push({ id: rid || genId(), gen: gen, name: name, stock: stock, photo: vphm });
+          addV++;
+        }
       } else {
         var c = (cat === "饮料") ? "drink" : "snack";
         var hm = null;
@@ -6357,7 +6421,11 @@ function cfgSignature() {
     return [x.id, x.name, x.price, x.stock, snackCatOf(x),
             ph ? (ph.length + "|" + ph.slice(0, 8) + "|" + ph.slice(-8)) : ""];
   }).sort(byId);
-  var v = state.vapes.map(function (x) { return [x.id, x.gen, x.name, x.stock]; }).sort(byId);
+  var v = state.vapes.map(function (x) {
+    var vph = String(x.photo || "");
+    return [x.id, x.gen, x.name, x.stock,
+            vph ? (vph.length + "|" + vph.slice(0, 8) + "|" + vph.slice(-8)) : ""];
+  }).sort(byId);
   var e = state.employees.map(function (x) { return [x.id, x.name, x.color, x.avatar ? 1 : 0]; }).sort(byId);
   var s = settingPayloads().map(function (x) { return [x.key, x.value]; });
   return JSON.stringify({ m: m, v: v, e: e, s: s });
@@ -7988,7 +8056,8 @@ jsonpGet(t, onRes);
     if (meKind === "vape") {
       for (i = 0; i < state.vapes.length; i++) {
         var v = state.vapes[i];
-        meRows.push({ id: v.id, gen: Number(v.gen) === 2 ? 2 : 1, name: v.name, stock: Number(v.stock) || 0, kill: false });
+        meRows.push({ id: v.id, gen: Number(v.gen) === 2 ? 2 : 1, name: v.name,
+                      stock: Number(v.stock) || 0, photo: String(v.photo || ""), kill: false });
       }
     } else {
       for (i = 0; i < state.snackMenu.length; i++) {
@@ -8007,10 +8076,10 @@ jsonpGet(t, onRes);
       ? "这里改<b>口味名称</b>和<b>库存</b>。平时列表里不能改，点「✎ 编辑」才进得来。"
       : "这里改<b>照片</b>、<b>名称</b>、<b>单价</b>、<b>库存</b>，也能加商品、删商品。平时列表里改不动，点「✎ 编辑」才进得来。";
     document.getElementById("meColCat").textContent = isVape ? "代别" : "分类";
-    document.getElementById("meColPhoto").style.display = isVape ? "none" : "";
+    document.getElementById("meColPhoto").style.display = "";       // 零食 / 电子烟都能传照片
     document.getElementById("meColPrice").style.display = isVape ? "none" : "";
     document.getElementById("menuEditOverlay").querySelector(".me-modal").className =
-      "modal me-modal" + (isVape ? " me-vape" : " me-hasphoto");
+      "modal me-modal me-hasphoto" + (isVape ? " me-vape" : "");
     document.getElementById("menuEditError").style.display = "none";
     document.getElementById("meAddError").style.display = "none";
     var sel = document.getElementById("meAddCat");
@@ -8027,15 +8096,14 @@ jsonpGet(t, onRes);
   function meRowHtml(r, i) {
     var isVape = meKind === "vape";
     var h = '<div class="me-row' + (r.kill ? " kill" : "") + '" data-mi="' + i + '">';
-    if (!isVape) {
-      var ph = String(r.photo || "");
-      h += '<div class="me-photo-wrap">' +
-        '<button type="button" class="me-photo' + (ph.length > 40 ? " has" : "") + '" data-mf="photo" title="' +
-          (ph.length > 40 ? "点一下换照片（✕ 删除）" : "上传照片") + '">' +
-          (ph.length > 40 ? '<img src="' + ph + '" alt="">' : "📷") + "</button>" +
-        (ph.length > 40 ? '<button type="button" class="me-photo-del" data-mf="photodel" title="删除照片">✕</button>' : "") +
-        "</div>";
-    }
+    // 照片格子：零食 / 电子烟都支持（点 📷 上传，点照片右上角 ✕ 删除）
+    var ph = String(r.photo || "");
+    h += '<div class="me-photo-wrap">' +
+      '<button type="button" class="me-photo' + (ph.length > 40 ? " has" : "") + '" data-mf="photo" title="' +
+        (ph.length > 40 ? "点一下换照片（✕ 删除）" : "上传照片") + '">' +
+        (ph.length > 40 ? '<img src="' + ph + '" alt="">' : "📷") + "</button>" +
+      (ph.length > 40 ? '<button type="button" class="me-photo-del" data-mf="photodel" title="删除照片">✕</button>' : "") +
+      "</div>";
     if (isVape) {
       h += '<select data-mf="gen"><option value="1"' + (Number(r.gen) === 2 ? "" : " selected") + '>一代</option>' +
            '<option value="2"' + (Number(r.gen) === 2 ? " selected" : "") + '>二代</option></select>';
@@ -8127,7 +8195,8 @@ jsonpGet(t, onRes);
     if (meKind === "vape") {
       var nv = [];
       for (i = 0; i < keep.length; i++) {
-        nv.push({ id: keep[i].id || genId(), gen: keep[i].gen, name: keep[i].name, stock: keep[i].stock });
+        nv.push({ id: keep[i].id || genId(), gen: keep[i].gen, name: keep[i].name, stock: keep[i].stock,
+                  photo: String(keep[i].photo || "") });
       }
       state.vapes = nv;
     } else {
@@ -8159,7 +8228,7 @@ jsonpGet(t, onRes);
     var stock = Math.max(0, Math.floor(parseFloat(document.getElementById("meAddStock").value) || 0));
     var catV = document.getElementById("meAddCat").value;
     var row = (meKind === "vape")
-      ? { gen: String(catV) === "2" ? 2 : 1, name: name, stock: stock, kill: false }
+      ? { gen: String(catV) === "2" ? 2 : 1, name: name, stock: stock, photo: "", kill: false }
       : { cat: catV === "drink" ? "drink" : "snack", name: name, price: price, stock: stock, photo: "", kill: false };
     // 插到同组第一个之前 → 显示时就在那一组的最上面
     var g = meGroupOf(row), at = meRows.length;
@@ -8940,7 +9009,7 @@ function sFlipCards(before) {
     })(all[i], dy);
   }
 }
-function sDragStart(e, handle) {
+function sDragStart(e, handle, kind) {
   var card = handle.closest ? handle.closest(".snack-card[data-dragid]") : null;
   if (!card) return;
   var box = card.closest(".snack-cards");
@@ -8970,6 +9039,7 @@ function sDragStart(e, handle) {
   document.body.appendChild(float);
   document.body.classList.add("dragging-row");
   sDrag = { id: card.getAttribute("data-dragid"), cat: card.getAttribute("data-dragcat"),
+            kind: (kind === "vape" ? "vape" : "snack"),
             card: card, float: float, ph: ph, box: box,
             grabX: e.clientX - rect.left, grabY: e.clientY - rect.top,
             lastX: e.clientX, lastY: e.clientY, timer: null };
@@ -9039,17 +9109,47 @@ function sDragFinish() {
       if (fl.parentNode) fl.parentNode.removeChild(fl);
       if (ph.parentNode) ph.parentNode.removeChild(ph);
       card.style.display = "";
-      snackReorderByBefore(d.id, d.cat, beforeId);
+      if (d.kind === "vape") vapeReorderByBefore(d.id, d.cat, beforeId);
+      else snackReorderByBefore(d.id, d.cat, beforeId);
     }, 175);
   })(d.float, d.ph, d.card);
 }
 document.getElementById("snackMenu").addEventListener("pointerdown", function (e) {
   var h = e.target && e.target.closest ? e.target.closest(".snack-drag") : null;
-  if (h) sDragStart(e, h);
+  if (h) sDragStart(e, h, "snack");
+});
+document.getElementById("vapeMenu").addEventListener("pointerdown", function (e) {
+  var h = e.target && e.target.closest ? e.target.closest(".snack-drag") : null;
+  if (h) sDragStart(e, h, "vape");
 });
 document.addEventListener("pointermove", function (e) { sDragMove(e); }, { passive: true });
 document.addEventListener("pointerup", function () { sDragFinish(); });
 document.addEventListener("pointercancel", function () { sDragFinish(); });
+
+// 电子烟：松手后按"空位插在哪张卡片前面"写回数据（同代别内）
+function vapeReorderByBefore(fromId, cat, beforeId) {
+  var gen = cat === "g2" ? 2 : 1;
+  var same = [], i;
+  for (i = 0; i < state.vapes.length; i++) {
+    if ((Number(state.vapes[i].gen) === 2 ? 2 : 1) === gen) same.push(state.vapes[i]);
+  }
+  var fi = -1;
+  for (i = 0; i < same.length; i++) if (same[i].id === fromId) { fi = i; break; }
+  if (fi < 0) return;
+  var moved = same.splice(fi, 1)[0];
+  var ti = same.length;
+  if (beforeId) { for (i = 0; i < same.length; i++) if (same[i].id === beforeId) { ti = i; break; } }
+  same.splice(ti, 0, moved);
+  var out = [], si = 0;
+  for (i = 0; i < state.vapes.length; i++) {
+    if ((Number(state.vapes[i].gen) === 2 ? 2 : 1) === gen) out.push(same[si++]);
+    else out.push(state.vapes[i]);
+  }
+  state.vapes = out;
+  save();
+  renderVapes();
+  toast("已调整顺序（只改本机显示，不动云端）", "var(--green-dark)");
+}
 
 // 松手后按"插到哪一行前面"写回数据
 function snackReorderByBefore(fromId, cat, beforeId) {
@@ -9622,57 +9722,89 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     return { order: o, payType: pt, cardAdd: add, base: base, fee: fee, grand: grand, rmb: rmb, discount: round2(base - grand) };
   }
 
-  // 表头：跟零食菜单用同一套网格，列名和下面每行一一对齐
-  function vapeMenuHead() {
-    return '<div class="menu-row menu-head">' +
-      '<span></span>' +              /* 0 和商品菜单对齐（这里没有拖动把手） */
-      '<span>口味名称</span>' +       /* 1 */
-      '<span style="text-align:center;">每根</span>' +   /* 2 */
-      '<span style="text-align:center;">库存</span>' +   /* 3 */
-      '<span></span>' +              /* 4 加入 */
-      '<span></span>' +              /* 5 盘点 */
+  // ===== 电子烟 · 卡片式菜单（v3.7.0 改版，跟零食页同一套模板）=====
+  // 没照片时按口味名猜个 emoji（有照片就用照片）
+  function vapeEmojiOf(v) {
+    var n = String((v && v.name) || "");
+    var map = [["西瓜", "🍉"], ["椰子", "🥥"], ["百香", "🥭"], ["芒果", "🥭"],
+               ["薄荷", "🌿"], ["葡萄", "🍇"], ["草莓", "🍓"], ["桃", "🍑"],
+               ["柠檬", "🍋"], ["橙", "🍊"], ["可乐", "🥤"], ["冰", "🧊"],
+               ["糖", "🍬"], ["茶", "🍵"], ["水", "💧"]];
+    for (var i = 0; i < map.length; i++) if (n.indexOf(map[i][0]) >= 0) return map[i][1];
+    return "💨";
+  }
+  // 点单里一共几根（一二代合并 —— 阶梯价按这个总数算）
+  function vapeCartSticks() {
+    var n = 0;
+    for (var i = 0; i < state.vapeCart.length; i++) n += Number(state.vapeCart[i].qty) || 0;
+    return n;
+  }
+  // 点单行的小缩略图（有照片用照片，没有用 emoji）
+  function vapeThumbHtml(gen, name) {
+    var v = null, i;
+    for (i = 0; i < state.vapes.length; i++) {
+      if (state.vapes[i].name === name && (Number(state.vapes[i].gen) === 2 ? 2 : 1) === gen) { v = state.vapes[i]; break; }
+    }
+    if (!v) return "💨";
+    var ph = String(v.photo || "");
+    return ph.length > 40 ? '<img src="' + ph + '" alt="">' : vapeEmojiOf(v);
+  }
+  // 一张口味卡片（点卡片 = 加一根；已选的底部变 − N ＋；价格跟着阶梯自动变）
+  function vapeCardHtml(v, sticks) {
+    var gen = Number(v.gen) === 2 ? 2 : 1;
+    var st = Number(v.stock) || 0;
+    var out = st <= 0;
+    var n = vapeCartQty(gen, v.name);
+    var ph = String(v.photo || "");
+    var price = "$" + (Number(vapeUnitPrice(gen, sticks)) || 0).toFixed(2).replace(/\.00$/, "");
+    var tier = vapeTierLabel(gen, sticks);
+    return '<div class="snack-card' + (out ? " out" : "") + (n ? " added" : "") + '"' +
+      ' data-dragid="' + v.id + '" data-dragcat="g' + gen + '" data-vapid="' + v.id + '">' +
+      '<span class="snack-tag t-g' + gen + '">' + (gen === 2 ? "二代" : "一代") + "</span>" +
+      '<button type="button" class="snack-drag" title="按住拖动排序（同代别内）">⠿</button>' +
+      '<div class="snack-thumb">' +
+        (ph.length > 40 ? '<img src="' + ph + '" alt="">' : '<span class="em">' + vapeEmojiOf(v) + "</span>") +
+      "</div>" +
+      '<div class="snack-nm">' + esc(v.name) + "</div>" +
+      // ★ 阶梯价：按点单里【一二代合计的总根数】自动换档（满3/满5/满10八折/员工价）
+      '<div class="snack-pr">' + price +
+        (tier !== "零售" ? '<span class="vape-tier">' + tier + "</span>" : "") + "</div>" +
+      (n
+        ? '<div class="snack-step">' +
+            '<button type="button" data-vapeminus="' + v.id + '" title="减少一根（减到 0 自动移出点单）">−</button>' +
+            '<span class="n">' + n + "</span>" +
+            '<button type="button" data-vapeplus="' + v.id + '" title="增加一根">＋</button>' +
+          "</div>"
+        : '<div class="snack-st">' + (out ? "售罄" : "剩 " + st) +
+            '<button type="button" class="snack-count" data-vapestocktake="' + v.id +
+            '" title="盘点：按实际数量修正库存">盘点</button></div>') +
       "</div>";
   }
-
   function renderVapeMenu() {
     var wrap = document.getElementById("vapeMenu");
     if (!state.vapes.length) {
-      wrap.innerHTML = '<div class="empty-mini">还没有口味，上面填「几代 / 口味 / 库存」后点「+ 添加口味」。</div>';
+      wrap.innerHTML = '<div class="empty-mini">还没有口味，点右上角「✎ 编辑」→「＋ 快速添加」，或者去「📋 盘点记录」看看。</div>';
       return;
     }
+    var sticks = vapeCartSticks();
     var gens = [{ g: 1, title: "🟢 一代" }, { g: 2, title: "🟣 二代" }];
-    var h = '<div class="cat-cols">';
+    var h = '<div class="snack-cols">';
     for (var gi = 0; gi < gens.length; gi++) {
       var glist = [];
       for (var k = 0; k < state.vapes.length; k++) {
         if ((Number(state.vapes[k].gen) === 2 ? 2 : 1) === gens[gi].g) glist.push(state.vapes[k]);
       }
-      glist.sort(function (a, b) { return a.name < b.name ? -1 : 1; });
-      h += '<div class="cat-col" data-catbox="g' + gens[gi].g + '">' +
-           '<div class="cat-title">' + gens[gi].title + "（" + glist.length + "）</div>" +
-           '<div class="list-scroll">' + vapeMenuHead();
+      // ★ 不再按名字排序：顺序就是数据里的顺序（拖动排序改的就是它）
+      h += '<section class="snack-col ' + (gens[gi].g === 1 ? "c-g1" : "c-g2") +
+           '" data-catbox="g' + gens[gi].g + '">' +
+           '<h3>' + gens[gi].title + ' <span class="cnt">' + glist.length + " 个</span></h3>" +
+           '<div class="snack-cards">';
       if (!glist.length) {
-        h += '<div class="empty-mini" style="padding:6px 0;">暂无</div>';
+        h += '<div class="snack-empty">（没有口味）</div>';
       } else {
-        for (var li = 0; li < glist.length; li++) {
-          var v = glist[li];
-          var low = (Number(v.stock) || 0) <= 0;
-          var priceTxt = "$" + vapeUnitPrice(v.gen, 1).toFixed(2) +
-                         (state.vapeStaffOn ? '<span style="font-size:11px;color:#b45309;"> 员工价</span>' : "");
-          h += '<div class="menu-row">' +
-            '<span></span>' +            /* 和商品菜单对齐 */
-            '<span style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-              esc(v.name) + '</span>' +
-            '<span style="text-align:center;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;">' +
-              priceTxt + '</span>' +
-            '<span style="text-align:center;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;' +
-              (low ? 'color:#b91c1c;' : '') + '">' + (Number(v.stock) || 0) + '</span>' +
-            '<button class="mini-add" data-vapeadd="' + v.id + '">加入</button>' +
-            '<button class="mini" data-vapestocktake="' + v.id + '" title="盘点：按实际数量修正库存">盘点</button>' +
-            "</div>";
-        }
+        for (var li = 0; li < glist.length; li++) h += vapeCardHtml(glist[li], sticks);
       }
-      h += "</div></div>";
+      h += "</div></section>";
     }
     h += "</div>";
     wrap.innerHTML = h;
@@ -9686,15 +9818,22 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     if (!state.vapeCart.length) { wrap.innerHTML = '<div class="empty-mini">还没点单</div>'; }
     else {
       var h = "";
+      var ov = vapeOrder();
       for (var i = 0; i < state.vapeCart.length; i++) {
         var c = state.vapeCart[i];
+        var gen0 = Number(c.gen) === 2 ? 2 : 1;
+        var ln = ov.lines[i] || { unit: 0, amount: 0 };
         h += '<div class="cart-row">' +
-          '<span style="min-width:34px;font-size:13px;font-weight:700;color:' + (c.gen === 2 ? "#7c3aed" : "var(--green-dark)") + ';">' + (c.gen === 2 ? "二代" : "一代") + "</span>" +
-          '<span class="cname">' + esc(c.name) + ' <span style="font-size:12px;color:var(--muted);">/ 库存 ' + vapeStockOf(c.gen, c.name) + "</span></span>" +
-          '<button class="mini" data-vapecart="minus" data-idx="' + i + '">−</button>' +
+          '<span class="cart-thumb">' + vapeThumbHtml(gen0, c.name) + "</span>" +
+          '<span class="cname">' + esc(c.name) +
+            ' <span class="cmeta" style="color:var(--muted);font-size:12px;">' +
+            (gen0 === 2 ? "二代" : "一代") + "　$" + (Number(ln.unit) || 0).toFixed(2) + "／根　库存 " +
+            vapeStockOf(c.gen, c.name) + "</span></span>" +
+          '<button class="qty-btn" data-vapecart="minus" data-idx="' + i + '">−</button>' +
           '<span class="qty">' + c.qty + "</span>" +
-          '<button class="mini" data-vapecart="plus" data-idx="' + i + '">＋</button>' +
-          '<button class="mini" data-vapecart="del" data-idx="' + i + '">✕</button>' +
+          '<button class="qty-btn" data-vapecart="plus" data-idx="' + i + '">＋</button>' +
+          '<span class="csum">$' + (Number(ln.amount) || 0).toFixed(2) + "</span>" +
+          '<button class="mini-del" data-vapecart="del" data-idx="' + i + '">✕</button>' +
           "</div>";
       }
       wrap.innerHTML = h;
@@ -9864,6 +10003,49 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
 
   // 添加口味
 
+  // 电子烟：点卡片 / ＋ = 加一根；− = 减一根（减到 0 自动移出点单）
+  function vapeAddToCart(id) {
+    var v = null, i;
+    for (i = 0; i < state.vapes.length; i++) if (state.vapes[i].id === id) { v = state.vapes[i]; break; }
+    if (!v) return;
+    var stock = Number(v.stock) || 0;
+    if (stock <= 0) { vapeMsg("「" + v.name + "」库存为 0，先补货"); return; }
+    var inCart = vapeCartQty(v.gen, v.name);
+    if (inCart >= stock) { vapeMsg("「" + v.name + "」库存只有 " + stock + " 根，点单里已经点了 " + inCart + " 根"); return; }
+    var found = null;
+    for (var j = 0; j < state.vapeCart.length; j++) {
+      if (state.vapeCart[j].name === v.name && state.vapeCart[j].gen === v.gen) { found = state.vapeCart[j]; break; }
+    }
+    if (found) found.qty++;
+    else state.vapeCart.push({ gen: v.gen, name: v.name, qty: 1 });
+    document.getElementById("vapeMsg").style.display = "none";
+    save();
+    renderVapes();          // 卡片上的档位价 / 步进器都要跟着变
+    // 加购反馈：卡片弹一下 + 手机震一下（购物车动效不要，跟零食页一致）
+    var nc = document.querySelector('#vapeMenu .snack-card[data-vapid="' + v.id + '"]');
+    if (nc) { nc.classList.remove("pop"); void nc.offsetWidth; nc.classList.add("pop"); }
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+  }
+  function vapeStepCart(id, delta) {
+    var v = null, i;
+    for (i = 0; i < state.vapes.length; i++) if (state.vapes[i].id === id) { v = state.vapes[i]; break; }
+    if (!v) return;
+    if (delta > 0) { vapeAddToCart(id); return; }
+    var gen = Number(v.gen) === 2 ? 2 : 1;
+    for (i = 0; i < state.vapeCart.length; i++) {
+      if (state.vapeCart[i].gen === gen && state.vapeCart[i].name === v.name) {
+        state.vapeCart[i].qty--;
+        if (state.vapeCart[i].qty <= 0) state.vapeCart.splice(i, 1);
+        break;
+      }
+    }
+    save();
+    renderVapes();
+    var nc = document.querySelector('#vapeMenu .snack-card[data-vapid="' + v.id + '"]');
+    if (nc) { nc.classList.remove("pop"); void nc.offsetWidth; nc.classList.add("pop"); }
+    if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} }
+  }
+
   // 菜单：改名字 / 改库存 / 加入点单 / 删除
   document.getElementById("vapeMenu").addEventListener("input", function (e) {
     var el = e.target;
@@ -9883,6 +10065,16 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     save();
   });
   document.getElementById("vapeMenu").addEventListener("click", function (e) {
+    // 卡片上的 − / ＋ 步进器
+    var pm = e.target.closest("button[data-vapeminus]");
+    if (pm) { vapeStepCart(pm.getAttribute("data-vapeminus"), -1); return; }
+    var pp = e.target.closest("button[data-vapeplus]");
+    if (pp) { vapeStepCart(pp.getAttribute("data-vapeplus"), 1); return; }
+    // 点卡片（不是点小按钮）= 加一根
+    if (!e.target.closest("button")) {
+      var card = e.target.closest(".snack-card[data-vapid]");
+      if (card) { vapeAddToCart(card.getAttribute("data-vapid")); return; }
+    }
     var sb = e.target.closest("button[data-vapestock]");
     if (sb) {
       var sid = sb.getAttribute("data-id"), sv = null;
@@ -9897,24 +10089,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     var ckb = e.target.closest("button[data-vapestocktake]");
     if (ckb) { openStocktake("vape", ckb.getAttribute("data-vapestocktake")); return; }
     var ab = e.target.closest("button[data-vapeadd]");
-    if (ab) {
-      var id = ab.getAttribute("data-vapeadd"), v = null;
-      for (var i = 0; i < state.vapes.length; i++) if (state.vapes[i].id === id) { v = state.vapes[i]; break; }
-      if (!v) return;
-      var stock = Number(v.stock) || 0;
-      if (stock <= 0) { vapeMsg("「" + v.name + "」库存为 0，先补货"); return; }
-      var inCart = vapeCartQty(v.gen, v.name);
-      if (inCart >= stock) { vapeMsg("「" + v.name + "」库存只有 " + stock + " 根，点单里已经点了 " + inCart + " 根"); return; }
-      var found = null;
-      for (var j = 0; j < state.vapeCart.length; j++) {
-        if (state.vapeCart[j].name === v.name && state.vapeCart[j].gen === v.gen) { found = state.vapeCart[j]; break; }
-      }
-      if (found) found.qty++;
-      else state.vapeCart.push({ gen: v.gen, name: v.name, qty: 1 });
-      document.getElementById("vapeMsg").style.display = "none";
-      save(); renderVapeCart();
-      return;
-    }
+    if (ab) { vapeAddToCart(ab.getAttribute("data-vapeadd")); return; }
     var db = e.target.closest("button[data-vapedel]");
     if (db) {
       var did = db.getAttribute("data-vapedel");
@@ -9937,10 +10112,10 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     }
     else if (act === "minus") { state.vapeCart[idx].qty--; if (state.vapeCart[idx].qty <= 0) state.vapeCart.splice(idx, 1); }
     else state.vapeCart.splice(idx, 1);
-    save(); renderVapeCart();
+    save(); renderVapeCart(); renderVapeMenu();   // 数量变了 → 卡片上的档位价也要变
   });
   document.getElementById("vapeClear").addEventListener("click", function () {
-    state.vapeCart = []; save(); renderVapeCart();
+    state.vapeCart = []; save(); renderVapeCart(); renderVapeMenu();
     document.getElementById("vapeStatus").textContent = "";
   });
   document.querySelectorAll('input[name="vapePay"]').forEach(function (el) {
