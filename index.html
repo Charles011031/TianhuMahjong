@@ -599,6 +599,178 @@
   .attach-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
   .attach-row select { flex: 1; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
 
+
+  /* ===== 零食饮料 · 卡片式菜单（v3.6.0 改版）=====
+     预览版「预览/零食卡片预览.html」用户已验收：
+     卡片式 · 零食左 / 饮料右 · 照片缩略图 · 点卡片加进点单 · 分类 tab + 搜索 */
+  .snack-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 2px 0 12px; }
+  .snack-tab {
+    padding: 7px 14px; font-size: 13px; font-weight: 700; border-radius: 999px;
+    border: 1px solid var(--line); background: #fff; color: var(--muted); cursor: pointer; white-space: nowrap;
+  }
+  .snack-tab:hover { border-color: var(--green); color: var(--green-dark); }
+  .snack-tab.on { background: var(--green); border-color: var(--green); color: #fff; }
+  .snack-tab[data-snackcat="snack"].on { background: #b45309; border-color: #b45309; }
+  .snack-tab[data-snackcat="drink"].on { background: #1d4ed8; border-color: #1d4ed8; }
+  .snack-tab .cnt { opacity: .72; font-weight: 400; margin-left: 3px; }
+  .snack-search {
+    margin-left: auto; width: 230px; padding: 8px 12px; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 10px; outline: none; background: #fff;
+  }
+  .snack-search:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,122,79,.12); }
+  .snack-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .snack-cols.one { grid-template-columns: 1fr; }
+  .snack-col { min-width: 0; border: 1px solid #e3e8e5; border-radius: 14px; padding: 10px; background: #fff; }
+  .snack-col.c-snack { background: #fffdf9; border-color: #fde8c8; }
+  .snack-col.c-drink { background: #f9fbff; border-color: #dbe8fd; }
+  .snack-col h3 { font-size: 13px; font-weight: 800; margin: 0 0 9px; display: flex; align-items: center; gap: 6px; }
+  .snack-col.c-snack h3 { color: #b45309; }
+  .snack-col.c-drink h3 { color: #1d4ed8; }
+  .snack-col h3 .cnt { font-size: 11px; font-weight: 400; opacity: .7; }
+  /* 卡片区：限高 + 框内滚动（和原来一样，页面不会被 30 个商品撑长） */
+  .snack-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px;
+    max-height: min(52vh, 540px); overflow-y: auto; overflow-x: hidden;
+    padding: 2px; overscroll-behavior-y: auto; border-radius: 10px;
+  }
+  .snack-cards.drag-scrolling { box-shadow: inset 0 0 0 2px rgba(29,122,79,.25); }
+  /* ★ 卡片高度统一：所有卡片同高（--sc-h），名字固定两行（--sc-nm）★ */
+  :root { --sc-h: 196px; --sc-thumb: 88px; --sc-nm: 34px; }
+  .snack-card {
+    height: var(--sc-h); position: relative; display: flex; flex-direction: column;
+    align-items: center; text-align: center; padding: 10px 8px 8px;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .snack-card:hover { transform: translateY(-2px); border-color: var(--green); box-shadow: 0 6px 18px rgba(29,122,79,.14); }
+  .snack-card:active { transform: scale(.97); }
+  .snack-card.added { border-color: var(--green); background: #f3fbf7; }
+  .snack-card.out { opacity: .45; filter: grayscale(.7); cursor: not-allowed; }
+  .snack-card.out:hover { transform: none; box-shadow: none; border-color: var(--line); }
+  .snack-card .snack-tag {
+    position: absolute; top: 6px; left: 6px; font-size: 9.5px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px; border: 1px solid transparent; pointer-events: none;
+  }
+  .snack-card .snack-tag.t-snack { background: #fff7ed; color: #b45309; border-color: #fed7aa; }
+  .snack-card .snack-tag.t-drink { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .snack-card .snack-drag {
+    position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0;
+    border: none; background: transparent; color: #c3c9ce; font-size: 14px; line-height: 1;
+    cursor: grab; touch-action: none;
+  }
+  .snack-card .snack-drag:hover { color: var(--green); }
+  .snack-card .snack-thumb {
+    width: 100%; height: var(--sc-thumb); display: flex; align-items: center; justify-content: center;
+    margin: 8px 0 6px; overflow: hidden; border-radius: 10px; background: #f7f9f8;
+  }
+  .snack-card .snack-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+  .snack-card .snack-thumb .em { font-size: 34px; line-height: 1; }
+  .snack-card .snack-nm {
+    width: 100%; font-size: 13.5px; font-weight: 700; line-height: 1.25; height: var(--sc-nm);
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    word-break: break-all;
+  }
+  .snack-card .snack-x { color: var(--green-dark); font-weight: 800; }
+  .snack-card .snack-pr {
+    font-size: 16px; font-weight: 800; color: var(--green-dark); margin-top: auto;
+    font-variant-numeric: tabular-nums;
+  }
+  .snack-card .snack-st {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-size: 11px; color: var(--muted); margin-top: 2px; min-height: 16px;
+  }
+  .snack-card.out .snack-st { color: #b91c1c; font-weight: 700; }
+  .snack-card .snack-count {
+    border: 1px solid var(--line); background: #f8faf9; color: var(--muted);
+    font-size: 10px; line-height: 1; padding: 2px 5px; border-radius: 6px; cursor: pointer;
+  }
+  .snack-card .snack-count:hover { border-color: var(--green); color: var(--green-dark); }
+  /* ★ 加购反馈：卡片数字弹一下 / 点单框抖一下 / 右下角购物车跳一下 ★ */
+  @keyframes scPop { 0% { transform: scale(.92); } 55% { transform: scale(1.05); } 100% { transform: scale(1); } }
+  .snack-card.pop { animation: scPop .32s ease; }
+  @keyframes scShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
+  #snackCart.shake { animation: scShake .3s ease; }
+  .snack-pill {
+    position: fixed; right: 18px; bottom: 18px; z-index: 60;
+    background: var(--green); color: #fff; border: none; border-radius: 999px;
+    padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(29,122,79,.35); display: none; align-items: center; gap: 8px;
+  }
+  .snack-pill.show { display: inline-flex; }
+  .snack-pill b { font-size: 18px; }
+  @keyframes scBounce { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-5px) scale(1.06); } 70% { transform: translateY(0) scale(.97); } }
+  .snack-pill.bounce { animation: scBounce .38s ease; }
+  .cart-thumb {
+    width: 30px; height: 30px; border-radius: 8px; background: #f7f9f8; flex: 0 0 30px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 16px;
+  }
+  .cart-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .snack-empty { grid-column: 1 / -1; text-align: center; padding: 26px 6px; color: var(--muted); font-size: 13px; }
+  /* 商品照片：编辑弹窗里的缩略图 + 删除小按钮 */
+  .me-photo-wrap { position: relative; width: 48px; height: 44px; }
+  .me-photo {
+    width: 48px; height: 44px; padding: 0; margin: 0 !important; border: 1px dashed var(--line);
+    border-radius: 10px; background: #f7f9f8; color: var(--muted); font-size: 18px; cursor: pointer;
+    overflow: visible; display: flex; align-items: center; justify-content: center;
+  }
+  .me-photo.has { border-style: solid; border-color: #cfe3d7; background: #fff; overflow: hidden; }
+  .me-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 9px; }
+  .me-photo:hover { border-color: var(--green); }
+  .me-photo-del {
+    position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; padding: 0;
+    border-radius: 50%; border: 1px solid #fecaca; background: #fee2e2; color: #b91c1c;
+    font-size: 10px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .me-modal.me-hasphoto .me-head, .me-modal.me-hasphoto .me-row {
+    grid-template-columns: 48px 76px minmax(96px, 1.5fr) 84px 78px 34px;
+  }
+  /* 照片裁剪弹窗（和员工头像一样：拖动 + 缩放） */
+  .scrop-stage {
+    position: relative; width: 240px; height: 240px; margin: 0 auto; overflow: hidden;
+    border-radius: 16px; background: #111; cursor: grab; touch-action: none; user-select: none;
+  }
+  .scrop-stage:active { cursor: grabbing; }
+  .scrop-stage img { position: absolute; user-select: none; pointer-events: none; -webkit-user-drag: none; }
+  .scrop-stage::after {
+    content: "拖动调整位置"; position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
+    font-size: 11px; color: rgba(255,255,255,.72); pointer-events: none;
+  }
+  .scrop-zoom { width: 240px; display: block; margin: 12px auto 0; accent-color: var(--green); }
+  .scrop-hint { font-size: 11px; color: var(--muted); text-align: center; margin: 6px 0 10px; }
+
+  /* ===== 手机：零食页整体按比例缩小（卡片更小 → 一行更多 → 页面更短）===== */
+  @media (max-width: 860px) {
+    .snack-cols { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    :root { --sc-h: 158px; --sc-thumb: 66px; --sc-nm: 30px; }
+    .box-head { gap: 6px; }
+    .box-head h2 { font-size: 15px; }
+    .snack-tools { gap: 6px; margin-bottom: 9px; }
+    .snack-tab { padding: 6px 10px; font-size: 12px; }
+    .snack-search { width: 100%; margin-left: 0; padding: 7px 10px; font-size: 13px; }
+    .snack-cards { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 7px; max-height: 56vh; }
+    .snack-col { padding: 8px; border-radius: 12px; }
+    .snack-col h3 { font-size: 12px; margin-bottom: 7px; }
+    .snack-card { padding: 8px 5px 6px; border-radius: 11px; }
+    .snack-card .snack-tag { font-size: 8.5px; padding: 1px 4px; top: 4px; left: 4px; }
+    .snack-card .snack-drag { width: 18px; height: 18px; font-size: 12px; top: 2px; right: 2px; }
+    .snack-card .snack-thumb { margin: 6px 0 4px; border-radius: 8px; }
+    .snack-card .snack-thumb .em { font-size: 26px; }
+    .snack-card .snack-nm { font-size: 12px; }
+    .snack-card .snack-pr { font-size: 15px; }
+    .snack-card .snack-st { font-size: 10px; }
+    .snack-card .snack-count { font-size: 9px; padding: 1px 4px; }
+    .snack-pill { right: 12px; bottom: 12px; padding: 10px 14px; font-size: 13px; }
+    .cart-thumb { width: 26px; height: 26px; flex-basis: 26px; font-size: 14px; }
+    .me-modal.me-hasphoto .me-head, .me-modal.me-hasphoto .me-row {
+      grid-template-columns: 40px 62px minmax(60px, 1fr) 62px 56px 30px; gap: 4px;
+    }
+    .me-photo-wrap, .me-photo { width: 40px; height: 38px; }
+    .me-photo { font-size: 15px; }
+  }
+
   /* ===== 会员 / 员工 ===== */
   .member-grid, .emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
   .member-card, .emp-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
@@ -789,6 +961,12 @@
             <span id="priceAllWrap"></span>
           </div>
         </div>
+        <div class="snack-tools">
+          <button type="button" class="snack-tab on" data-snackcat="">全部</button>
+          <button type="button" class="snack-tab" data-snackcat="snack">🍿 零食</button>
+          <button type="button" class="snack-tab" data-snackcat="drink">🥤 饮料</button>
+          <input type="text" id="snackSearch" class="snack-search" placeholder="🔍 搜商品名或分类…" autocomplete="off">
+        </div>
         <div id="snackMenu"></div>
       </section>
       <section class="card-box">
@@ -829,6 +1007,9 @@
       <div class="history-head"><h2>零食饮料结算记录</h2></div>
       <div class="history-wrap-scroll" id="snackHistoryWrap"></div>
     </section>
+    <button type="button" class="snack-pill" id="snackPill" title="点一下跳到点单">
+      🛒 已选 <b id="snackPillN">0</b> 件 · <span id="snackPillSum">$0.00</span>
+    </button>
   </div>
 
   <!-- ===== 鸭嘴兽电子烟 ===== -->
@@ -1596,6 +1777,7 @@
         <div class="error" id="meAddError" style="display:none;margin:6px 0 0;"></div>
       </div>
       <div class="me-head">
+        <span id="meColPhoto">照片</span>
         <span id="meColCat">分类</span>
         <span>名称</span>
         <span id="meColPrice">单价</span>
@@ -1611,7 +1793,7 @@
       </div>
       <div class="hint" style="margin-top:8px;">
         平时列表里不能改名字和库存，点「✎ 编辑」才进到这里来改 —— 避免手滑改错。<br>
-        标记 <b>✕</b> 的行会在保存时删掉。
+        左边 <b>📷</b> 传商品照片（可裁剪），照片右上角 <b>✕</b> 删掉照片；标记 <b>✕</b> 的行会在保存时删掉。
       </div>
     </div>
   </div>
@@ -1663,6 +1845,20 @@
         <button id="veSave" class="btn-start">保存修改</button>
         <button id="veCancel" class="btn-ghost">取消</button>
         <button id="veDelete" class="btn-settle" data-armkey="ve-del">删除这条记录</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 零食商品照片裁剪弹窗（拖动 + 缩放，最后压成 200×200 JPEG） -->
+  <div class="overlay" id="snackCropOverlay">
+    <div class="modal" style="width:min(340px,94vw);">
+      <h3>调整商品照片</h3>
+      <div class="scrop-stage" id="scropStage"><img id="scropImg" alt=""></div>
+      <input type="range" class="scrop-zoom" id="scropZoom" min="100" max="320" value="100">
+      <div class="scrop-hint">拖动照片调整位置，下面滑杆缩放</div>
+      <div class="modal-btns">
+        <button type="button" id="scropOk" class="btn-start">确定</button>
+        <button type="button" id="scropCancel" class="btn-ghost">取消</button>
       </div>
     </div>
   </div>
@@ -2193,6 +2389,23 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.6.0  2026-10-20
+  //    + 🍜 零食页改版（预览版用户已验收）★★
+  //      · 商品菜单从「表格行」改成「卡片」：照片缩略图 / 名字 / 单价 / 库存
+  //      · 零食左 / 饮料右；桌面一行 3~4 张，卡片高度统一（--sc-h）
+  //      · 点卡片 = 加一份；再点 = 再加（库存 / 已点数量都会拦）
+  //      · 加购反馈：卡片角标 ×N 弹一下 / 点单框抖一下 / 右下角购物车跳一下 / 手机震动
+  //      · 当前点单面板：看得到选了啥、改数量、删除；右下角还有悬浮购物车
+  //      · 「✎ 编辑」统一编辑：改 照片 / 名称 / 单价 / 库存，加商品、删商品
+  //        照片在弹窗里 📷 上传（拖动 + 缩放裁剪成 200×200 JPEG），点 ✕ 删除照片
+  //      · 分类 tab：全部 / 零食 / 饮料；搜索框同时搜【商品名】和【分类】
+  //      · 盘点入口保留：每张卡片库存旁的「盘点」小按钮（盘点记录照旧）
+  //      · 手机端整体按比例缩小（一行 3 张卡，页面更短）
+  //      · 拖动排序改成卡片网格版（右上角 ⠿，同分类内，仍只改本机显示）
+  //    + 商品照片跟着「商品库存」一起同步（Firebase 实时同步；
+  //      老 Google 表格没有「照片」列时，拉回来会保留本机照片，不会冲掉）
+  //    + Firebase REST 兜底轮询把 inventory 归到「大集合」（照片让这个节点变大，
+  //      不能每 15 秒拉一次；商品/照片很少变，5 分钟一次足够）
   //  v3.5.8  2026-10-20
   //    + 预约备注输入框的占位提示去掉括号说明 ✗ 只留「备注」✓（用户要求）
   //  v3.5.7  2026-10-20
@@ -2588,7 +2801,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.5.8";
+  var APP_VER = "v3.6.0";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -5787,8 +6000,13 @@ function inventoryPayloads() {
   var out = [], i;
   for (i = 0; i < state.snackMenu.length; i++) {
     var it = state.snackMenu[i];
+    // 商品照片（200×200 JPEG 的 dataURL）跟着库存记录一起同步。
+    // 表格单元格上限 5 万字符 → 太大的不发（本机照样显示）
+    var ph = String(it.photo || "");
+    if (ph.length > 46000) ph = "";
     out.push({ id: it.id, cat: snackCatOf(it) === "drink" ? "饮料" : "零食",
-               name: it.name, price: Number(it.price) || 0, stock: Number(it.stock) || 0 });
+               name: it.name, price: Number(it.price) || 0, stock: Number(it.stock) || 0,
+               photo: ph.length > 40 ? ph : "" });
   }
   for (i = 0; i < state.vapes.length; i++) {
     var v = state.vapes[i];
@@ -5916,6 +6134,15 @@ function verifyConfigPush(done) {
 }
 
   // ---------- 主数据：从表格恢复 ----------
+  // 老表格没有「照片」这一列 → 拉回来时别把本机照片冲掉
+  function snackPhotoFromLocal(id, name, cat) {
+    var i;
+    for (i = 0; i < state.snackMenu.length; i++) if (id && state.snackMenu[i].id === id) return String(state.snackMenu[i].photo || "");
+    for (i = 0; i < state.snackMenu.length; i++) {
+      if (name && state.snackMenu[i].name === name && snackCatOf(state.snackMenu[i]) === cat) return String(state.snackMenu[i].photo || "");
+    }
+    return "";
+  }
   function applyInventoryRows(rows) {
     var menu = [], vapes = [];
     for (var i = 0; i < rows.length; i++) {
@@ -5930,7 +6157,10 @@ function verifyConfigPush(done) {
       if (cat === "一代" || cat === "二代") {
         vapes.push({ id: id, gen: cat === "二代" ? 2 : 1, name: name, stock: stock });
       } else {
-        menu.push({ id: id, cat: cat === "饮料" ? "drink" : "snack", name: name, price: price, stock: stock });
+        var c2 = cat === "饮料" ? "drink" : "snack";
+        var ph2 = String(r.photo || "").trim();
+        if (!ph2) ph2 = snackPhotoFromLocal(id, name, c2);
+        menu.push({ id: id, cat: c2, name: name, price: price, stock: stock, photo: ph2 });
       }
     }
     state.snackMenu = menu;
@@ -5963,9 +6193,14 @@ function verifyConfigPush(done) {
         for (var m = 0; m < state.snackMenu.length; m++) {
           if (state.snackMenu[m].name === name && snackCatOf(state.snackMenu[m]) === c) { hm = state.snackMenu[m]; break; }
         }
-        if (hm) { hm.price = price; hm.stock = stock; updM++; }
-        else {
-          state.snackMenu.push({ id: rid || genId(), cat: c, name: name, price: price, stock: stock });
+        var phm = String(r.photo || "").trim();
+        if (hm) {
+          hm.price = price; hm.stock = stock;
+          if (phm) hm.photo = phm;              // 云端没带照片（老表格）→ 保留本机照片
+          updM++;
+        } else {
+          state.snackMenu.push({ id: rid || genId(), cat: c, name: name, price: price, stock: stock,
+                                 photo: phm });
           addM++;
         }
       }
@@ -6078,7 +6313,11 @@ function cfgSignature() {
   // ⚠️ 全部按 id 排序后再拼签名：拖动只改顺序、不改内容，
   //    这样"换个排法"不会触发自动同步（不然白白整表写一次）
   function byId(a, b) { return String(a[0]) < String(b[0]) ? -1 : (String(a[0]) > String(b[0]) ? 1 : 0); }
-  var m = state.snackMenu.map(function (x) { return [x.id, x.name, x.price, x.stock, snackCatOf(x)]; }).sort(byId);
+  var m = state.snackMenu.map(function (x) {
+    var ph = String(x.photo || "");
+    return [x.id, x.name, x.price, x.stock, snackCatOf(x),
+            ph ? (ph.length + "|" + ph.slice(0, 8) + "|" + ph.slice(-8)) : ""];
+  }).sort(byId);
   var v = state.vapes.map(function (x) { return [x.id, x.gen, x.name, x.stock]; }).sort(byId);
   var e = state.employees.map(function (x) { return [x.id, x.name, x.color, x.avatar ? 1 : 0]; }).sort(byId);
   var s = settingPayloads().map(function (x) { return [x.key, x.value]; });
@@ -7716,7 +7955,8 @@ jsonpGet(t, onRes);
       for (i = 0; i < state.snackMenu.length; i++) {
         var m = state.snackMenu[i];
         meRows.push({ id: m.id, cat: snackCatOf(m), name: m.name,
-                      price: Number(m.price) || 0, stock: Number(m.stock) || 0, kill: false });
+                      price: Number(m.price) || 0, stock: Number(m.stock) || 0,
+                      photo: String(m.photo || ""), kill: false });
       }
     }
     if (seed) meRows.push(seed);          // 从「+ 加零食」进来的：直接带一个空行
@@ -7726,11 +7966,12 @@ jsonpGet(t, onRes);
     document.getElementById("menuEditTitle").textContent = isVape ? "编辑鸭嘴兽口味" : "编辑商品菜单";
     document.getElementById("menuEditHint").innerHTML = isVape
       ? "这里改<b>口味名称</b>和<b>库存</b>。平时列表里不能改，点「✎ 编辑」才进得来。"
-      : "这里改<b>名称</b>、<b>单价</b>、<b>库存</b>。平时列表里不能改，点「✎ 编辑」才进得来。";
+      : "这里改<b>照片</b>、<b>名称</b>、<b>单价</b>、<b>库存</b>，也能加商品、删商品。平时列表里改不动，点「✎ 编辑」才进得来。";
     document.getElementById("meColCat").textContent = isVape ? "代别" : "分类";
+    document.getElementById("meColPhoto").style.display = isVape ? "none" : "";
     document.getElementById("meColPrice").style.display = isVape ? "none" : "";
     document.getElementById("menuEditOverlay").querySelector(".me-modal").className =
-      "modal me-modal" + (isVape ? " me-vape" : "");
+      "modal me-modal" + (isVape ? " me-vape" : " me-hasphoto");
     document.getElementById("menuEditError").style.display = "none";
     document.getElementById("meAddError").style.display = "none";
     var sel = document.getElementById("meAddCat");
@@ -7747,6 +7988,15 @@ jsonpGet(t, onRes);
   function meRowHtml(r, i) {
     var isVape = meKind === "vape";
     var h = '<div class="me-row' + (r.kill ? " kill" : "") + '" data-mi="' + i + '">';
+    if (!isVape) {
+      var ph = String(r.photo || "");
+      h += '<div class="me-photo-wrap">' +
+        '<button type="button" class="me-photo' + (ph.length > 40 ? " has" : "") + '" data-mf="photo" title="' +
+          (ph.length > 40 ? "点一下换照片（✕ 删除）" : "上传照片") + '">' +
+          (ph.length > 40 ? '<img src="' + ph + '" alt="">' : "📷") + "</button>" +
+        (ph.length > 40 ? '<button type="button" class="me-photo-del" data-mf="photodel" title="删除照片">✕</button>' : "") +
+        "</div>";
+    }
     if (isVape) {
       h += '<select data-mf="gen"><option value="1"' + (Number(r.gen) === 2 ? "" : " selected") + '>一代</option>' +
            '<option value="2"' + (Number(r.gen) === 2 ? " selected" : "") + '>二代</option></select>';
@@ -7845,7 +8095,8 @@ jsonpGet(t, onRes);
       var nm = [];
       for (i = 0; i < keep.length; i++) {
         nm.push({ id: keep[i].id || genId(), cat: keep[i].cat, name: keep[i].name,
-                  price: keep[i].price, stock: keep[i].stock });
+                  price: keep[i].price, stock: keep[i].stock,
+                  photo: String(keep[i].photo || "") });
       }
       state.snackMenu = nm;
     }
@@ -7870,7 +8121,7 @@ jsonpGet(t, onRes);
     var catV = document.getElementById("meAddCat").value;
     var row = (meKind === "vape")
       ? { gen: String(catV) === "2" ? 2 : 1, name: name, stock: stock, kill: false }
-      : { cat: catV === "drink" ? "drink" : "snack", name: name, price: price, stock: stock, kill: false };
+      : { cat: catV === "drink" ? "drink" : "snack", name: name, price: price, stock: stock, photo: "", kill: false };
     // 插到同组第一个之前 → 显示时就在那一组的最上面
     var g = meGroupOf(row), at = meRows.length;
     for (var i = 0; i < meRows.length; i++) {
@@ -7904,7 +8155,30 @@ jsonpGet(t, onRes);
     renderMenuEdit();            // 再按新分类重排（拖到对应组里）
   });
   document.getElementById("menuEditList").addEventListener("click", function (e) {
-    var btn = e.target && e.target.closest ? e.target.closest('[data-mf="del"]') : null;
+    if (!e.target || !e.target.closest) return;
+    // 删除照片（统一编辑里点照片右上角的 ✕，不搞长按菜单）
+    var delPh = e.target.closest('[data-mf="photodel"]');
+    if (delPh) {
+      meRead();
+      var rp0 = delPh.closest(".me-row");
+      var ip0 = rp0 ? Number(rp0.getAttribute("data-mi")) : -1;
+      if (meRows[ip0]) meRows[ip0].photo = "";
+      renderMenuEdit();
+      toast("照片已移除，点「保存」才生效", "var(--muted)");
+      return;
+    }
+    // 上传 / 更换照片
+    var phBtn = e.target.closest('[data-mf="photo"]');
+    if (phBtn) {
+      meRead();
+      var rp = phBtn.closest(".me-row");
+      var ip = rp ? Number(rp.getAttribute("data-mi")) : -1;
+      if (!meRows[ip]) return;
+      scPhotoIdx = ip;
+      scFileIn.click();
+      return;
+    }
+    var btn = e.target.closest('[data-mf="del"]');
     if (!btn) return;
     var row = btn.closest(".me-row");
     if (!row) return;
@@ -7917,6 +8191,116 @@ jsonpGet(t, onRes);
   document.getElementById("menuEditSave").addEventListener("click", saveMenuEdit);
   document.getElementById("menuEditOverlay").addEventListener("click", function (e) {
     if (e.target === this) closeMenuEdit();
+  });
+
+  // ===== 商品照片：上传 → 头像式裁剪（拖动 + 缩放）→ 压成 200×200 JPEG =====
+  // 照片存在商品记录里（state.snackMenu[].photo），跟着「商品库存」一起同步。
+  var scFileIn = document.createElement("input");
+  scFileIn.id = "snackPhotoFile";
+  scFileIn.type = "file"; scFileIn.accept = "image/*"; scFileIn.style.display = "none";
+  document.body.appendChild(scFileIn);
+  var scPhotoIdx = null;
+  var SC = { size: 240, base: 1, cw: 0, ch: 0, x: 0, y: 0, cb: null };
+  var scImg = document.getElementById("scropImg");
+  var scStage = document.getElementById("scropStage");
+  var scZoom = document.getElementById("scropZoom");
+  function scDraw() {
+    var z = Number(scZoom.value) / 100;
+    var sc = SC.base * z;
+    var w = SC.cw * sc, h = SC.ch * sc;
+    var maxX = Math.max(0, (w - SC.size) / 2), maxY = Math.max(0, (h - SC.size) / 2);
+    SC.x = Math.max(-maxX, Math.min(maxX, SC.x));
+    SC.y = Math.max(-maxY, Math.min(maxY, SC.y));
+    scImg.style.width = w + "px";
+    scImg.style.height = h + "px";
+    scImg.style.left = (SC.size / 2 - w / 2 + SC.x) + "px";
+    scImg.style.top = (SC.size / 2 - h / 2 + SC.y) + "px";
+  }
+  function openSnackCropper(file, cb) {
+    var url = URL.createObjectURL(file);
+    var im = new Image();
+    im.onload = function () {
+      // ★ 千万别 revokeObjectURL：revoke 之后 <img> 再用这个 blob 地址就成破图了
+      //   （页面关掉浏览器会自己回收）
+      SC.cw = im.width; SC.ch = im.height;
+      SC.base = Math.max(SC.size / im.width, SC.size / im.height);
+      SC.x = 0; SC.y = 0; SC.cb = cb;
+      scZoom.value = 100;
+      scImg.src = url;
+      document.getElementById("snackCropOverlay").classList.add("show");
+      scDraw();
+    };
+    im.onerror = function () {
+      URL.revokeObjectURL(url);
+      toast("这张图片打不开，换一张 JPG / PNG 试试", "var(--red)");
+    };
+    im.src = url;
+  }
+  (function () {
+    var dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    scStage.addEventListener("pointerdown", function (e) {
+      dragging = true; sx = e.clientX; sy = e.clientY; ox = SC.x; oy = SC.y;
+      try { scStage.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    scStage.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      SC.x = ox + (e.clientX - sx);
+      SC.y = oy + (e.clientY - sy);
+      scDraw();
+    });
+    function up() { dragging = false; }
+    scStage.addEventListener("pointerup", up);
+    scStage.addEventListener("pointercancel", up);
+    // 滚轮缩放
+    scStage.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      scZoom.value = Math.max(100, Math.min(320, Number(scZoom.value) + (e.deltaY < 0 ? 12 : -12)));
+      scDraw();
+    }, { passive: false });
+  })();
+  scZoom.addEventListener("input", scDraw);
+  document.getElementById("scropCancel").addEventListener("click", function () {
+    document.getElementById("snackCropOverlay").classList.remove("show");
+    SC.cb = null;
+  });
+  document.getElementById("scropOk").addEventListener("click", function () {
+    var out = 200, c = document.createElement("canvas");
+    c.width = out; c.height = out;
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, out, out);
+    var z = Number(scZoom.value) / 100;
+    var sc = SC.base * z;
+    var w = SC.cw * sc, h = SC.ch * sc;
+    // 图片在【裁剪框坐标系】里的左上角
+    var imgLeft = SC.size / 2 - w / 2 + SC.x;
+    var imgTop = SC.size / 2 - h / 2 + SC.y;
+    var k = out / SC.size;
+    // ★ 这里不要加负号（竖图/横图会上下颠倒）
+    ctx.drawImage(scImg, imgLeft * k, imgTop * k, w * k, h * k);
+    var data = "";
+    try { data = c.toDataURL("image/jpeg", 0.78); } catch (e) { data = ""; }
+    if (data && data.length > 40000) {
+      try { data = c.toDataURL("image/jpeg", 0.55); } catch (e2) { data = ""; }
+    }
+    if (data && data.length > 46000) data = "";      // 太大就别存（免得把同步写崩）
+    document.getElementById("snackCropOverlay").classList.remove("show");
+    var cb = SC.cb; SC.cb = null;
+    if (cb) cb(data);
+  });
+  document.getElementById("snackCropOverlay").addEventListener("click", function (e) {
+    if (e.target === this) { this.classList.remove("show"); SC.cb = null; }
+  });
+  scFileIn.addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    this.value = "";
+    if (!f) return;
+    openSnackCropper(f, function (data) {
+      if (!data) { toast("这张照片处理不了，换一张小一点的试试", "var(--red)"); return; }
+      if (scPhotoIdx == null || !meRows[scPhotoIdx]) return;
+      meRows[scPhotoIdx].photo = data;
+      renderMenuEdit();
+      toast("照片已加入，点「保存」才生效", "var(--green-dark)");
+    });
   });
 
   // 工具栏右侧的「改价」按钮（点一下所有单价变成可编辑）
@@ -7932,32 +8316,139 @@ jsonpGet(t, onRes);
     }
   }
 
-  // 表头：列名和每行的格子一一对齐（「库存」正好在数字框上方）
-  function snackMenuHead() {
-    return '<div class="menu-row menu-head">' +
-      '<span></span>' +              /* 0 拖动把手 */
-      '<span>商品名称</span>' +       /* 1 */
-      '<span style="text-align:center;">单价</span>' +  /* 2 */
-      '<span style="text-align:center;">库存</span>' +  /* 3 */
-      '<span></span>' +              /* 4 加入 */
-      '<span></span>' +              /* 5 盘点 */
+  // ===== 商品卡片（v3.6.0 改版）=====
+  // 预览已验收：卡片式 · 零食左 / 饮料右 · 照片缩略图 · 点卡片加进点单
+  var snackCatFilter = "";        // "" 全部 ／ "snack" 零食 ／ "drink" 饮料
+  var snackQuery = "";            // 搜索词（商品名 或 分类）
+  var SNACK_EMOJI = [
+    ["可乐", "🥤"], ["雪碧", "🥤"], ["芬达", "🥤"], ["北冰洋", "🥤"], ["王老吉", "🥤"], ["气泡", "🥤"],
+    ["元气", "🧋"], ["奶茶", "🧋"], ["鲜奶", "🧋"], ["咖啡", "🧋"], ["茶", "🧋"],
+    ["水", "💧"], ["奶", "🥛"], ["啤酒", "🍺"],
+    ["薯片", "🍿"], ["爆米花", "🍿"], ["虾片", "🍿"], ["蟹", "🍿"],
+    ["泡面", "🍜"], ["面", "🍜"], ["肠", "🌭"], ["蛋", "🥚"],
+    ["辣", "🌶️"], ["毛肚", "🌶️"], ["豆腐", "🌶️"], ["糖", "🍬"], ["麻薯", "🍬"],
+    ["巧克", "🍫"], ["饼干", "🍪"], ["果", "🍎"], ["豆", "🥜"]
+  ];
+  // 没照片时按名字猜个 emoji（有照片就用照片）
+  function snackEmojiOf(it) {
+    var n = String((it && it.name) || "");
+    for (var i = 0; i < SNACK_EMOJI.length; i++) if (n.indexOf(SNACK_EMOJI[i][0]) >= 0) return SNACK_EMOJI[i][1];
+    return snackCatOf(it) === "drink" ? "🥤" : "🍿";
+  }
+  function snackPhotoOf(it) {
+    var ph = String((it && it.photo) || "");
+    return ph.length > 40 ? ph : "";
+  }
+  function snackThumbHtml(it) {
+    var ph = snackPhotoOf(it);
+    if (ph) return '<img src="' + ph + '" alt="">';
+    return '<span class="em">' + snackEmojiOf(it) + "</span>";
+  }
+  function snackPriceTxt(v) { return "$" + (Number(v) || 0).toFixed(2).replace(/\.00$/, ""); }
+
+  // 一张商品卡片（点卡片 = 加一份；右上角 ⠿ = 拖动排序；库存旁「盘」= 盘点）
+  function snackCardHtml(it) {
+    var out = (Number(it.stock) || 0) <= 0;
+    var n = snackCartQty(it.id);
+    var cat = snackCatOf(it);
+    return '<div class="snack-card' + (out ? " out" : "") + (n ? " added" : "") + '"' +
+      ' data-dragid="' + it.id + '" data-dragcat="' + cat + '" data-snackid="' + it.id + '">' +
+      '<span class="snack-tag ' + (cat === "drink" ? "t-drink" : "t-snack") + '">' +
+        (cat === "drink" ? "饮料" : "零食") + "</span>" +
+      '<button type="button" class="snack-drag" title="按住拖动排序（同分类内）">⠿</button>' +
+      '<div class="snack-thumb">' + snackThumbHtml(it) + "</div>" +
+      '<div class="snack-nm">' + esc(it.name) + (n ? ' <span class="snack-x">×' + n + "</span>" : "") + "</div>" +
+      '<div class="snack-pr">' + snackPriceTxt(it.price) + "</div>" +
+      '<div class="snack-st">' + (out ? "售罄" : "剩 " + (Number(it.stock) || 0)) +
+        '<button type="button" class="snack-count" data-menu="check" data-id="' + it.id +
+        '" title="盘点：按实际数量修正库存">盘点</button></div>' +
       "</div>";
   }
 
-  // 商品行：**只读显示**（名字/单价/库存都不能在这里改，要改点右上角「✎ 编辑」）
-  function snackRowHtml(it) {
-    var lowS = (Number(it.stock) || 0) <= 0;
-    var stockTxt = '<span style="text-align:center;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;' +
-                   (lowS ? 'color:#b91c1c;' : '') + '">' + (Number(it.stock) || 0) + '</span>';
-    return '<div class="menu-row" data-dragid="' + it.id + '" data-dragcat="' + snackCatOf(it) + '">' +
-      '<span class="drag-h" title="按住上下拖动排序（同分类内）">⠿</span>' +
-      '<span style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(it.name) + '</span>' +
-      '<span style="text-align:center;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;">$' +
-        (Number(it.price) || 0).toFixed(2) + '</span>' +
-      stockTxt +
-      '<button class="mini-add" data-menu="add" data-id="' + it.id + '">加入</button>' +
-      '<button class="mini" data-menu="check" data-id="' + it.id + '" title="盘点：按实际数量修正库存">盘点</button>' +
-      "</div>";
+  // 搜索：商品名 或 分类（输入「零食 / 饮料 / snack / drink / 吃 / 喝」都能搜到）
+  function snackMatchQ(it, q) {
+    if (String(it.name || "").toLowerCase().indexOf(q) >= 0) return true;
+    return (snackCatOf(it) === "drink" ? "饮料 drink 喝的" : "零食 snack 吃的").indexOf(q) >= 0;
+  }
+  function snackListOf(cat) {
+    var out = [], q = snackQuery.trim().toLowerCase(), i;
+    for (i = 0; i < state.snackMenu.length; i++) {
+      var it = state.snackMenu[i];
+      if (snackCatOf(it) !== cat) continue;
+      if (q && !snackMatchQ(it, q)) continue;
+      out.push(it);
+    }
+    return out;
+  }
+
+  // 点卡片 = 加一份（库存 / 已点数量都会拦）
+  function snackAddFromCard(id) {
+    for (var i = 0; i < state.snackMenu.length; i++) {
+      if (state.snackMenu[i].id !== id) continue;
+      var it = state.snackMenu[i];
+      var stk = Number(it.stock) || 0;
+      if (stk <= 0) { snackMsg("「" + it.name + "」库存为 0，先补货"); return; }
+      var inCart = snackCartQty(it.id);
+      if (inCart >= stk) { snackMsg("「" + it.name + "」库存只有 " + stk + " 件，点单里已经点了 " + inCart + " 件"); return; }
+      var found = null;
+      for (var j = 0; j < state.snackCart.length; j++) if (state.snackCart[j].id === it.id) { found = state.snackCart[j]; break; }
+      if (found) found.qty++;
+      else state.snackCart.push({ id: it.id, name: it.name, price: Number(it.price) || 0, qty: 1 });
+      document.getElementById("snackStatus").textContent = "";
+      save();
+      renderSnacks();
+      // ★ 加购反馈：卡片弹一下 / 点单框抖一下 / 右下角购物车跳一下 / 手机震一下
+      var nc = document.querySelector('#snackMenu .snack-card[data-snackid="' + it.id + '"]');
+      if (nc) { nc.classList.remove("pop"); void nc.offsetWidth; nc.classList.add("pop"); }
+      var cart = document.getElementById("snackCart");
+      if (cart) { cart.classList.remove("shake"); void cart.offsetWidth; cart.classList.add("shake"); }
+      updateSnackPill(true);
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+      return;
+    }
+  }
+
+  function snackCartCount() {
+    var n = 0;
+    for (var i = 0; i < state.snackCart.length; i++) n += Number(state.snackCart[i].qty) || 0;
+    return n;
+  }
+  // 右下角悬浮购物车（已选 N 件 · 合计）
+  function updateSnackPill(bounce) {
+    var el = document.getElementById("snackPill");
+    if (!el) return;
+    var n = snackCartCount();
+    if (!n) { el.className = "snack-pill"; return; }
+    el.className = "snack-pill show";
+    var nEl = document.getElementById("snackPillN");
+    var sEl = document.getElementById("snackPillSum");
+    if (nEl) nEl.textContent = n;
+    if (sEl) sEl.textContent = "$" + snackCartSubtotal().toFixed(2);
+    if (bounce) { el.classList.remove("bounce"); void el.offsetWidth; el.classList.add("bounce"); }
+  }
+  // 当前点单面板：看得到选了啥 / 改数量 / 删除（商品缩略图 + 单价 + 库存）
+  function renderSnackCart() {
+    var cart = document.getElementById("snackCart");
+    if (!cart) return;
+    if (!state.snackCart.length) {
+      cart.innerHTML = '<div class="empty-mini">还没有点单，点上面的商品卡片加进去。</div>';
+      return;
+    }
+    var h = "", i;
+    for (i = 0; i < state.snackCart.length; i++) {
+      var c = state.snackCart[i], m = null;
+      for (var j = 0; j < state.snackMenu.length; j++) if (state.snackMenu[j].id === c.id) { m = state.snackMenu[j]; break; }
+      h += '<div class="cart-row">' +
+           '<span class="cart-thumb">' + (m ? snackThumbHtml(m) : "🍿") + "</span>" +
+           '<span class="cname">' + esc(c.name) + ' <span style="color:var(--muted);font-size:12px;">$' + (Number(c.price) || 0).toFixed(2) + '　/ 库存 ' + snackStockOf(c.id) + '</span></span>' +
+           '<button class="qty-btn" data-cart="minus" data-idx="' + i + '">−</button>' +
+           '<span class="qty">' + c.qty + '</span>' +
+           '<button class="qty-btn" data-cart="plus" data-idx="' + i + '">+</button>' +
+           '<span class="csum">$' + snackItemTotal(c).toFixed(2) + '</span>' +
+           '<button class="mini-del" data-cart="del" data-idx="' + i + '">✕</button>' +
+           "</div>";
+    }
+    cart.innerHTML = h;
   }
 
   function snackStockOf(id) {
@@ -7998,50 +8489,39 @@ jsonpGet(t, onRes);
     refreshSettleDates();          // 日期框没手动改过的话，刷新成当前业务日
     var i, h;
     var menu = document.getElementById("snackMenu");
+    // 分类 tab：数量 + 选中态（数量按全部商品算，不受搜索影响）
+    var nS = 0, nD = 0;
+    for (i = 0; i < state.snackMenu.length; i++) { if (snackCatOf(state.snackMenu[i]) === "drink") nD++; else nS++; }
+    var tabEls = document.querySelectorAll(".snack-tab");
+    for (i = 0; i < tabEls.length; i++) {
+      var ck = tabEls[i].getAttribute("data-snackcat") || "";
+      var n0 = ck === "snack" ? nS : (ck === "drink" ? nD : nS + nD);
+      tabEls[i].innerHTML = (ck === "snack" ? "🍿 零食" : (ck === "drink" ? "🥤 饮料" : "全部")) +
+                            '<span class="cnt">' + n0 + "</span>";
+      tabEls[i].className = "snack-tab" + (ck === snackCatFilter ? " on" : "");
+    }
     if (!state.snackMenu.length) {
-      menu.innerHTML = '<div class="empty-mini">还没有商品，点右上角「+ 加零食」或「+ 加饮料」。</div>';
+      menu.innerHTML = '<div class="empty-mini" style="padding:16px 0;">还没有商品。点右上角「✎ 编辑」→「＋ 快速添加」，就能加商品、传照片。</div>';
     } else {
-      // 零食在左、饮料在右，各占一栏、各自限高滚动（表头各自吸顶）
-      var groups = [{ key: "snack", title: "🍿 零食" }, { key: "drink", title: "🥤 饮料" }];
-      h = '<div class="cat-cols">';
-      for (var gi = 0; gi < groups.length; gi++) {
-        var glist = [];
-        for (i = 0; i < state.snackMenu.length; i++) {
-          if (snackCatOf(state.snackMenu[i]) === groups[gi].key) glist.push(state.snackMenu[i]);
-        }
-        h += '<div class="cat-col" data-catbox="' + groups[gi].key + '">' +
-             '<div class="cat-title">' + groups[gi].title + "（" + glist.length + "）</div>" +
-             '<div class="list-scroll">' + snackMenuHead();
-        if (!glist.length) {
-          h += '<div class="empty-mini" style="padding:6px 0;">暂无</div>';
-        } else {
-          for (i = 0; i < glist.length; i++) h += snackRowHtml(glist[i]);
-        }
-        h += "</div></div>";
+      var cats = snackCatFilter ? [snackCatFilter] : ["snack", "drink"];
+      h = '<div class="snack-cols' + (cats.length === 1 ? " one" : "") + '">';
+      for (var ci = 0; ci < cats.length; ci++) {
+        var cat = cats[ci];
+        var list = snackListOf(cat);
+        var emptyTxt = snackQuery ? "（没有匹配的）" : "（没有商品）";
+        h += '<section class="snack-col ' + (cat === "snack" ? "c-snack" : "c-drink") + '" data-catbox="' + cat + '">' +
+             '<h3>' + (cat === "snack" ? "🍿 零食" : "🥤 饮料") +
+             ' <span class="cnt">' + list.length + " 个</span></h3>" +
+             '<div class="snack-cards">' +
+             (list.length ? list.map(snackCardHtml).join("") : '<div class="snack-empty">' + emptyTxt + "</div>") +
+             "</div></section>";
       }
       h += "</div>";
       menu.innerHTML = h;
     }
-    renderPriceAllBtn();          // 右上角「改价 / 保存全部」按钮跟着状态变
-
-    var cart = document.getElementById("snackCart");
-    if (!state.snackCart.length) {
-      cart.innerHTML = '<div class="empty-mini">还没有点单，点左边商品的「加入」。</div>';
-    } else {
-      h = "";
-      for (i = 0; i < state.snackCart.length; i++) {
-        var c = state.snackCart[i];
-        h += '<div class="cart-row">' +
-             '<span class="cname">' + esc(c.name) + ' <span style="color:var(--muted);font-size:12px;">$' + (Number(c.price) || 0).toFixed(2) + '　/ 库存 ' + snackStockOf(c.id) + '</span></span>' +
-             '<button class="qty-btn" data-cart="minus" data-idx="' + i + '">−</button>' +
-             '<span class="qty">' + c.qty + '</span>' +
-             '<button class="qty-btn" data-cart="plus" data-idx="' + i + '">+</button>' +
-             '<span class="csum">$' + snackItemTotal(c).toFixed(2) + '</span>' +
-             '<button class="mini-del" data-cart="del" data-idx="' + i + '">✕</button>' +
-             '</div>';
-      }
-      cart.innerHTML = h;
-    }
+    renderPriceAllBtn();          // 右上角「✎ 编辑」按钮
+    renderSnackCart();
+    updateSnackPill(false);
 
     var ch = snackCharges();
     var customWrap = document.getElementById("snackCustomWrap");
@@ -8366,33 +8846,29 @@ jsonpGet(t, onRes);
     }
   });
 
-// ===== 商品拖动排序：指针版（像 App 一样边拖边让位）=====
-// 为什么不用浏览器自带的拖拽：它的影像是浏览器画的，会跟着鼠标左右跑、
-// 而且只能"放下之后"才重排，中间没有任何反馈。这里用 pointer 事件自己实现：
-//   拖起来 → 原位留一个"空位" → 卡片只上下跟着手 → 越过谁就让谁滑开（即时排序）→
-//   松手 → 卡片滑回空位、写回数据。
+// ===== 商品卡片拖动排序：网格版（同分类内，边拖边让位）=====
+// 为什么不用浏览器自带拖拽：影像是浏览器画的、会跟手飘、且放下才重排，没有即时反馈。
+// 这里用 pointer 事件自己实现：
+//   按住卡片右上角 ⠿ → 原位留一个"空位" → 卡片跟着手（不歪）→ 靠近谁就插到谁前面（即时让位）
+//   → 松手 → 卡片滑回空位、写回数据（只改本机显示顺序，不动云端）
 var sDrag = null;
 
-// 拖动只在自己那个框（零食框 / 饮料框 / 一代框 / 二代框）里进行
-function sDragBox() {
-  if (sDrag && sDrag.box) return sDrag.box;
-  return document.getElementById("snackMenu");
-}
-function sDragSameRows() {
-  var out = [], rows = sDragBox().querySelectorAll(".menu-row[data-dragid]");
-  for (var i = 0; i < rows.length; i++) {
-    if (sDrag && rows[i] === sDrag.row) continue;
-    out.push(rows[i]);
-  }
+function sDragCards() {
+  var out = [];
+  if (!sDrag || !sDrag.box) return out;
+  var all = sDrag.box.querySelectorAll(".snack-card[data-dragid]");
+  for (var i = 0; i < all.length; i++) if (all[i] !== sDrag.card) out.push(all[i]);
   return out;
 }
-function sFlipRows(before) {
-  var rows = sDragBox().querySelectorAll(".menu-row[data-dragid]");
-  for (var i = 0; i < rows.length; i++) {
-    var id = rows[i].getAttribute("data-dragid");
+// FLIP：其它卡片平滑让位
+function sFlipCards(before) {
+  if (!sDrag || !sDrag.box) return;
+  var all = sDrag.box.querySelectorAll(".snack-card[data-dragid]");
+  for (var i = 0; i < all.length; i++) {
+    var id = all[i].getAttribute("data-dragid");
     var was = before[id];
     if (was === undefined) continue;
-    var dy = was - rows[i].getBoundingClientRect().top;
+    var dy = was - all[i].getBoundingClientRect().top;
     if (Math.abs(dy) < 1) continue;
     (function (el, dy) {
       el.style.transition = "none";
@@ -8401,107 +8877,119 @@ function sFlipRows(before) {
         el.style.transition = "transform .16s cubic-bezier(.2,.7,.3,1)";
         el.style.transform = "";
       });
-    })(rows[i], dy);
+    })(all[i], dy);
   }
 }
 function sDragStart(e, handle) {
-  var row = handle.closest ? handle.closest(".menu-row[data-dragid]") : null;
-  if (!row) return;
-  var rect = row.getBoundingClientRect();
+  var card = handle.closest ? handle.closest(".snack-card[data-dragid]") : null;
+  if (!card) return;
+  var box = card.closest(".snack-cards");
+  if (!box) return;
+  var rect = card.getBoundingClientRect();
   var ph = document.createElement("div");
-  ph.className = "menu-row ph";
+  ph.className = "snack-card ph";
   ph.style.height = rect.height + "px";
-  ph.style.marginBottom = window.getComputedStyle(row).marginBottom || "9px";
-  row.parentNode.insertBefore(ph, row);
-  row.style.display = "none";
-  var float = row.cloneNode(true);
-  float.className = "menu-row drag-float";
+  ph.style.border = "1px dashed #bfd8c9";
+  ph.style.background = "#f6fbf8";
+  ph.style.boxShadow = "none";
+  ph.style.pointerEvents = "none";
+  card.parentNode.insertBefore(ph, card);
+  card.style.display = "none";
+  var float = card.cloneNode(true);
+  float.className = "snack-card drag-float";
   float.style.position = "fixed";
-  float.style.left = rect.left + "px";          // ★ 横向锁死
+  float.style.left = rect.left + "px";
   float.style.top = rect.top + "px";
   float.style.width = rect.width + "px";
+  float.style.height = rect.height + "px";
   float.style.margin = "0";
-  float.style.display = "grid";
+  float.style.zIndex = "80";
+  float.style.pointerEvents = "none";
+  float.style.opacity = ".97";
+  float.style.boxShadow = "0 14px 30px rgba(12,38,26,.22), 0 2px 8px rgba(12,38,26,.10)";
   document.body.appendChild(float);
   document.body.classList.add("dragging-row");
-  sDrag = { id: row.getAttribute("data-dragid"), cat: row.getAttribute("data-dragcat"),
-            row: row, float: float, ph: ph, grabY: e.clientY - rect.top, startY: e.clientY,
-            box: (handle.closest ? handle.closest(".list-scroll") : null),   // 限高的那个框
-            lastY: e.clientY, timer: null };
-  // 拖到框的上/下边缘时，框要自己滚 —— 不然菜单限高之后就拖不到看不见的地方了
-  if (sDrag.box) {
-    sDrag.timer = setInterval(function () {
-      var d = sDrag;
-      if (!d || !d.box) return;
-      var r = d.box.getBoundingClientRect(), EDGE = 76, STEP = 16, moved = 0;
-      if (d.lastY < r.top + EDGE) { d.box.scrollTop -= STEP; moved = -1; }
-      else if (d.lastY > r.bottom - EDGE) { d.box.scrollTop += STEP; moved = 1; }
-      d.box.classList.toggle("drag-scrolling", moved !== 0);
-      if (moved) sDragUpdate(d.lastY);          // 框滚了 → 重新算该插到哪一行
-    }, 40);
-  }
+  sDrag = { id: card.getAttribute("data-dragid"), cat: card.getAttribute("data-dragcat"),
+            card: card, float: float, ph: ph, box: box,
+            grabX: e.clientX - rect.left, grabY: e.clientY - rect.top,
+            lastX: e.clientX, lastY: e.clientY, timer: null };
+  // 拖到分类框的上/下边缘 → 框自己滚（限高之后也能拖到看不见的商品）
+  sDrag.timer = setInterval(function () {
+    var d = sDrag;
+    if (!d || !d.box) return;
+    var r = d.box.getBoundingClientRect(), EDGE = 64, STEP = 14, moved = 0;
+    if (d.lastY < r.top + EDGE) { d.box.scrollTop -= STEP; moved = -1; }
+    else if (d.lastY > r.bottom - EDGE) { d.box.scrollTop += STEP; moved = 1; }
+    d.box.classList.toggle("drag-scrolling", moved !== 0);
+    if (moved) sDragUpdate(d.lastX, d.lastY);
+  }, 40);
   try { handle.setPointerCapture(e.pointerId); } catch (x) {}
   e.preventDefault();
 }
 function sDragMove(e) {
   if (!sDrag) return;
+  sDrag.lastX = e.clientX;
   sDrag.lastY = e.clientY;
-  sDragUpdate(e.clientY);
+  sDragUpdate(e.clientX, e.clientY);
 }
-// 根据手指当前高度，决定空位插在哪一行前面（框滚动之后也要重跑一次）
-function sDragUpdate(clientY) {
+// 决定空位插在哪张卡片前面：上一行的位置 → 同一行左半边 → 都没有就排到最后
+function sDragUpdate(clientX, clientY) {
   if (!sDrag) return;
-  var d = sDrag, e = { clientY: clientY };
-  d.float.style.top = (e.clientY - d.grabY) + "px";      // 只动上下
-  var rows = sDragSameRows();
-  var before = {}, i;
-  var all = sDragBox().querySelectorAll(".menu-row[data-dragid]");
+  var d = sDrag;
+  d.float.style.left = (clientX - d.grabX) + "px";
+  d.float.style.top = (clientY - d.grabY) + "px";
+  var cards = sDragCards(), before = {}, i;
+  var all = d.box.querySelectorAll(".snack-card[data-dragid]");
   for (i = 0; i < all.length; i++) before[all[i].getAttribute("data-dragid")] = all[i].getBoundingClientRect().top;
-  // 越过谁的中点，就插到谁前面
   var target = null;
-  for (i = 0; i < rows.length; i++) {
-    var r = rows[i].getBoundingClientRect();
-    if (r.top + r.height / 2 > e.clientY) { target = rows[i]; break; }
+  for (i = 0; i < cards.length; i++) {
+    var r = cards[i].getBoundingClientRect();
+    if (clientY < r.top) { target = cards[i]; break; }              // 在它上面一行
+    if (clientY <= r.bottom) {                                       // 和它同一行
+      if (clientX < r.left + r.width / 2) { target = cards[i]; break; }
+      continue;
+    }
   }
   if (target) {
     if (d.ph.nextElementSibling !== target) d.ph.parentNode.insertBefore(d.ph, target);
-  } else if (rows.length) {
-    var last = rows[rows.length - 1];
-    if (last.nextElementSibling !== d.ph) d.ph.parentNode.insertBefore(d.ph, last.nextSibling);
+  } else {
+    d.ph.parentNode.appendChild(d.ph);
   }
-  sFlipRows(before);          // 其它行平滑让位
+  sFlipCards(before);
 }
-function sDragFinish(e) {
+function sDragFinish() {
   if (!sDrag) return;
   var d = sDrag; sDrag = null;
   if (d.timer) clearInterval(d.timer);
   if (d.box) d.box.classList.remove("drag-scrolling");
   document.body.classList.remove("dragging-row");
-  // 空位现在在哪一行前面 → 就是新顺序
+  // 空位现在在哪张卡片前面 → 就是新顺序（跳过被拖的那张自己）
   var n = d.ph.nextElementSibling, beforeId = null;
-  while (n && !(n.getAttribute && n.getAttribute("data-dragid"))) n = n.nextElementSibling;
-  if (n) beforeId = n.getAttribute("data-dragid");
-  // 卡片滑回空位
+  while (n) {
+    if (n.getAttribute && n.getAttribute("data-dragid") && n !== d.card) { beforeId = n.getAttribute("data-dragid"); break; }
+    n = n.nextElementSibling;
+  }
   var pr = d.ph.getBoundingClientRect();
-  d.float.style.transition = "top .17s cubic-bezier(.2,.7,.3,1), opacity .17s ease";
+  d.float.style.transition = "left .17s cubic-bezier(.2,.7,.3,1), top .17s cubic-bezier(.2,.7,.3,1), opacity .17s ease";
+  d.float.style.left = pr.left + "px";
   d.float.style.top = pr.top + "px";
   d.float.style.opacity = "0";
-  (function (fl, ph, row) {
+  (function (fl, ph, card) {
     setTimeout(function () {
       if (fl.parentNode) fl.parentNode.removeChild(fl);
       if (ph.parentNode) ph.parentNode.removeChild(ph);
-      row.style.display = "";
+      card.style.display = "";
       snackReorderByBefore(d.id, d.cat, beforeId);
     }, 175);
-  })(d.float, d.ph, d.row);
+  })(d.float, d.ph, d.card);
 }
 document.getElementById("snackMenu").addEventListener("pointerdown", function (e) {
-  var h = e.target && e.target.closest ? e.target.closest(".drag-h") : null;
+  var h = e.target && e.target.closest ? e.target.closest(".snack-drag") : null;
   if (h) sDragStart(e, h);
 });
 document.addEventListener("pointermove", function (e) { sDragMove(e); }, { passive: true });
-document.addEventListener("pointerup", function (e) { sDragFinish(e); });
-document.addEventListener("pointercancel", function (e) { sDragFinish(e); });
+document.addEventListener("pointerup", function () { sDragFinish(); });
+document.addEventListener("pointercancel", function () { sDragFinish(); });
 
 // 松手后按"插到哪一行前面"写回数据
 function snackReorderByBefore(fromId, cat, beforeId) {
@@ -8597,7 +9085,36 @@ function snackReorderByBefore(fromId, cat, beforeId) {
       save(); renderSnacks();
     }
   });
-  document.getElementById("snackCart").addEventListener("click", function (e) {
+    // 点卡片（不是点小按钮）= 加一份
+  document.getElementById("snackMenu").addEventListener("click", function (e) {
+    if (!e.target || !e.target.closest) return;
+    if (e.target.closest("button")) return;
+    var card = e.target.closest(".snack-card[data-snackid]");
+    if (!card) return;
+    snackAddFromCard(card.getAttribute("data-snackid"));
+  });
+  // 分类 tab（全部 / 零食 / 饮料）
+  var snackToolsEl = document.querySelector(".snack-tools");
+  if (snackToolsEl) snackToolsEl.addEventListener("click", function (e) {
+    var t = e.target && e.target.closest ? e.target.closest(".snack-tab") : null;
+    if (!t) return;
+    snackCatFilter = t.getAttribute("data-snackcat") || "";
+    renderSnacks();
+  });
+  // 搜索（商品名 / 分类）
+  document.getElementById("snackSearch").addEventListener("input", function () {
+    snackQuery = this.value.trim();
+    renderSnacks();
+  });
+  // 右下角悬浮购物车 → 滚到点单
+  document.getElementById("snackPill").addEventListener("click", function () {
+    var cart = document.getElementById("snackCart");
+    if (!cart) return;
+    var box = cart.closest(".card-box") || cart;
+    if (box.scrollIntoView) box.scrollIntoView({ behavior: "smooth", block: "center" });
+    cart.classList.remove("shake"); void cart.offsetWidth; cart.classList.add("shake");
+  });
+document.getElementById("snackCart").addEventListener("click", function (e) {
     var btn = e.target.closest("button[data-cart]");
     if (!btn) return;
     var act = btn.getAttribute("data-cart");
@@ -12118,7 +12635,9 @@ var fbRestTimer = null, fbRestBusy = false, fbRestRound = 0;
 //   这两样平时几乎不变 → 少问；其余八个集合一共才 10KB → 勤问。
 var FB_REST_SMALL = 15000;     // 小集合：15 秒
 var FB_REST_BIG_EVERY = 20;    // 大集合：每 20 轮 ≈ 5 分钟
-var FB_REST_BIG = ["memberRows", "attendance"];
+// ★ v3.6.0：inventory 也放进大集合 —— 商品照片（200×200 dataURL）会让它变成几百 KB，
+//   不能每 15 秒轮询一次。商品/库存/照片平时很少变，5 分钟拉一次足够。
+var FB_REST_BIG = ["memberRows", "attendance", "inventory"];
 
 // ---------- 多设备同步的两个"防打架"记录 ----------
 // 为什么需要：
