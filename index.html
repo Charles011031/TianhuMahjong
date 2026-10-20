@@ -201,6 +201,8 @@
   @media (max-width: 620px) {
     .history-wrap-scroll { max-height: 54vh; }
   }
+  /* 手机上用的记录摘要卡（桌面端隐藏，手机端把对应表格藏掉） */
+  .rec-cards { display: none; }
   .history table { width: 100%; border-collapse: collapse; min-width: 920px; }
   /* vertical-align:top —— 应收那格有两行（金额+手续费小字），
      如果单元格垂直居中，同行的其他数字会掉到中间 → 跟表头对不上 */
@@ -961,6 +963,25 @@
       display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px;
       padding: 8px 12px; margin: 0 0 8px;
     }
+    /* ★ 记录卡改成两列：一笔记录从 8 行压到 4 行，一屏能多看几笔 ★ */
+    #historyWrap tbody tr:not(.txn-grp), #snackHistoryWrap tbody tr:not(.txn-grp),
+    #vapeHistoryWrap tbody tr:not(.txn-grp), #memberTxnWrap tbody tr,
+    #attWrap tbody tr, #stTxnWrap tbody tr:not(.txn-grp) {
+      display: flex; flex-wrap: wrap; align-content: flex-start;
+      gap: 1px 10px; padding: 7px 12px;
+    }
+    #historyWrap tbody tr:not(.txn-grp) td, #snackHistoryWrap tbody tr:not(.txn-grp) td,
+    #vapeHistoryWrap tbody tr:not(.txn-grp) td, #memberTxnWrap tbody tr td,
+    #attWrap tbody tr td, #stTxnWrap tbody tr:not(.txn-grp) td {
+      flex: 1 1 calc(50% - 10px); min-width: 0;
+      padding: 2px 10px 2px 0;
+      box-shadow: inset -1px 0 0 #eef2f0;   /* 两列之间一条细线，避免「6.65 班次」粘在一起 */
+    }
+    /* 零食/鸭嘴兽：时间、品项当卡片的头两行，其余两两一组 */
+    #snackHistoryWrap tbody tr td:nth-child(1), #vapeHistoryWrap tbody tr td:nth-child(1),
+    #snackHistoryWrap tbody tr td:nth-child(2), #vapeHistoryWrap tbody tr td:nth-child(2) {
+      flex-basis: 100%; max-width: 100%;
+    }
     #historyWrap tbody tr:last-child, #snackHistoryWrap tbody tr:last-child,
     #vapeHistoryWrap tbody tr:last-child, #memberList tbody tr:last-child,
     #memberTxnWrap tbody tr:last-child, #attWrap tbody tr:last-child,
@@ -1064,6 +1085,42 @@
     #wageList .wage-row > span[data-label]::before {
       content: attr(data-label); color: var(--muted); font-weight: 600; font-size: 12px;
     }
+
+    /* --- 记录摘要卡：主信息一行、明细一行、收款/操作一行 --- */
+    .rec-cards { display: block; }
+    #historyWrap > table, #snackHistoryWrap > table, #vapeHistoryWrap > table,
+    #memberTxnWrap > table, #attWrap > table, #stTxnWrap > table { display: none !important; }
+    .rec-card {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 9px 12px; margin: 0 0 8px;
+    }
+    .rec-card:last-child { margin-bottom: 0; }
+    .rec-day {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      background: #f3f7f5; border: 1px dashed #cfe0d7; border-radius: 10px;
+      padding: 7px 12px; margin: 0 0 8px; font-size: 12px;
+    }
+    .rec-day .gs { margin-left: auto; font-weight: 800; color: var(--ink); }
+    .rec-day .gn {
+      font-size: 10px; color: #b45309; background: #fff7e6; border: 1px solid #f0c98a;
+      border-radius: 5px; padding: 1px 6px; font-weight: 700;
+    }
+    .rec-top { display: flex; align-items: baseline; gap: 8px; }
+    .rec-t1 {
+      font-size: 14px; font-weight: 800; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .rec-t2 { font-size: 12px; color: var(--muted); flex: 1; min-width: 0; white-space: nowrap; }
+    .rec-amt {
+      font-size: 17px; font-weight: 800; color: var(--green-dark); margin-left: auto;
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    .rec-sub { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+    .rec-bottom { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .rec-pays { display: flex; flex-wrap: wrap; gap: 4px; }
+    .rec-acts { margin-left: auto; display: flex; gap: 6px; }
+    .rec-acts .row-edit, .rec-acts .btn-ghost { padding: 7px 12px; font-size: 13px; }
+    .rec-busy { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 
     /* --- 充值档位：手机上收窄，不横向溢出 --- */
     #tierList .menu-row { grid-template-columns: 24px minmax(0,1fr) minmax(0,1fr) minmax(0,0.85fr) 30px !important; gap: 6px; }
@@ -2621,6 +2678,13 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.10.1  2026-10-21
+  //    + 手机记录改成【摘要卡】（用户反馈：一行一个标签太高、像表单）
+  //      · 每笔压缩成 3 行：桌号/品名 + 时间 + 金额（金额突出）
+  //        第 2 行小字：台费 / 零食 / 手续费等；第 3 行：收款方式 + 操作按钮
+  //      · 日期分组单独一行；一屏能看 4~5 笔（之前 2 笔）
+  //      · 涉及：桌台结算 / 零食 / 鸭嘴兽 / 统计明细 / 会员交易明细 / 打卡记录
+  //      · 桌面端仍是原来的表格，完全不受影响
   //  v3.10.0  2026-10-21
   //    + 📱 手机适配改版（用户要求）★★
   //      · 所有记录表在手机上改成「一行一张卡」：左边列名、右边值，不用再左右拖表格
@@ -3079,7 +3143,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.0";
+  var APP_VER = "v3.10.1";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -3551,11 +3615,13 @@
       function (h) { return showDateOf(h); },
       function (h) { return timeMinutes(h.end || h.start); });   // ★ 按【结束时间】排（用户要求）
 
-    var rows = "", gi, i, j;
+    var rows = "", cards = "", gi, i, j;
     for (gi = 0; gi < groups.length; gi++) {
       var g = groups[gi], daySum = 0;
       for (i = 0; i < g.items.length; i++) daySum += Number(g.items[i].h.grand != null ? g.items[i].h.grand : g.items[i].h.total) || 0;
       rows += dayGroupRow("📅", g.date, g.items.length, daySum, 8);
+      cards += '<div class="rec-day">📅 <b>' + esc(g.date) + "</b> 周" + weekdayCn(g.date) +
+               ' · ' + g.items.length + ' 笔 <span class="gs">$' + round2(daySum).toFixed(2) + "</span></div>";
 
       for (i = 0; i < g.items.length; i++) {
         var h = g.items[i].h, idx = g.items[i].idx;
@@ -3571,6 +3637,18 @@
           chipHtml += '<span class="chip ' + esc(chips[j].cls) + '">' + esc(chips[j].txt) + "</span>";
         }
 
+        // 📱 手机摘要卡：桌号 · 时间 · 应收 / 台费零食手续费小字 / 收款 + 编辑
+        cards += '<div class="rec-card">' +
+          '<div class="rec-top"><b class="rec-t1">' + esc((h.tableNo != null) ? (h.tableNo + " 号桌") : (h.name || "")) + "</b>" +
+          '<span class="rec-t2">' + esc(timeTxt) + " · " + esc(hours) + "</span>" +
+          '<b class="rec-amt">' + fmtMoney(grand) + "</b></div>" +
+          '<div class="rec-sub">台费 ' + fmtMoney(tableFee) +
+            (Number(h.fine) > 0.005 ? " · 罚款 $" + Number(h.fine).toFixed(2) : "") +
+            " · 零食 " + (other > 0.005 ? fmtMoney(other) : "—") +
+            (showFee && Number(h.fee) > 0.005 ? " · 手续费 $" + Number(h.fee).toFixed(2) : "") + "</div>" +
+          '<div class="rec-bottom"><span class="rec-pays">' + chipHtml + "</span>" +
+            '<span class="rec-acts"><button class="row-edit" data-idx="' + idx + '">编辑</button></span></div>' +
+          "</div>";
         rows += "<tr>" +
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(timeTxt) + "</td>" +
           '<td style="font-weight:700;">' + esc((h.tableNo != null) ? h.tableNo : h.name) + "</td>" +
@@ -3591,7 +3669,8 @@
       }
     }
 
-    wrap.innerHTML = '<table><thead><tr>' +
+    wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
+      '<table><thead><tr>' +
       '<th>时间（开台–结束）</th><th>桌号</th><th>时长</th>' +
       '<th class="num">台费</th><th class="num">零食</th><th class="num">应收</th><th>收款</th><th>操作</th>' +
       "</tr></thead><tbody>" + rows + "</tbody></table>";
@@ -8956,13 +9035,15 @@ jsonpGet(t, onRes);
       function (h) { return showDateOf(h); },
       function (h) { return timeMinutes(h.time); });
 
-    var rows = "", gi, i;
+    var rows = "", cards = "", gi, i;
     for (gi = 0; gi < groups.length; gi++) {
       var g = groups[gi], daySum = 0;
       for (i = 0; i < g.items.length; i++) daySum += Number(g.items[i].h.grand) || 0;
       var tblSum = 0;
       for (i = 0; i < g.items.length; i++) if (g.items[i].h._fromTable) tblSum += Number(g.items[i].h.grand) || 0;
       rows += dayGroupRow("🍜", g.date, g.items.length, daySum, 6);
+      cards += '<div class="rec-day">🍜 <b>' + esc(g.date) + "</b> 周" + weekdayCn(g.date) +
+               " · " + g.items.length + ' 笔 <span class="gs">$' + round2(daySum).toFixed(2) + "</span></div>";
 
       for (i = 0; i < g.items.length; i++) {
         var h = g.items[i].h, idx = g.items[i].idx, fromTable = !!h._fromTable;
@@ -8975,7 +9056,13 @@ jsonpGet(t, onRes);
           // ★ 挂桌结算的：标出是哪张桌 ✗ 明细没有就写个提示 ✓
           var tn = "🀄 " + (h._tableName || (h._tableNo + " 号桌")) + " 结算";
           items = (items ? items : "（挂桌零食，随桌费一起结）");
-          rows += "<tr style=\"background:#f7fbf8;\">" +
+                    cards += '<div class="rec-card">' +
+            '<div class="rec-top"><b class="rec-t1">' + esc(tn) + "</b>" +
+            '<span class="rec-t2">' + esc(recTimeTxt(h.time)) + "</span>" +
+            '<b class="rec-amt">$' + Number(h.grand || 0).toFixed(2) + "</b></div>" +
+            '<div class="rec-sub">' + esc(items) + " · 已随桌费一起收</div>" +
+            "</div>";
+rows += "<tr style=\"background:#f7fbf8;\">" +
             '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
             '<td><span style="display:inline-block;padding:1px 7px;margin-right:6px;border-radius:6px;' +
               'background:#e6f4ec;color:var(--green-dark);font-size:12px;font-weight:700;">' + esc(tn) + "</span>" +
@@ -8994,6 +9081,20 @@ jsonpGet(t, onRes);
         if (Number(h.discount) > 0.005) notes.push("抹零 −$" + Number(h.discount).toFixed(2));
         var armed = armGet("snack-del") === idx;
 
+        cards += '<div class="rec-card">' +
+          '<div class="rec-top"><b class="rec-t1">' + esc(items) + "</b>" +
+          '<span class="rec-t2">' + esc(recTimeTxt(h.time)) + "</span>" +
+          '<b class="rec-amt">$' + Number(h.grand || 0).toFixed(2) + "</b></div>" +
+          '<div class="rec-sub">小计 $' + Number(h.subtotal || 0).toFixed(2) +
+            (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div>" +
+          '<div class="rec-bottom"><span class="rec-pays">' +
+            recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, "") +
+          '</span><span class="rec-acts">' +
+            '<button class="row-edit" data-snackedit="' + idx + '">编辑</button>' +
+            '<button class="row-edit" data-snackdel="' + idx + '" data-armkey="snack-del"' +
+              (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+              (armed ? "再点一次" : "删除") + "</button></span></div></div>";
+
         rows += "<tr>" +
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
           "<td>" + esc(items) + "</td>" +
@@ -9008,7 +9109,8 @@ jsonpGet(t, onRes);
           "</tr>";
       }
     }
-    wrap.innerHTML = "<table><thead><tr><th>时间</th><th>品项（名称×数量）</th>" +
+    wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
+      "<table><thead><tr><th>时间</th><th>品项（名称×数量）</th>" +
       '<th class="num">小计</th><th class="num">应收</th><th>收款</th><th>操作</th>' +
       "</tr></thead><tbody>" + rows + "</tbody></table>";
   }
@@ -10124,11 +10226,13 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
       function (h) { return showDateOf(h); },
       function (h) { return timeMinutes(h.time); });
 
-    var rows = "", gi, i;
+    var rows = "", cards = "", gi, i;
     for (gi = 0; gi < groups.length; gi++) {
       var g = groups[gi], daySum = 0;
       for (i = 0; i < g.items.length; i++) daySum += Number(g.items[i].h.grand) || 0;
       rows += dayGroupRow("🦆", g.date, g.items.length, daySum, 6);
+      cards += '<div class="rec-day">🦆 <b>' + esc(g.date) + "</b> 周" + weekdayCn(g.date) +
+               " · " + g.items.length + ' 笔 <span class="gs">$' + round2(daySum).toFixed(2) + "</span></div>";
 
       for (i = 0; i < g.items.length; i++) {
         var h = g.items[i].h, idx = g.items[i].idx;
@@ -10143,7 +10247,20 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
         if (Number(h.fee) > 0.005) notes.push("手续费 $" + Number(h.fee).toFixed(2));
         var armed = armGet("vape-del") === idx;
 
-        rows += "<tr>" +
+                cards += '<div class="rec-card">' +
+          '<div class="rec-top"><b class="rec-t1">' + esc(items) + "</b>" +
+          '<span class="rec-t2">' + esc(recTimeTxt(h.time)) + "</span>" +
+          '<b class="rec-amt">$' + Number(h.grand || 0).toFixed(2) + "</b></div>" +
+          '<div class="rec-sub">小计 $' + Number(h.subtotal || 0).toFixed(2) +
+            (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div>" +
+          '<div class="rec-bottom"><span class="rec-pays">' +
+            recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, "") +
+          '</span><span class="rec-acts">' +
+            '<button class="row-edit" data-vapeedit="' + idx + '">编辑</button>' +
+            '<button class="row-edit" data-vapedelrec="' + idx + '" data-armkey="vape-del"' +
+              (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+              (armed ? "再点一次" : "删除") + "</button></span></div></div>";
+rows += "<tr>" +
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
           "<td>" + esc(items) + "</td>" +
           '<td class="money">$' + Number(h.subtotal || 0).toFixed(2) + "</td>" +
@@ -10157,7 +10274,8 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
           "</tr>";
       }
     }
-    wrap.innerHTML = "<table><thead><tr><th>时间</th><th>品项</th>" +
+    wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
+      "<table><thead><tr><th>时间</th><th>品项</th>" +
       '<th class="num">小计</th><th class="num">应收</th><th>收款</th><th>操作</th>' +
       "</tr></thead><tbody>" + rows + "</tbody></table>";
   }
@@ -10946,11 +11064,31 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     }
     if (!list.length) { wrap.innerHTML = '<div class="empty">暂无交易记录</div>'; return; }
     list.sort(function (a, b) { return (b.t.ts || 0) - (a.t.ts || 0); });
-    var rows = "";
+    var rows = "", cards = "";
     for (var n = 0; n < list.length; n++) {
       var x = list[n];
       var isRe = (x.t.type === "recharge");
       var isAdj = (x.t.type === "adjust");
+      // 📱 手机摘要卡：会员 · 时间 · 金额（充值 + / 消费 −）
+      var amtTxt;
+      if (isRe) amtTxt = "+$" + Number(x.t.payAmount != null ? x.t.payAmount : (Number(x.t.amount) || 0)).toFixed(2);
+      else if (isAdj) {
+        var aj0 = Number(x.t.adjust) || 0;
+        amtTxt = (aj0 >= 0 ? "+$" : "−$") + Math.abs(aj0).toFixed(2);
+      } else amtTxt = "−$" + (Number(x.t.amount) || 0).toFixed(2);
+      cards += '<div class="rec-card">' +
+        '<div class="rec-top"><b class="rec-t1">' + esc(x.name) + "</b>" +
+        '<span class="rec-t2">' + esc(x.t.date || "") + " " + esc(x.t.time || "") + " · " +
+          (isRe ? "充值" : (isAdj ? "余额调整" : "消费")) + "</span>" +
+        '<b class="rec-amt">' + amtTxt + "</b></div>" +
+        '<div class="rec-sub">' +
+          (isRe ? "到账 $" + (Number(x.t.amount) || 0).toFixed(2) + " · " : "") +
+          "余额 $" + (Number(x.t.balanceAfter) || 0).toFixed(2) +
+          (x.t.note ? " · " + esc(x.t.note) : "") + "</div>" +
+        '<div class="rec-bottom"><span></span><span class="rec-acts">' +
+          '<button class="btn-ghost sm" data-txnedit="' + esc(x.mid) + "|" + esc(x.t.id) + '">改</button>' +
+          '<button class="btn-ghost sm" data-txndel="' + esc(x.mid) + "|" + esc(x.t.id) + '" style="color:#b91c1c;">删</button>' +
+        "</span></div></div>";
       rows += '<tr>' +
         '<td>' + esc(x.t.date || "") + ' <span style="color:var(--muted);font-size:13px;">' + esc(x.t.time || "") + '</span></td>' +
         '<td><div class="cell-who">' +
@@ -10975,7 +11113,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         '</td>' +
         '</tr>';
     }
-    wrap.innerHTML = '<table><thead><tr><th>时间</th><th>会员</th><th>类型</th><th class="num">实付</th><th class="num">到账/扣款</th><th class="num">余额</th><th>备注</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
+      '<table><thead><tr><th>时间</th><th>会员</th><th>类型</th><th class="num">实付</th><th class="num">到账/扣款</th><th class="num">余额</th><th>备注</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
   document.getElementById("memAdd").addEventListener("click", function () {
@@ -11483,9 +11622,40 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return (a.clockIn || "") < (b.clockIn || "") ? 1 : -1;
     });
-    var rows = "";
+    var rows = "", cards = "";
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
+      (function () {
+        // 📱 手机摘要卡
+        var hTxt = "—";
+        if (r.clockOut && r.hours !== "") hTxt = r.hours + "h";
+        else if (!r.clockOut && String(r.date || "") === bizDate(Date.now())) {
+          var hh0 = attHours(r.clockIn, fmtHM(Date.now()));
+          if (hh0 != null) hTxt = hh0 + "h（进行中）";
+        }
+        var bo0 = busyOf(r);
+        var tag0 = bo0.on
+          ? '<span style="color:#b45309;font-weight:700;">+$' + (Number(state.busyBonus) || 0) + "</span>"
+          : '<span style="color:var(--muted);">—</span>';
+        var how0 = (r.busy === "yes") ? "手动：算" : (r.busy === "no" ? "手动：不算" : "自动");
+        var armed0 = armGet("att-del") === r.id;
+        cards += '<div class="rec-card">' +
+          '<div class="rec-top"><b class="rec-t1">' + esc(r.name) + "</b>" +
+          '<span class="rec-t2">' + esc(r.date) + " · " + esc(r.clockIn || "—") + "–" +
+            (r.clockOut ? esc(r.clockOut) : "上班中") + "</span>" +
+          '<b class="rec-amt">' + hTxt + "</b></div>" +
+          '<div class="rec-sub">班次 <select class="shift-sel" data-attshift="' + esc(r.id) + '">' +
+            '<option value=""' + (!r.shift ? " selected" : "") + ">自动</option>" +
+            '<option value="day"' + (r.shift === "day" ? " selected" : "") + ">白班</option>" +
+            '<option value="night"' + (r.shift === "night" ? " selected" : "") + ">晚班</option>" +
+          '</select> · 忙日 <span class="rec-busy" data-attbusy="' + esc(r.id) + '">' + tag0 +
+          ' <span style="font-size:11px;color:var(--muted);">' + how0 + "</span></span></div>" +
+          '<div class="rec-bottom"><span></span><span class="rec-acts">' +
+            '<button class="row-edit" data-attedit="' + esc(r.id) + '">编辑</button>' +
+            '<button class="row-edit" data-attdel="' + esc(r.id) + '" data-armkey="att-del"' +
+              (armed0 ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+              (armed0 ? "再点一次" : "删除") + "</button></span></div></div>";
+      })();
       rows += '<tr>' +
         '<td>' + esc(r.date) + '</td>' +
         '<td><div class="cell-who">' +
@@ -11528,7 +11698,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         (armGet("att-del") === r.id ? "再点一次" : "删除") + "</button></td>" +
         '</tr>';
     }
-    wrap.innerHTML = '<table><thead><tr><th>日期</th><th>姓名</th><th>上班时间</th><th>下班时间</th><th class="num">时长(小时)</th><th>班次</th><th>忙日</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
+      '<table><thead><tr><th>日期</th><th>姓名</th><th>上班时间</th><th>下班时间</th><th class="num">时长(小时)</th><th>班次</th><th>忙日</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
   // 点打卡行的「忙日」格子：自动 → 强制算 → 强制不算 → 回自动
@@ -12808,7 +12979,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var wrap = document.getElementById("stTxnWrap");
     if (!list.length) { wrap.innerHTML = '<div class="empty">这天没有记录</div>'; return; }
 
-    var rows = "";
+    var rows = "", cards = "";
     var shownCount = 0;
     for (var gi = 0; gi < TXN_GROUPS.length; gi++) {
       var g = TXN_GROUPS[gi];
@@ -12826,13 +12997,22 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         (g.counted ? "" : '<span class="gn">不计营业额</span>') +
         '<span class="gs">$' + round2(gsum).toFixed(2) + "</span>" +
         "</td></tr>";
+      cards += '<div class="rec-day">' + g.icon + " <b>" + esc(g.name) + "</b>（" + gl.length + " 笔）" +
+        (g.counted ? "" : '<span class="gn">不计营业额</span>') +
+        '<span class="gs">$' + round2(gsum).toFixed(2) + "</span></div>";
       for (var qi = 0; qi < gl.length; qi++) {
         var x2 = gl[qi];
         var chips = "";
         for (var cj = 0; cj < (x2.chips || []).length; cj++) {
           chips += '<span class="chip ' + esc((x2.chips[cj] || {}).cls || "mix") + '">' + esc((x2.chips[cj] || {}).txt || "") + "</span>";
         }
-        rows += "<tr>" +
+                cards += '<div class="rec-card">' +
+          '<div class="rec-top"><b class="rec-t1">' + esc(x2.d || "—") + "</b>" +
+          '<span class="rec-t2">' + esc(x2.t || "—") + "</span>" +
+          '<b class="rec-amt">$' + (Number(x2.a) || 0).toFixed(2) + "</b></div>" +
+          (x2.info ? '<div class="rec-sub">' + esc(x2.info) + "</div>" : "") +
+          '<div class="rec-bottom"><span class="rec-pays">' + chips + "</span></div></div>";
+rows += "<tr>" +
           '<td style="color:var(--muted);font-size:13px;white-space:nowrap;">' + esc(x2.t || "—") + "</td>" +
           "<td>" + esc(x2.d || "") + "</td>" +
           '<td class="money">$' + (Number(x2.a) || 0).toFixed(2) + "</td>" +
@@ -12841,7 +13021,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
           "</td></tr>";
       }
     }
-    wrap.innerHTML = '<table><thead><tr><th>时间</th><th>说明</th><th class="num">金额</th><th>收款</th></tr></thead><tbody>' +
+    wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
+      '<table><thead><tr><th>时间</th><th>说明</th><th class="num">金额</th><th>收款</th></tr></thead><tbody>' +
       (shownCount ? rows : '<tr><td colspan="4" class="empty">这一类当天没有记录</td></tr>') + "</tbody></table>";
 
     // ---- 底部合计条 ----
