@@ -955,24 +955,6 @@
   .banner { background: #fff3cd; border: 1px solid #e5c37e; color: #8a5a00; border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .banner button { padding: 6px 12px; font-size: 13px; }
   .banner .sp { margin-left: auto; }
-  /* ============================================================
-     小屏电脑 / 平板适配（v3.10.5）
-     ------------------------------------------------------------
-     13 寸（1440×900）是基准；11 寸电脑（1366×768，浏览器可用高约 680）
-     和 11 寸 iPad（1194×834，可用高约 750）都比它矮。
-     这里按「宽度 ≤1400 且 高度不够」整体缩放，让 11 寸也能看到
-     和 13 寸一样多的内容（图标、字体、卡片一起等比缩小）。
-     注意：加 max-height 条件是为了不影响正常 13 寸（1440×900）。
-     ============================================================ */
-  @media (min-width: 861px) and (max-width: 1400px) and (max-height: 880px) {
-    body { zoom: 0.94; }
-  }
-  @media (min-width: 861px) and (max-width: 1400px) and (max-height: 800px) {
-    body { zoom: 0.89; }
-  }
-  @media (min-width: 861px) and (max-width: 1400px) and (max-height: 740px) {
-    body { zoom: 0.85; }
-  }
 
   /* ============================================================
      手机适配（v3.10.0）：记录表 → 一行一张卡；头部/标签页更紧凑
@@ -2758,6 +2740,38 @@
   // 刷卡手续费：向上取整
   function feeOf(amount) { return ceil2((Number(amount) || 0) * state.feeRate / 100); }
 
+  // ============================================================
+  //  🖥️ 小屏电脑 / 平板适配（v3.10.5 起）
+  //  13 寸（1440×900）是基准；11 寸电脑（1366×768）和 11 寸 iPad（1194×834）
+  //  都比它矮 → 整体等比缩小（图标/字体/卡片一起缩），看到差不多一样多的内容。
+  //  注意：
+  //    · 高度只在【加载时 / 转屏】算一次；
+  //      iPad Safari 滚动时工具栏收起会让 innerHeight 变大，
+  //      如果跟着重算，缩放会跳来跳去 → 所以只有【宽度变了】才重算。
+  //    · 13 寸宽度 >1400 不缩放。
+  // ============================================================
+  (function () {
+    function uiScale() {
+      var w = window.innerWidth, h = window.innerHeight;
+      if (w < 861 || w > 1400) return 1;
+      if (h <= 740) return 0.85;
+      if (h <= 800) return 0.89;
+      if (h <= 880) return 0.94;
+      return 1;
+    }
+    var lastW = 0;
+    function apply(force) {
+      var w = window.innerWidth;
+      if (!force && Math.abs(w - lastW) < 20) return;   // 只变高度（工具栏收起）→ 不重算
+      lastW = w;
+      var z = uiScale();
+      document.body.style.zoom = (z === 1 ? "" : String(z));
+    }
+    apply(true);
+    window.addEventListener("orientationchange", function () { setTimeout(function () { apply(true); }, 300); });
+    window.addEventListener("resize", function () { apply(false); });
+  })();
+
   // ===== 版本号 =====
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
@@ -3251,7 +3265,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.5";
+  var APP_VER = "v3.10.6";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
