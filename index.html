@@ -680,6 +680,22 @@
     width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px;
     font-size: 11px; color: var(--muted); margin-top: 2px; min-height: 16px;
   }
+  /* ★ 已选数量 > 0 时，卡片底部变成「− N ＋」步进器（手机上单击就能调数量）★ */
+  .snack-card .snack-step {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 2px; min-height: 22px;
+  }
+  .snack-card .snack-step button {
+    width: 26px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 7px;
+    background: #fff; color: var(--green-dark); font-size: 15px; line-height: 1;
+    font-weight: 800; cursor: pointer; touch-action: manipulation;
+  }
+  .snack-card .snack-step button:hover { border-color: var(--green); background: #f3fbf7; }
+  .snack-card .snack-step button:active { transform: scale(.92); }
+  .snack-card .snack-step .n {
+    min-width: 16px; text-align: center; font-size: 13px; font-weight: 800;
+    color: var(--green-dark); font-variant-numeric: tabular-nums;
+  }
   .snack-card.out .snack-st { color: #b91c1c; font-weight: 700; }
   .snack-card .snack-count {
     border: 1px solid var(--line); background: #f8faf9; color: var(--muted);
@@ -760,6 +776,24 @@
     .snack-card .snack-count { font-size: 9px; padding: 1px 4px; }
     .snack-pill { right: 12px; bottom: 12px; padding: 10px 14px; font-size: 13px; }
     .cart-thumb { width: 26px; height: 26px; flex-basis: 26px; font-size: 14px; }
+    /* ★ 手机点单：第一行 缩略图+名字+删除，第二行 减/数量/加/小计
+         按钮加大到 38~40px，行内自动换行，✕ 再也不会被挤出屏幕 ★ */
+    .cart-row { flex-wrap: wrap; gap: 6px 8px; padding: 10px 0; align-items: center; }
+    .cart-row .cart-thumb { order: 0; align-self: flex-start; }
+    .cart-row .cname { order: 1; flex: 1 1 calc(100% - 96px); min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .cart-row .cname .cmeta { display: block; font-size: 11px !important; }
+    .cart-row .mini-del {
+      order: 2; width: 38px; height: 38px; font-size: 16px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .cart-row .qty-btn[data-cart=minus] { order: 3; }
+    .cart-row .qty-btn[data-cart=plus] { order: 5; }
+    .cart-row .qty-btn { width: 40px; height: 38px; font-size: 19px; }
+    .cart-row .qty { order: 4; min-width: 26px; font-size: 16px; }
+    .cart-row .csum { order: 6; margin-left: auto; font-size: 15px; min-width: 0; }
+    .snack-card .snack-step { gap: 5px; }
+    .snack-card .snack-step button { width: 28px; height: 26px; font-size: 16px; }
+    .snack-card .snack-step .n { min-width: 14px; font-size: 13px; }
     .me-modal.me-hasphoto .me-head, .me-modal.me-hasphoto .me-row {
       grid-template-columns: 40px 62px minmax(60px, 1fr) 62px 56px 30px; gap: 4px;
     }
@@ -2385,6 +2419,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.6.2  2026-10-21
+  //    + 减少/删除不再依赖双击：已选的商品卡片底部变成「− N ＋」步进器
+  //      · 手机上单击 − 就能减一份，减到 0 自动移出点单（不用跑回点单面板）
+  //      · 点单面板的 − ＋ ✕ 保留；手机上按钮加大到 38~40px、行内自动换行，
+  //        ✕ 不会再被挤出屏幕（之前窄屏会挤到边上/点不到）
+  //      · 全程只有单击，没有双击/长按
   //  v3.6.1  2026-10-20
   //    + 去掉加购时【购物车「弹一下」动画】（点单框抖动 + 右下角悬浮车跳动）
   //      （用户要求：数字跳动 + 手机震动保留，购物车动效不要）
@@ -2800,8 +2840,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.6.1";
-  var APP_DATE = "2026-10-20";
+  var APP_VER = "v3.6.2";
+  var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
@@ -8356,11 +8396,19 @@ jsonpGet(t, onRes);
         (cat === "drink" ? "饮料" : "零食") + "</span>" +
       '<button type="button" class="snack-drag" title="按住拖动排序（同分类内）">⠿</button>' +
       '<div class="snack-thumb">' + snackThumbHtml(it) + "</div>" +
-      '<div class="snack-nm">' + esc(it.name) + (n ? ' <span class="snack-x">×' + n + "</span>" : "") + "</div>" +
+      '<div class="snack-nm">' + esc(it.name) + "</div>" +
       '<div class="snack-pr">' + snackPriceTxt(it.price) + "</div>" +
-      '<div class="snack-st">' + (out ? "售罄" : "剩 " + (Number(it.stock) || 0)) +
-        '<button type="button" class="snack-count" data-menu="check" data-id="' + it.id +
-        '" title="盘点：按实际数量修正库存">盘点</button></div>' +
+      // ★ 已选数量 > 0 → 底部变成「− N ＋」步进器（手机上单击就能减，不用去点单面板）
+      //   数量 = 0 → 显示库存 + 盘点入口
+      (n
+        ? '<div class="snack-step">' +
+            '<button type="button" data-menu="minus" data-id="' + it.id + '" title="减少一份（减到 0 自动移出点单）">−</button>' +
+            '<span class="n">' + n + "</span>" +
+            '<button type="button" data-menu="plus" data-id="' + it.id + '" title="增加一份">＋</button>' +
+          "</div>"
+        : '<div class="snack-st">' + (out ? "售罄" : "剩 " + (Number(it.stock) || 0)) +
+            '<button type="button" class="snack-count" data-menu="check" data-id="' + it.id +
+            '" title="盘点：按实际数量修正库存">盘点</button></div>') +
       "</div>";
   }
 
@@ -8378,6 +8426,21 @@ jsonpGet(t, onRes);
       out.push(it);
     }
     return out;
+  }
+
+  // 卡片上的 − / ＋：直接改点单数量（减到 0 自动移出点单）
+  function snackStepCart(id, delta) {
+    var i, idx = -1;
+    for (i = 0; i < state.snackCart.length; i++) if (state.snackCart[i].id === id) { idx = i; break; }
+    if (delta > 0) { snackAddFromCard(id); return; }   // 加：复用加购逻辑（库存/上限都会拦）
+    if (idx < 0) return;
+    state.snackCart[idx].qty--;
+    if (state.snackCart[idx].qty <= 0) state.snackCart.splice(idx, 1);
+    save();
+    renderSnacks();
+    var nc = document.querySelector('#snackMenu .snack-card[data-snackid="' + id + '"]');
+    if (nc) { nc.classList.remove("pop"); void nc.offsetWidth; nc.classList.add("pop"); }
+    if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} }
   }
 
   // 点卡片 = 加一份（库存 / 已点数量都会拦）
@@ -8437,7 +8500,7 @@ jsonpGet(t, onRes);
       for (var j = 0; j < state.snackMenu.length; j++) if (state.snackMenu[j].id === c.id) { m = state.snackMenu[j]; break; }
       h += '<div class="cart-row">' +
            '<span class="cart-thumb">' + (m ? snackThumbHtml(m) : "🍿") + "</span>" +
-           '<span class="cname">' + esc(c.name) + ' <span style="color:var(--muted);font-size:12px;">$' + (Number(c.price) || 0).toFixed(2) + '　/ 库存 ' + snackStockOf(c.id) + '</span></span>' +
+           '<span class="cname">' + esc(c.name) + ' <span class="cmeta" style="color:var(--muted);font-size:12px;">$' + (Number(c.price) || 0).toFixed(2) + '　/ 库存 ' + snackStockOf(c.id) + '</span></span>' +
            '<button class="qty-btn" data-cart="minus" data-idx="' + i + '">−</button>' +
            '<span class="qty">' + c.qty + '</span>' +
            '<button class="qty-btn" data-cart="plus" data-idx="' + i + '">+</button>' +
@@ -9049,6 +9112,8 @@ function snackReorderByBefore(fromId, cat, beforeId) {
       snackMsg(changed ? ("已更新 " + changed + " 个单价") : "单价没有变化", true);
       return;
     }
+    if (act === "minus") { snackStepCart(id, -1); return; }
+    if (act === "plus") { snackStepCart(id, 1); return; }
     if (act === "check") { openStocktake("snack", id); return; }
     if (act === "stplus" || act === "stminus") {
       for (var k = 0; k < state.snackMenu.length; k++) {
