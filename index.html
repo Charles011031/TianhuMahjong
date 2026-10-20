@@ -686,11 +686,9 @@
     font-size: 10px; line-height: 1; padding: 2px 5px; border-radius: 6px; cursor: pointer;
   }
   .snack-card .snack-count:hover { border-color: var(--green); color: var(--green-dark); }
-  /* ★ 加购反馈：卡片数字弹一下 / 点单框抖一下 / 右下角购物车跳一下 ★ */
+  /* ★ 加购反馈：卡片数字/数量弹一下（用户要求：购物车的抖动/跳动动画不要）★ */
   @keyframes scPop { 0% { transform: scale(.92); } 55% { transform: scale(1.05); } 100% { transform: scale(1); } }
   .snack-card.pop { animation: scPop .32s ease; }
-  @keyframes scShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
-  #snackCart.shake { animation: scShake .3s ease; }
   .snack-pill {
     position: fixed; right: 18px; bottom: 18px; z-index: 60;
     background: var(--green); color: #fff; border: none; border-radius: 999px;
@@ -699,8 +697,6 @@
   }
   .snack-pill.show { display: inline-flex; }
   .snack-pill b { font-size: 18px; }
-  @keyframes scBounce { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-5px) scale(1.06); } 70% { transform: translateY(0) scale(.97); } }
-  .snack-pill.bounce { animation: scBounce .38s ease; }
   .cart-thumb {
     width: 30px; height: 30px; border-radius: 8px; background: #f7f9f8; flex: 0 0 30px;
     display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 16px;
@@ -2389,12 +2385,15 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.6.1  2026-10-20
+  //    + 去掉加购时【购物车「弹一下」动画】（点单框抖动 + 右下角悬浮车跳动）
+  //      （用户要求：数字跳动 + 手机震动保留，购物车动效不要）
   //  v3.6.0  2026-10-20
   //    + 🍜 零食页改版（预览版用户已验收）★★
   //      · 商品菜单从「表格行」改成「卡片」：照片缩略图 / 名字 / 单价 / 库存
   //      · 零食左 / 饮料右；桌面一行 3~4 张，卡片高度统一（--sc-h）
   //      · 点卡片 = 加一份；再点 = 再加（库存 / 已点数量都会拦）
-  //      · 加购反馈：卡片角标 ×N 弹一下 / 点单框抖一下 / 右下角购物车跳一下 / 手机震动
+  //      · 加购反馈：卡片角标 ×N 弹一下 / 手机震动（购物车动效已去掉）
   //      · 当前点单面板：看得到选了啥、改数量、删除；右下角还有悬浮购物车
   //      · 「✎ 编辑」统一编辑：改 照片 / 名称 / 单价 / 库存，加商品、删商品
   //        照片在弹窗里 📷 上传（拖动 + 缩放裁剪成 200×200 JPEG），点 ✕ 删除照片
@@ -2801,7 +2800,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.6.0";
+  var APP_VER = "v3.6.1";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -8397,12 +8396,11 @@ jsonpGet(t, onRes);
       document.getElementById("snackStatus").textContent = "";
       save();
       renderSnacks();
-      // ★ 加购反馈：卡片弹一下 / 点单框抖一下 / 右下角购物车跳一下 / 手机震一下
+      // ★ 加购反馈：卡片弹一下 + 手机震一下
+      //   （用户要求：购物车那一抖/一跳的动画不要，数字跳动保留）
       var nc = document.querySelector('#snackMenu .snack-card[data-snackid="' + it.id + '"]');
       if (nc) { nc.classList.remove("pop"); void nc.offsetWidth; nc.classList.add("pop"); }
-      var cart = document.getElementById("snackCart");
-      if (cart) { cart.classList.remove("shake"); void cart.offsetWidth; cart.classList.add("shake"); }
-      updateSnackPill(true);
+      updateSnackPill();
       if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
       return;
     }
@@ -8414,7 +8412,7 @@ jsonpGet(t, onRes);
     return n;
   }
   // 右下角悬浮购物车（已选 N 件 · 合计）
-  function updateSnackPill(bounce) {
+  function updateSnackPill() {
     var el = document.getElementById("snackPill");
     if (!el) return;
     var n = snackCartCount();
@@ -8424,7 +8422,6 @@ jsonpGet(t, onRes);
     var sEl = document.getElementById("snackPillSum");
     if (nEl) nEl.textContent = n;
     if (sEl) sEl.textContent = "$" + snackCartSubtotal().toFixed(2);
-    if (bounce) { el.classList.remove("bounce"); void el.offsetWidth; el.classList.add("bounce"); }
   }
   // 当前点单面板：看得到选了啥 / 改数量 / 删除（商品缩略图 + 单价 + 库存）
   function renderSnackCart() {
@@ -8521,7 +8518,7 @@ jsonpGet(t, onRes);
     }
     renderPriceAllBtn();          // 右上角「✎ 编辑」按钮
     renderSnackCart();
-    updateSnackPill(false);
+    updateSnackPill();
 
     var ch = snackCharges();
     var customWrap = document.getElementById("snackCustomWrap");
@@ -9112,7 +9109,6 @@ function snackReorderByBefore(fromId, cat, beforeId) {
     if (!cart) return;
     var box = cart.closest(".card-box") || cart;
     if (box.scrollIntoView) box.scrollIntoView({ behavior: "smooth", block: "center" });
-    cart.classList.remove("shake"); void cart.offsetWidth; cart.classList.add("shake");
   });
 document.getElementById("snackCart").addEventListener("click", function (e) {
     var btn = e.target.closest("button[data-cart]");
