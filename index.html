@@ -2193,6 +2193,14 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.5.2  2026-10-20
+  //    + 结算完成弹窗：会员余额抵扣旁边显示【扣后余额】★★（用户要求）
+  //      · 单会员：张三 扣后余额 $100.33 ✓
+  //      · 多会员：张三 扣后余额 $X · 李四 扣后余额 $Y ✓
+  //      · 余额取的是【扣完之后的】（member.balance 已在结算时更新 ✓）
+  //    + 修【分账收款行显示 "undefined："】★
+  //      parts 里的 label 可能是空的 ✗ esc(undefined) 就显示成 "undefined" ✗✓✓
+  //      → label 为空时不显示前缀 ✓
   //  v3.5.1  2026-10-20
   //    + 📊 汇率对照记录 ★（用户要求：每天对比"支付宝汇率" vs "API 自动价"）
   //      · 自动：点「实时」时记一条（市场价 / 加点 / 自动价 ✓）
@@ -2550,7 +2558,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.5.1";
+  var APP_VER = "v3.5.2";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -5289,13 +5297,48 @@
     html += "<br>";
     html += "零食等其它：<b>" + fmtMoney(rec.other != null ? rec.other : 0) + "</b><br>";
     html += "全额：<b>" + fmtMoney(rec.total) + "</b><br>";
-    if (rec.balanceUsed > 0) html += "会员余额抵扣：<b>-$" + Number(rec.balanceUsed).toFixed(2) + "</b><br>";
+    // ★ 会员余额抵扣：顺便显示【扣后余额】★（用户要求 ✓）
+    //   支持多人扣款：主会员 + 分账里每笔 member 的 memberId ✓
+    var memRows = (function () {
+      var out = [], seen = {};
+      function push(id, name, amt) {
+        if (!id || seen[id]) return;
+        seen[id] = 1;
+        var m = null;
+        for (var mi = 0; mi < (state.members || []).length; mi++) {
+          if (state.members[mi].id === id) { m = state.members[mi]; break; }
+        }
+        if (!m) return;
+        out.push({ name: m.name || name || "", amt: Number(amt) || 0, bal: Number(m.balance) || 0 });
+      }
+      try {
+        if (rec.memberId && Number(rec.balanceUsed) > 0.005) push(rec.memberId, rec.memberName, rec.balanceUsed);
+        for (var pi2 = 0; pi2 < (rec.parts || []).length; pi2++) {
+          var pp2 = rec.parts[pi2];
+          if (pp2 && pp2.payType === "member" && pp2.memberId) push(pp2.memberId, pp2.memberName, pp2.amount);
+        }
+      } catch (e) {}
+      return out;
+    })();
+    if (rec.balanceUsed > 0) {
+      html += "会员余额抵扣：<b>-$" + Number(rec.balanceUsed).toFixed(2) + "</b>";
+      if (memRows.length) {
+        html += "<br><span style='font-size:13px;color:var(--muted);'>　" +
+          memRows.map(function (r2) {
+            return esc(r2.name || "会员") + " 扣后余额 <b style='color:var(--green-dark);'>$" +
+                   (Math.round(r2.bal * 100) / 100).toFixed(2) + "</b>";
+          }).join("　·　") + "</span>";
+      }
+      html += "<br>";
+    }
     if (rec.fee > 0) html += "刷卡手续费（" + state.feeRate + "%）：<b>" + fmtMoney(rec.fee) + "</b><br>";
     if (rec.parts && rec.parts.length) {
       html += "分账收款（" + rec.parts.length + " 笔）：<br>";
       for (var i = 0; i < rec.parts.length; i++) {
         var p = rec.parts[i];
-        html += "　" + esc(p.label) + "：澳币 <b>$" + Number(p.amount).toFixed(2) + "</b>　" + payLabel(p.payType);
+        // ★ label 可能是空的 ✗ 直接 esc(undefined) 会显示 "undefined" ✗✓✓
+        var lb = (p.label == null ? "" : String(p.label)).trim();
+        html += "　" + (lb ? esc(lb) + "：" : "") + "澳币 <b>$" + Number(p.amount).toFixed(2) + "</b>　" + payLabel(p.payType);
         if (p.payType === "rmb" && p.rmb != null) html += "　实收 <b>¥" + Number(p.rmb).toFixed(2) + "</b>";
         else if (p.payType === "cash") html += "　实收 <b>$" + Number(p.due).toFixed(2) + "</b>";
         else html += "　应收 <b>$" + Number(p.due).toFixed(2) + "</b>";
