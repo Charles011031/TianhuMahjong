@@ -929,6 +929,165 @@
   .banner { background: #fff3cd; border: 1px solid #e5c37e; color: #8a5a00; border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .banner button { padding: 6px 12px; font-size: 13px; }
   .banner .sp { margin-left: auto; }
+  /* ============================================================
+     手机适配（v3.10.0）：记录表 → 一行一张卡；头部/标签页更紧凑
+     桌面端完全不受影响（只在 ≤640px 生效）
+     ============================================================ */
+  @media (max-width: 640px) {
+    /* --- 顶部更紧凑（省出竖直空间） --- */
+    header { padding: 14px 16px; gap: 10px; border-radius: 14px; }
+    header h1 { font-size: 19px; }
+    header .sub { display: none; }
+    .settings { gap: 8px; }
+    .rate-box { padding: 7px 10px; gap: 6px; }
+    .rate-box label { font-size: 12px; }
+    .rate-box input { width: 64px; font-size: 15px; padding: 6px; }
+    .fx-btn { padding: 7px 8px; font-size: 12px; }
+    .tabs { gap: 8px; margin-bottom: 12px; }
+    .tab { flex: 1 1 96px; padding: 9px 6px; font-size: 13px; }
+
+    /* --- 所有记录表：一行一张卡（表头隐藏，每格前面带列名） --- */
+    .history-wrap-scroll { max-height: 66vh; border: 0; background: transparent; overflow-x: hidden; }
+    #historyWrap > table, #snackHistoryWrap > table, #vapeHistoryWrap > table,
+    #memberList > table, #memberTxnWrap > table, #attWrap > table, #stTxnWrap > table {
+      display: block; width: 100%; min-width: 0; border-collapse: separate;
+    }
+    #historyWrap thead, #snackHistoryWrap thead, #vapeHistoryWrap thead,
+    #memberList thead, #memberTxnWrap thead, #attWrap thead, #stTxnWrap thead { display: none; }
+    #historyWrap tbody, #snackHistoryWrap tbody, #vapeHistoryWrap tbody,
+    #memberList tbody, #memberTxnWrap tbody, #attWrap tbody, #stTxnWrap tbody { display: block; }
+    #historyWrap tbody tr, #snackHistoryWrap tbody tr, #vapeHistoryWrap tbody tr,
+    #memberList tbody tr, #memberTxnWrap tbody tr, #attWrap tbody tr, #stTxnWrap tbody tr {
+      display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 8px 12px; margin: 0 0 8px;
+    }
+    #historyWrap tbody tr:last-child, #snackHistoryWrap tbody tr:last-child,
+    #vapeHistoryWrap tbody tr:last-child, #memberList tbody tr:last-child,
+    #memberTxnWrap tbody tr:last-child, #attWrap tbody tr:last-child,
+    #stTxnWrap tbody tr:last-child { margin-bottom: 0; }
+    #historyWrap tbody td, #snackHistoryWrap tbody td, #vapeHistoryWrap tbody td,
+    #memberList tbody td, #memberTxnWrap tbody td, #attWrap tbody td, #stTxnWrap tbody td {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start;
+      gap: 4px 10px; min-width: 0; max-width: none; padding: 3px 0; border: 0;
+      white-space: normal !important; font-size: 13px; text-align: right; line-height: 1.45;
+    }
+    #historyWrap tbody td::before, #snackHistoryWrap tbody td::before,
+    #vapeHistoryWrap tbody td::before, #memberList tbody td::before,
+    #memberTxnWrap tbody td::before, #attWrap tbody td::before, #stTxnWrap tbody td::before {
+      content: "—"; flex: 0 0 auto; color: var(--muted); font-size: 12px;
+      font-weight: 600; text-align: left; padding-top: 1px;
+    }
+    /* 当天汇总行（📅 日期 · N 笔 · 合计） */
+    #historyWrap tbody tr.txn-grp, #snackHistoryWrap tbody tr.txn-grp,
+    #vapeHistoryWrap tbody tr.txn-grp, #stTxnWrap tbody tr.txn-grp {
+      background: #f3f7f5; border-style: dashed; padding: 7px 12px;
+    }
+    #historyWrap tbody tr.txn-grp td, #snackHistoryWrap tbody tr.txn-grp td,
+    #vapeHistoryWrap tbody tr.txn-grp td, #stTxnWrap tbody tr.txn-grp td {
+      display: block; text-align: left; padding: 0;
+    }
+    #historyWrap tbody tr.txn-grp td::before, #snackHistoryWrap tbody tr.txn-grp td::before,
+    #vapeHistoryWrap tbody tr.txn-grp td::before, #stTxnWrap tbody tr.txn-grp td::before { content: none; }
+    /* 表格里的空状态 */
+    #historyWrap tbody td.empty, #snackHistoryWrap tbody td.empty, #vapeHistoryWrap tbody td.empty,
+    #stTxnWrap tbody td.empty { display: block; text-align: center; color: var(--muted); }
+
+    /* 结算记录：时间 / 桌号 / 时长 / 台费 / 零食 / 应收 / 收款 / 操作 */
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(1)::before { content: "时间"; }
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(2)::before { content: "桌号"; }
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(3)::before { content: "时长"; }
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(4)::before { content: "台费"; }
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(5)::before { content: "零食"; }
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(6)::before { content: "应收"; }
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(7)::before { content: "收款"; }
+    #historyWrap tbody tr:not(.txn-grp) td:nth-child(8)::before { content: "操作"; }
+    /* 零食 / 鸭嘴兽记录：时间 / 品项 / 小计 / 应收 / 收款 / 操作 */
+    #snackHistoryWrap tbody td:nth-child(1)::before, #vapeHistoryWrap tbody td:nth-child(1)::before { content: "时间"; }
+    #snackHistoryWrap tbody td:nth-child(2)::before, #vapeHistoryWrap tbody td:nth-child(2)::before { content: "品项"; }
+    #snackHistoryWrap tbody td:nth-child(3)::before, #vapeHistoryWrap tbody td:nth-child(3)::before { content: "小计"; }
+    #snackHistoryWrap tbody td:nth-child(4)::before, #vapeHistoryWrap tbody td:nth-child(4)::before { content: "应收"; }
+    #snackHistoryWrap tbody td:nth-child(5)::before, #vapeHistoryWrap tbody td:nth-child(5)::before { content: "收款"; }
+    #snackHistoryWrap tbody td:nth-child(6)::before, #vapeHistoryWrap tbody td:nth-child(6)::before { content: "操作"; }
+
+    /* 会员列表：第一行是头像+名字+改名+电话（通栏），最后一行是操作按钮（通栏） */
+    #memberList tbody td:nth-child(1) {
+      display: block; text-align: left; padding: 0 0 4px;
+    }
+    #memberList tbody td:nth-child(1)::before { content: none; }
+    #memberList tbody td:nth-child(2)::before { content: "当前余额"; }
+    #memberList tbody td:nth-child(3)::before { content: "累计充值"; }
+    #memberList tbody td:nth-child(4)::before { content: "累计消费"; }
+    #memberList tbody td:nth-child(5) {
+      display: block; text-align: left; padding: 6px 0 0; margin-top: 4px;
+      border-top: 1px dashed var(--line);
+    }
+    #memberList tbody td:nth-child(5)::before { content: none; }
+    #memberList tbody .mem-acts { justify-content: flex-start; gap: 6px; }
+    #memberList tbody .mem-acts button { padding: 8px 12px; font-size: 13px; }
+
+    /* 交易明细：时间 / 会员 / 类型 / 实付 / 到账扣款 / 余额 / 备注 / 操作 */
+    #memberTxnWrap tbody td:nth-child(1)::before { content: "时间"; }
+    #memberTxnWrap tbody td:nth-child(2)::before { content: "会员"; }
+    #memberTxnWrap tbody td:nth-child(3)::before { content: "类型"; }
+    #memberTxnWrap tbody td:nth-child(4)::before { content: "实付"; }
+    #memberTxnWrap tbody td:nth-child(5)::before { content: "到账/扣款"; }
+    #memberTxnWrap tbody td:nth-child(6)::before { content: "余额"; }
+    #memberTxnWrap tbody td:nth-child(7)::before { content: "备注"; }
+    #memberTxnWrap tbody td:nth-child(8)::before { content: "操作"; }
+
+    /* 打卡记录：日期 / 姓名 / 上班 / 下班 / 时长 / 班次 / 忙日 / 操作 */
+    #attWrap tbody td:nth-child(1)::before { content: "日期"; }
+    #attWrap tbody td:nth-child(2)::before { content: "姓名"; }
+    #attWrap tbody td:nth-child(3)::before { content: "上班"; }
+    #attWrap tbody td:nth-child(4)::before { content: "下班"; }
+    #attWrap tbody td:nth-child(5)::before { content: "时长"; }
+    #attWrap tbody td:nth-child(6)::before { content: "班次"; }
+    #attWrap tbody td:nth-child(7)::before { content: "忙日"; }
+    #attWrap tbody td:nth-child(8)::before { content: "操作"; }
+    #attWrap tbody td .shift-sel { padding: 6px 8px; }
+
+    /* 统计当日明细：时间 / 说明 / 金额 / 收款 */
+    #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(1)::before { content: "时间"; }
+    #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(2)::before { content: "说明"; }
+    #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(3)::before { content: "金额"; }
+    #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(4)::before { content: "收款"; }
+
+    /* --- 工资汇总：表头藏掉，每行变成「标签 + 值」 --- */
+    #wageList .wage-head { display: none !important; }   /* 后面 .wage-row 会覆盖，必须 !important */
+    #wageList .wage-row { display: block; padding: 9px 0; }
+    #wageList .wage-row > .wn { display: block; font-size: 14px; margin-bottom: 2px; }
+    #wageList .wage-row > .wage-av { margin: 0 0 4px; }
+    #wageList .wage-row > span[data-label] {
+      display: flex; justify-content: space-between; gap: 10px;
+      min-width: 0 !important; font-size: 13px; padding: 2px 0;
+    }
+    #wageList .wage-row > span[data-label]::before {
+      content: attr(data-label); color: var(--muted); font-weight: 600; font-size: 12px;
+    }
+
+    /* --- 充值档位：手机上收窄，不横向溢出 --- */
+    #tierList .menu-row { grid-template-columns: 24px minmax(0,1fr) minmax(0,1fr) minmax(0,0.85fr) 30px !important; gap: 6px; }
+    #tierList .menu-row.menu-head { display: none; }
+    #tierList .menu-row .vp-cell {
+      display: block; position: relative; padding-top: 14px !important;
+      font-size: 13px; white-space: nowrap;
+    }
+    #tierList .menu-row .vp-cell input { width: calc(100% - 11px) !important; min-width: 0; padding: 6px 4px; font-size: 13px; }
+    #tierList .menu-row .vp-cell::before {
+      position: absolute; top: 0; left: 0; font-size: 11px; font-weight: 400; color: var(--muted);
+    }
+    #tierList .menu-row:not(.menu-head) > span:nth-child(2)::before { content: "充值"; }
+    #tierList .menu-row:not(.menu-head) > span:nth-child(3)::before { content: "赠送"; }
+    /* 空单元格（比如没填备注）不占一行 */
+    #historyWrap tbody td:empty, #snackHistoryWrap tbody td:empty, #vapeHistoryWrap tbody td:empty,
+    #memberList tbody td:empty, #memberTxnWrap tbody td:empty, #attWrap tbody td:empty,
+    #stTxnWrap tbody td:empty { display: none; }
+    #tierList .menu-row:not(.menu-head) > span:nth-child(4) {
+      display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 14px;
+    }
+    #tierList .menu-row:not(.menu-head) > span:nth-child(4)::before { content: "到账"; color: var(--muted); font-size: 11px; font-weight: 400; }
+  }
+
 </style>
 </head>
 <body>
@@ -2462,6 +2621,16 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.10.0  2026-10-21
+  //    + 📱 手机适配改版（用户要求）★★
+  //      · 所有记录表在手机上改成「一行一张卡」：左边列名、右边值，不用再左右拖表格
+  //        （桌台结算 / 零食 / 鸭嘴兽 / 统计当日明细 / 会员交易明细 / 打卡记录）
+  //      · 会员充值：充值档位收窄（充值 / 赠送 / 到账 / ✕ 不再被挤出屏幕）；
+  //        会员列表、交易明细卡片化；充值弹窗在手机上正常显示
+  //      · 员工打卡：打卡记录卡片化；工资汇总改成「标签 + 值」逐行显示
+  //      · 顶部更紧凑（手机隐藏副标题、设置块变小），页签一行 3 个（原来 2 个）
+  //      · 手机上隐藏表头（每格自带列名）；记录框高度 66vh
+  //      · 桌面端完全不受影响（只在 ≤640px 生效）
   //  v3.9.0  2026-10-21
   //    + 右下角购物车浮标两页统一（用户要求）★
   //      · 零食：已选 N 件 · 应收 $X（应收 = 含手续费/抹零，跟实际收款一致）
@@ -2910,7 +3079,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.9.0";
+  var APP_VER = "v3.10.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -12072,7 +12241,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var wrap = document.getElementById("wageList");
     if (!state.employees.length) { wrap.innerHTML = '<div class="empty-mini">还没有员工</div>'; return; }
     var w = wageCalc(per.from, per.to);
-    var html = '<div class="wage-row" style="font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);">' +
+    var html = '<div class="wage-row wage-head" style="font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);">' +
       '<span class="wn">姓名</span><span style="min-width:150px;">白班（$' + dr + '/h）</span>' +
       '<span style="min-width:150px;">晚班（$' + nr + '/h）</span>' +
       '<span style="min-width:120px;">忙日加成</span>' +
@@ -12085,24 +12254,24 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       html += '<div class="wage-row">' +
         (wEmp ? empAvatarHtml(wEmp, 30, "wage-av") : "") +
         '<span class="wn">' + esc(r.name) + '</span>' +
-        '<span style="min-width:150px;font-size:13px;color:var(--muted);">' + r.dayH + ' h = <b style="color:var(--ink);">$' + r.dayPay.toFixed(2) + '</b></span>' +
-        '<span style="min-width:150px;font-size:13px;color:var(--muted);">' + r.nightH + ' h = <b style="color:var(--ink);">$' + r.nightPay.toFixed(2) + '</b></span>' +
-        '<span style="min-width:120px;font-size:13px;color:' + (r.busyPay > 0.005 ? "#b45309" : "var(--muted)") + ';">' +
+        '<span data-label="白班" style="min-width:150px;font-size:13px;color:var(--muted);">' + r.dayH + ' h = <b style="color:var(--ink);">$' + r.dayPay.toFixed(2) + '</b></span>' +
+        '<span data-label="晚班" style="min-width:150px;font-size:13px;color:var(--muted);">' + r.nightH + ' h = <b style="color:var(--ink);">$' + r.nightPay.toFixed(2) + '</b></span>' +
+        '<span data-label="忙日加成" style="min-width:120px;font-size:13px;color:' + (r.busyPay > 0.005 ? "#b45309" : "var(--muted)") + ';">' +
           (r.busyPay > 0.005 ? ("+$" + r.busyPay.toFixed(2)) : "—") + '</span>' +
-        '<span style="min-width:120px;font-size:13px;color:' + (r.commPay > 0.005 ? "#1d4e89" : "var(--muted)") + ';">' +
+        '<span data-label="充值提成" style="min-width:120px;font-size:13px;color:' + (r.commPay > 0.005 ? "#1d4e89" : "var(--muted)") + ';">' +
           (r.commPay > 0.005 ? ("+$" + r.commPay.toFixed(2)) : "—") + '</span>' +
-        '<span style="margin-left:auto;font-weight:800;color:var(--green-dark);">$' + r.pay.toFixed(2) + '</span>' +
+        '<span data-label="工资" style="margin-left:auto;font-weight:800;color:var(--green-dark);">$' + r.pay.toFixed(2) + '</span>' +
         '</div>';
     }
     html += '<div class="wage-row" style="border:0;font-weight:800;">' +
       '<span class="wn">合计</span>' +
-      '<span style="min-width:150px;font-size:13px;">白班 ' + w.dayH + ' h</span>' +
-      '<span style="min-width:150px;font-size:13px;">晚班 ' + w.nightH + ' h</span>' +
-      '<span style="min-width:120px;font-size:13px;color:' + (w.busyPay > 0.005 ? "#b45309" : "var(--muted)") + ';">' +
+      '<span data-label="白班" style="min-width:150px;font-size:13px;">白班 ' + w.dayH + ' h</span>' +
+      '<span data-label="晚班" style="min-width:150px;font-size:13px;">晚班 ' + w.nightH + ' h</span>' +
+      '<span data-label="忙日加成" style="min-width:120px;font-size:13px;color:' + (w.busyPay > 0.005 ? "#b45309" : "var(--muted)") + ';">' +
         (w.busyPay > 0.005 ? ("+$" + w.busyPay.toFixed(2)) : "—") + '</span>' +
-      '<span style="min-width:120px;font-size:13px;color:' + (w.commPay > 0.005 ? "#1d4e89" : "var(--muted)") + ';">' +
+      '<span data-label="充值提成" style="min-width:120px;font-size:13px;color:' + (w.commPay > 0.005 ? "#1d4e89" : "var(--muted)") + ';">' +
         (w.commPay > 0.005 ? ("+$" + w.commPay.toFixed(2)) : "—") + '</span>' +
-      '<span style="margin-left:auto;color:var(--green-dark);">$' + w.pay.toFixed(2) + '</span></div>' +
+      '<span data-label="工资" style="margin-left:auto;color:var(--green-dark);">$' + w.pay.toFixed(2) + '</span></div>' +
       '<div class="hint" style="margin-top:6px;">忙日 = 当天营业额超过 $' + (Number(state.busyThreshold) || 800) +
       '，每一小时 +$' + (Number(state.busyBonus) || 0) + '（可在员工打卡那一行单独覆盖）<br>' +
       '充值提成 = 谁在「充值那一刻」上班就归谁，按实付金额的 ' + (Number(state.rechargePct) || 0) + '%' +
