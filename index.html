@@ -897,6 +897,30 @@
   .emp-inrow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; background: #f7f9f8; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; }
   .emp-inrow label { font-size: 13px; color: var(--muted); white-space: nowrap; }
   .emp-inrow input { flex: 1; width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 17px; font-weight: 700; text-align: center; color: var(--green-dark); background: #fff; letter-spacing: 1px; }
+
+  /* 员工卡布局：桌面端（手机端在下面的 @media 里换成「一行一个 + ⋯ 菜单」） */
+  .emp-card {
+    display: grid; align-items: center; gap: 8px 10px; padding: 14px;
+    grid-template-columns: 48px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "av main edit drag"
+      "inrow inrow inrow inrow"
+      "punch punch punch punch"
+      "del del del del";
+  }
+  .emp-card > div[data-empav] { grid-area: av; align-self: center; }
+  .emp-card .emp-av { width: 48px; height: 48px; font-size: 20px; }
+  .emp-main { grid-area: main; min-width: 0; }
+  .emp-main .emp-status { margin: 3px 0 0; }
+  .emp-punch { grid-area: punch; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .emp-punch button { padding: 8px 6px; font-size: 13px; }
+  .emp-more { display: none; }
+  .emp-menu { display: contents; }
+  .emp-menu .emp-inrow { grid-area: inrow; margin: 0; }
+  .emp-tools { display: contents; }
+  .emp-tools .emp-editbtn { grid-area: edit; }
+  .emp-tools .emp-dragbtn { grid-area: drag; margin-left: 0; }
+  .emp-del { grid-area: del; margin-top: 0 !important; width: 100% !important; }
   .warn-note { color: var(--amber); font-size: 13px; }
   .table-extras { font-size: 13px; color: #1d4e89; background: #eef4f9; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 8px; }
   .table-extras button { margin-left: auto; padding: 4px 10px; font-size: 12px; }
@@ -1073,35 +1097,47 @@
     #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(3)::before { content: "金额"; }
     #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(4)::before { content: "收款"; }
 
-    /* --- 员工打卡：每人一张紧凑卡（桌面端保持原来的宽松排版） --- */
+    /* --- 员工打卡：一行一个员工 + 右边「⋯」菜单（v3.10.4） --- */
     .emp-card {
-      display: grid; padding: 10px 12px;
-      grid-template-columns: minmax(0, 1fr) 104px;
-      grid-template-areas: "head btns" "inrow del";
-      gap: 6px 8px; align-items: center;
+      grid-template-columns: 48px minmax(0, 1fr) auto auto;
+      grid-template-areas: "av main punch more" "menu menu menu menu";
+      padding: 10px 12px; gap: 6px 8px; align-items: center;
     }
-    .emp-head { grid-area: head; margin: 0; gap: 8px; min-width: 0; }
-    .emp-head .emp-av { width: 38px; height: 38px; font-size: 16px; }
-    .emp-head .emp-name { font-size: 15px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .emp-head .emp-status { font-size: 11px; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .emp-head .emp-editbtn, .emp-head .emp-dragbtn {
-      width: 28px; height: 28px; min-width: 28px; font-size: 13px; border-radius: 8px;
+    .emp-main .emp-name {
+      font-size: 15px; line-height: 1.2;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .emp-head .emp-dragbtn { margin-left: 0; }
-    .emp-card .btns {
-      grid-area: btns; display: flex; flex-direction: column; gap: 5px;
+    .emp-main .emp-status {
+      font-size: 11px; margin: 2px 0 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .emp-card .btns button { padding: 0 6px; height: 38px; font-size: 13px; }
-    .emp-inrow {
-      grid-area: inrow; margin: 0; padding: 3px 8px; gap: 6px; align-self: center;
+    .emp-punch { display: flex; gap: 5px; }
+    .emp-punch button {
+      height: 34px; padding: 0 8px; font-size: 12px; border-radius: 9px; white-space: nowrap;
     }
-    .emp-inrow label { font-size: 11px; }
-    .emp-inrow input { font-size: 14px; padding: 4px 6px; letter-spacing: .5px; }
-    /* 删除员工：不再占一整行，挪到第二行右侧，小一点 */
-    .emp-card > button[data-emp="del"] {
-      grid-area: del; width: auto !important; margin: 0 !important;
-      padding: 6px 8px; font-size: 12px; align-self: stretch;
+    .emp-more {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; padding: 0; font-size: 17px; line-height: 1;
+      border-radius: 9px; border: 1px solid var(--line); background: #fff;
+      color: var(--muted); cursor: pointer;
     }
+    .emp-more:hover { border-color: var(--green); color: var(--green-dark); }
+    .emp-menu { display: none; grid-area: menu; }
+    .emp-menu.open {
+      display: flex; flex-direction: column; gap: 6px;
+      padding-top: 6px; border-top: 1px dashed var(--line);
+    }
+    .emp-menu .emp-inrow { margin: 0; padding: 3px 8px; }
+    .emp-menu .emp-inrow label { font-size: 11px; }
+    .emp-menu .emp-inrow input { font-size: 14px; padding: 4px 6px; }
+    .emp-menu .emp-tools { display: flex; gap: 6px; }
+    .emp-menu .emp-tools button {
+      flex: 1; width: auto; height: 34px; font-size: 12px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    }
+    .emp-menu .emp-tools .emp-editbtn::after { content: "改名 / 头像"; }
+    .emp-menu .emp-tools .emp-dragbtn::after { content: "拖动排序"; }
+    .emp-del { width: 100% !important; margin-top: 0 !important; }
 
     /* --- 工资汇总：表头藏掉，每行变成「标签 + 值」 --- */
     #wageList .wage-head { display: none !important; }   /* 后面 .wage-row 会覆盖，必须 !important */
@@ -2708,6 +2744,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.10.4  2026-10-21
+  //    + 手机「员工打卡」改成【一行一个员工】（用户选方案 A）★★
+  //      · 一行：头像 + 名字/状态 + 上班打卡 / 下班打卡 + ⋯
+  //      · 「开始时间 / 改名·头像 / 拖动排序 / 删除员工」收进 ⋯ 菜单，点开才出现
+  //      · 一屏能看 8~10 个员工（之前约 5 个）
+  //      · 桌面端保持原来的宽松排版（头像/名字在上，开始时间/打卡/删除在下）
   //  v3.10.3  2026-10-21
   //    + 手机「员工打卡」员工卡改成【紧凑两行】（用户反馈：一张卡 4 行太高）
   //      · 第一行：头像 + 名字/状态 +（右边）上班打卡 / 下班打卡
@@ -3184,7 +3226,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.3";
+  var APP_VER = "v3.10.4";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -11538,27 +11580,31 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         var e = state.employees[i];
         var open = attOpen(e.name);
         h += '<div class="emp-card" data-empid="' + e.id + '">' +
-             '<div class="emp-head">' +
-               '<div data-empav="' + e.id + '" style="cursor:pointer;">' + empAvatarHtml(e, 48, "emp-av") + '</div>' +
-               '<div style="flex:1;min-width:0;">' +
-                 '<div class="emp-name" data-empname="' + e.id + '">' + esc(e.name) + '</div>' +
-                 '<div class="emp-status' + (open ? " on" : "") + '">' + (open ? ("上班中：自 " + esc(open.clockIn) + " 起") : "未上班") + '</div>' +
+             '<div data-empav="' + e.id + '" style="cursor:pointer;">' + empAvatarHtml(e, 48, "emp-av") + '</div>' +
+             '<div class="emp-main">' +
+               '<div class="emp-name" data-empname="' + e.id + '">' + esc(e.name) + '</div>' +
+               '<div class="emp-status' + (open ? " on" : "") + '">' + (open ? ("上班中：自 " + esc(open.clockIn) + " 起") : "未上班") + '</div>' +
+             '</div>' +
+             '<div class="emp-punch">' +
+               '<button class="btn-start" data-emp="in" data-id="' + e.id + '">上班打卡</button>' +
+               '<button class="btn-pause" data-emp="out" data-id="' + e.id + '">下班打卡</button>' +
+             '</div>' +
+             // 手机上这一颗是「⋯」；桌面端隐藏（桌面直接显示编辑/拖动按钮）
+             '<button class="emp-more" data-emp="more" data-id="' + e.id + '" title="更多：开始时间 / 改名 / 删除">⋯</button>' +
+             '<div class="emp-menu">' +
+               (open ? "" :
+                 '<div class="emp-inrow">' +
+                   '<label>开始时间</label>' +
+                   '<input type="text" class="time-input" data-empin="1" data-id="' + e.id + '" placeholder="' + fmtHM(Date.now()) + '" value="' + esc(attInDraft[e.id] || "") + '" maxlength="5" inputmode="numeric">' +
+                 '</div>') +
+               '<div class="emp-tools">' +
+                 '<button class="emp-editbtn" data-emp="edit" data-id="' + e.id + '" title="改名字 / 换头像">✎</button>' +
+                 '<button class="emp-dragbtn drag-h" data-empdrag="' + e.id + '" title="按住拖动 → 调整员工顺序">≡</button>' +
                '</div>' +
-               '<button class="emp-editbtn" data-emp="edit" data-id="' + e.id + '" title="改名字 / 换头像">✎</button>' +
-               '<button class="emp-dragbtn drag-h" data-empdrag="' + e.id + '" title="按住拖动 → 调整员工顺序">≡</button>' +
+               '<button class="emp-del btn-ghost sm" data-emp="del" data-armkey="emp-del" data-id="' + e.id + '" style="margin-top:6px;width:100%;' +
+                 (armGet("emp-del") === e.id ? "background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;" : "") + '">' +
+                 (armGet("emp-del") === e.id ? "再点一次确认删除" : "删除员工") + '</button>' +
              '</div>' +
-             (open ? "" :
-               '<div class="emp-inrow">' +
-                 '<label>开始时间</label>' +
-                 '<input type="text" class="time-input" data-empin="1" data-id="' + e.id + '" placeholder="' + fmtHM(Date.now()) + '" value="' + esc(attInDraft[e.id] || "") + '" maxlength="5" inputmode="numeric">' +
-               '</div>') +
-             '<div class="btns">' +
-             '<button class="btn-start" data-emp="in" data-id="' + e.id + '">上班打卡</button>' +
-             '<button class="btn-pause" data-emp="out" data-id="' + e.id + '">下班打卡</button>' +
-             '</div>' +
-             '<button class="btn-ghost sm" data-emp="del" data-armkey="emp-del" data-id="' + e.id + '" style="margin-top:6px;width:100%;' +
-               (armGet("emp-del") === e.id ? "background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;" : "") + '">' +
-               (armGet("emp-del") === e.id ? "再点一次确认删除" : "删除员工") + '</button>' +
              '</div>';
       }
       wrap.innerHTML = h;
@@ -11919,6 +11965,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var emp = null;
     for (var i = 0; i < state.employees.length; i++) if (state.employees[i].id === id) { emp = state.employees[i]; break; }
     if (!emp) return;
+    if (act === "more") {
+      var card0 = btn.closest(".emp-card");
+      var menu0 = card0 ? card0.querySelector(".emp-menu") : null;
+      if (menu0) menu0.classList.toggle("open");
+      return;
+    }
     if (act === "edit") {
       openAvModal(id);
       return;
