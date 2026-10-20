@@ -1073,6 +1073,36 @@
     #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(3)::before { content: "金额"; }
     #stTxnWrap tbody tr:not(.txn-grp) td:nth-child(4)::before { content: "收款"; }
 
+    /* --- 员工打卡：每人一张紧凑卡（桌面端保持原来的宽松排版） --- */
+    .emp-card {
+      display: grid; padding: 10px 12px;
+      grid-template-columns: minmax(0, 1fr) 104px;
+      grid-template-areas: "head btns" "inrow del";
+      gap: 6px 8px; align-items: center;
+    }
+    .emp-head { grid-area: head; margin: 0; gap: 8px; min-width: 0; }
+    .emp-head .emp-av { width: 38px; height: 38px; font-size: 16px; }
+    .emp-head .emp-name { font-size: 15px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .emp-head .emp-status { font-size: 11px; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .emp-head .emp-editbtn, .emp-head .emp-dragbtn {
+      width: 28px; height: 28px; min-width: 28px; font-size: 13px; border-radius: 8px;
+    }
+    .emp-head .emp-dragbtn { margin-left: 0; }
+    .emp-card .btns {
+      grid-area: btns; display: flex; flex-direction: column; gap: 5px;
+    }
+    .emp-card .btns button { padding: 0 6px; height: 38px; font-size: 13px; }
+    .emp-inrow {
+      grid-area: inrow; margin: 0; padding: 3px 8px; gap: 6px; align-self: center;
+    }
+    .emp-inrow label { font-size: 11px; }
+    .emp-inrow input { font-size: 14px; padding: 4px 6px; letter-spacing: .5px; }
+    /* 删除员工：不再占一整行，挪到第二行右侧，小一点 */
+    .emp-card > button[data-emp="del"] {
+      grid-area: del; width: auto !important; margin: 0 !important;
+      padding: 6px 8px; font-size: 12px; align-self: stretch;
+    }
+
     /* --- 工资汇总：表头藏掉，每行变成「标签 + 值」 --- */
     #wageList .wage-head { display: none !important; }   /* 后面 .wage-row 会覆盖，必须 !important */
     #wageList .wage-row { display: block; padding: 9px 0; }
@@ -2678,6 +2708,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.10.3  2026-10-21
+  //    + 手机「员工打卡」员工卡改成【紧凑两行】（用户反馈：一张卡 4 行太高）
+  //      · 第一行：头像 + 名字/状态 +（右边）上班打卡 / 下班打卡
+  //      · 第二行：开始时间 + 删除员工
+  //      · 桌面端保持原来的宽松排版
   //  v3.10.2  2026-10-21
   //    + 顶部加【🔄 刷新】按钮（用户要求：手机不用退出后台重进）
   //      · 点一下 = 带时间戳参数重新加载页面（绕过缓存），等于退出重进
@@ -3149,7 +3184,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.2";
+  var APP_VER = "v3.10.3";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
