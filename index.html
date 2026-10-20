@@ -971,7 +971,7 @@
     .rate-box input { width: 64px; font-size: 15px; padding: 6px; }
     .fx-btn { padding: 7px 8px; font-size: 12px; }
     .tabs { gap: 8px; margin-bottom: 12px; }
-    .tab { flex: 1 1 96px; padding: 9px 6px; font-size: 13px; }
+    .tab { flex: 1 1 calc(33.333% - 6px); padding: 9px 4px; font-size: 13px; }
 
     /* --- 所有记录表：一行一张卡（表头隐藏，每格前面带列名） --- */
     .history-wrap-scroll { max-height: 66vh; border: 0; background: transparent; overflow-x: hidden; }
@@ -1210,6 +1210,41 @@
       display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 14px;
     }
     #tierList .menu-row:not(.menu-head) > span:nth-child(4)::before { content: "到账"; color: var(--muted); font-size: 11px; font-weight: 400; }
+  }
+
+  /* ============================================================
+     iPhone Duo 展开 / 小平板（561~860px 宽）
+     ------------------------------------------------------------
+     折叠屏展开后是「宽手机」：还走手机版骨架，但宽度够了 →
+     标签页一行 6 个、商品卡更大、记录卡/按钮都放大一点。
+     ============================================================ */
+  @media (min-width: 561px) and (max-width: 860px) {
+    body { padding: 16px 20px; }
+    .tabs { gap: 8px; }
+    .tab {
+      flex: 1 1 0; min-width: 0; padding: 10px 2px; font-size: 13px;
+      white-space: nowrap; letter-spacing: -.2px;
+    }
+    .snack-cards { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+    .snack-col { padding: 10px; }
+    .snack-card { padding: 10px 6px 7px; }
+    .snack-card .snack-thumb { height: 84px; }
+    .snack-card .snack-thumb .em { font-size: 32px; }
+    .snack-card .snack-nm { font-size: 13px; }
+    .snack-card .snack-pr { font-size: 16px; }
+    .rec-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .rec-card { margin: 0; }
+    .rec-day { grid-column: 1 / -1; }
+    .rec-amt { font-size: 18px; }
+    .rec-t1 { font-size: 15px; }
+    .rec-t2, .rec-sub { font-size: 12.5px; }
+    .rec-acts .row-edit, .rec-acts .btn-ghost { padding: 8px 14px; font-size: 13px; }
+    #empList { grid-template-columns: 1fr; }   /* 员工卡保持一行一个，状态才不会被挤掉 */
+    .emp-punch button { height: 38px; padding: 0 12px; font-size: 13px; }
+    .emp-main .emp-name { font-size: 16px; }
+    .emp-main .emp-status { font-size: 12px; }
+    .emp-more { width: 36px; height: 36px; font-size: 18px; }
+    .history-wrap-scroll { max-height: 58vh; }
   }
 
   /* ============================================================
@@ -2852,6 +2887,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.10.8  2026-10-21
+  //    + 🍎 iPhone Duo（苹果首款折叠屏，2026-10 发售）适配：
+  //      · 折叠外屏（5.4"，~466×678）→ 手机版：标签页固定 3 个一排，不再 4+2
+  //      · 展开内屏（7.6"，~626×890）→ 新增「宽手机」档（561~860）：
+  //        标签页一行 6 个、商品卡更大、记录卡 2 列、员工卡仍一行一个
+  //      · 半折叠（~626×445）也正常：上下滑，不会横向溢出
   //  v3.10.7  2026-10-21
   //    + 📱 小屏手机适配（≤400px，如 iPhone SE / 手机分屏 / Surface Duo 折叠单屏）
   //      · 320~400 宽：字号/间距/卡片/按钮再缩一档；商品卡 320 宽也能 3 张一排
@@ -3348,7 +3389,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.7";
+  var APP_VER = "v3.10.8";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
