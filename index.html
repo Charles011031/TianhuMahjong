@@ -2193,6 +2193,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.5.4  2026-10-20
+  //    + 结算完成弹窗：删掉「会员余额抵扣：-$X」那一行 ✗
+  //      改成在【分账收款】的会员扣款那一行【后面】显示：
+  //        澳币 $32.34　会员扣款　· 测 扣后余额 $567.66　应收 $32.34 ✓
+  //      （用户要求：红框不要了 ✗ 谁扣/扣后余额挪到蓝框那边 ✓）
   //  v3.5.3  2026-10-20
   //    + 修【结算完成弹窗里"会员扣款"显示成"刷卡"】★★★（用户实测）
   //      根因：showResult 用的是旧函数 payLabel ✗ 它只认 cash/rmb/mixed ✗
@@ -2569,7 +2574,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.5.3";
+  var APP_VER = "v3.5.4";
   var APP_DATE = "2026-10-20";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -5322,40 +5327,8 @@
     html += "<br>";
     html += "零食等其它：<b>" + fmtMoney(rec.other != null ? rec.other : 0) + "</b><br>";
     html += "全额：<b>" + fmtMoney(rec.total) + "</b><br>";
-    // ★ 会员余额抵扣：顺便显示【扣后余额】★（用户要求 ✓）
-    //   支持多人扣款：主会员 + 分账里每笔 member 的 memberId ✓
-    var memRows = (function () {
-      var out = [], seen = {};
-      function push(id, name, amt) {
-        if (!id || seen[id]) return;
-        seen[id] = 1;
-        var m = null;
-        for (var mi = 0; mi < (state.members || []).length; mi++) {
-          if (state.members[mi].id === id) { m = state.members[mi]; break; }
-        }
-        if (!m) return;
-        out.push({ name: m.name || name || "", amt: Number(amt) || 0, bal: Number(m.balance) || 0 });
-      }
-      try {
-        if (rec.memberId && Number(rec.balanceUsed) > 0.005) push(rec.memberId, rec.memberName, rec.balanceUsed);
-        for (var pi2 = 0; pi2 < (rec.parts || []).length; pi2++) {
-          var pp2 = rec.parts[pi2];
-          if (pp2 && pp2.payType === "member" && pp2.memberId) push(pp2.memberId, pp2.memberName, pp2.amount);
-        }
-      } catch (e) {}
-      return out;
-    })();
-    if (rec.balanceUsed > 0) {
-      html += "会员余额抵扣：<b>-$" + Number(rec.balanceUsed).toFixed(2) + "</b>";
-      if (memRows.length) {
-        html += "<br><span style='font-size:13px;color:var(--muted);'>　" +
-          memRows.map(function (r2) {
-            return esc(r2.name || "会员") + " 扣后余额 <b style='color:var(--green-dark);'>$" +
-                   (Math.round(r2.bal * 100) / 100).toFixed(2) + "</b>";
-          }).join("　·　") + "</span>";
-      }
-      html += "<br>";
-    }
+    // ★ 用户要求：这里不再单独显示"会员余额抵扣"✗
+    //   改成在下面【分账收款】的会员扣款那一行显示"谁 + 扣后余额"✓
     if (rec.fee > 0) html += "刷卡手续费（" + state.feeRate + "%）：<b>" + fmtMoney(rec.fee) + "</b><br>";
     if (rec.parts && rec.parts.length) {
       html += "分账收款（" + rec.parts.length + " 笔）：<br>";
@@ -5366,6 +5339,22 @@
         // ★ 必须用 payLabelOf ✗ payLabel 是旧函数 ✗ 不认 "member" ✗
         //   会把会员扣款显示成"刷卡"✗✓✓（用户实测）
         html += "　" + (lb ? esc(lb) + "：" : "") + "澳币 <b>$" + Number(p.amount).toFixed(2) + "</b>　" + payLabelOf(p.payType);
+        // ★ 会员扣款：在【这一行后面】显示"扣的谁 + 扣后余额"★（用户要求 ✓）
+        if (p.payType === "member") {
+          var mm2 = null;
+          try {
+            for (var mi2 = 0; mi2 < (state.members || []).length; mi2++) {
+              if (state.members[mi2].id === p.memberId) { mm2 = state.members[mi2]; break; }
+            }
+          } catch (e) {}
+          var nm2 = mm2 ? (mm2.name || "会员") : (p.memberName || "");
+          if (nm2) {
+            html += "　<span style=\"font-size:13px;color:var(--muted);\">· " + esc(nm2);
+            if (mm2) html += " 扣后余额 <b style=\"color:var(--green-dark);\">$" +
+              (Math.round((Number(mm2.balance) || 0) * 100) / 100).toFixed(2) + "</b>";
+            html += "</span>";
+          }
+        }
         if (p.payType === "rmb" && p.rmb != null) html += "　实收 <b>¥" + Number(p.rmb).toFixed(2) + "</b>";
         else if (p.payType === "cash") html += "　实收 <b>$" + Number(p.due).toFixed(2) + "</b>";
         else html += "　应收 <b>$" + Number(p.due).toFixed(2) + "</b>";
