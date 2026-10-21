@@ -995,6 +995,60 @@
   }
   .font-pop .fp-opts button.active { background: var(--green); border-color: var(--green); color: #fff; }
   .font-pop .fp-hint { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; }
+  /* 夜间模式面板：三个按钮，字小一点让「跟随时间」不折行 */
+  #nightPop { width: 300px; }
+  #nightPop .fp-opts button { font-size: 13px; padding: 11px 4px; white-space: nowrap; }
+
+  /* ===== 夜间模式配色（v3.14.0） ===== */
+  body.dark {
+    --bg: #0d141b; --card: #17222c; --ink: #e8eef4; --muted: #93a3b3; --line: #2a3846;
+    --green: #2f9e6a; --green-dark: #1d6a49; --red: #ff6b5e; --amber: #e0a33a;
+    background: #0d141b !important; color: var(--ink) !important;
+    color-scheme: dark;
+  }
+  body.dark header { background: linear-gradient(135deg, #15452e, #0d2a1c) !important; }
+  body.dark .tab { background: #17222c !important; color: #b9c6d3 !important; border-color: #2a3846 !important; }
+  body.dark .tab.active { background: #2f9e6a !important; color: #fff !important; border-color: #2f9e6a !important; }
+  body.dark .table, body.dark .card-box, body.dark .history, body.dark .snack-col,
+  body.dark .snack-card, body.dark .emp-card, body.dark .member-card, body.dark .rec-card,
+  body.dark .rec-day, body.dark .box, body.dark .modal, body.dark .panel-card,
+  body.dark .rate-box, body.dark .snack-pill, body.dark .to-top, body.dark .history-wrap-scroll,
+  body.dark .mem-card, body.dark .settle-box, body.dark .cart-box, body.dark .preview,
+  body.dark .mem-edit-box {
+    background: #17222c !important; border-color: #2a3846 !important; color: var(--ink) !important;
+  }
+  body.dark .rec-day { background: #12202a !important; }
+  body.dark .history-wrap-scroll { background: transparent !important; }
+  body.dark input, body.dark select, body.dark textarea {
+    background: #0f1922 !important; color: var(--ink) !important; border-color: #2f4050 !important;
+  }
+  body.dark input::placeholder, body.dark textarea::placeholder { color: #6f8296 !important; }
+  body.dark .btn-ghost, body.dark .fx-btn, body.dark .row-edit {
+    background: #1d2b37 !important; color: #cfe0ee !important; border-color: #2f4050 !important;
+  }
+  body.dark .btn-manual { background: #12202a !important; color: #8fc6f0 !important; border-color: #2f4a63 !important; }
+  body.dark .btn-start { background: #2f9e6a !important; color: #fff !important; }
+  body.dark .btn-pause { background: #2a2013 !important; color: #e0b463 !important; border-color: #3a2f1d !important; }
+  body.dark .snack-card .snack-thumb { background: #0f1922 !important; }
+  body.dark .emp-menu.open { border-top-color: #2a3846 !important; }
+  body.dark td, body.dark th { border-color: #2a3846 !important; }
+  body.dark .txn-grp { background: #12202a !important; }
+  body.dark .empty, body.dark .empty-mini, body.dark .hint { color: #93a3b3 !important; }
+  body.dark .snack-col h3 { color: var(--ink) !important; }
+  body.dark .emp-status { color: #93a3b3 !important; }
+  body.dark .emp-status.on { color: #4fd18f !important; }
+  body.dark h1, body.dark h2, body.dark h3 { color: var(--ink) !important; }
+  body.dark .chip { filter: saturate(.9) brightness(.92); }
+  body.dark .icon-btn.on { background: rgba(255, 255, 255, .34) !important; }
+  body.dark .font-pop { background: #17222c !important; border-color: #2a3846 !important; }
+  body.dark .font-pop .fp-title { color: #b9c6d3 !important; }
+  body.dark .font-pop .fp-opts button {
+    background: #0f1922 !important; color: var(--ink) !important; border-color: #2f4050 !important;
+  }
+  body.dark .font-pop .fp-opts button.active {
+    background: #2f9e6a !important; border-color: #2f9e6a !important; color: #fff !important;
+  }
+  body.dark .font-pop .fp-hint { color: #8fa1b3 !important; }
 
   /* ===== 左下角「回到顶部」按钮（v3.11.0） ===== */
   .to-top {
@@ -1431,6 +1485,7 @@
       </div>
       <div class="head-actions">
         <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）">📊</button>
+        <button type="button" class="icon-btn" id="nightBtn" title="夜间模式（跟随时间 / 开 / 关）">🌙</button>
         <button type="button" class="icon-btn" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）">Aa</button>
         <button type="button" class="icon-btn" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）">↻</button>
       </div>
@@ -2543,6 +2598,17 @@
     <div class="fp-hint">调完自动保存在这台设备</div>
   </div>
 
+  <!-- 夜间模式面板 -->
+  <div class="font-pop" id="nightPop">
+    <div class="fp-title">夜间模式</div>
+    <div class="fp-opts" style="grid-template-columns:1fr 1fr 1fr;">
+      <button type="button" data-night="auto">跟随时间</button>
+      <button type="button" data-night="on">开</button>
+      <button type="button" data-night="off" class="active">关</button>
+    </div>
+    <div class="fp-hint">跟随时间 = 19:00–07:00 自动开</div>
+  </div>
+
   <!-- 左下角：回到顶部（往下滚一屏才出现） -->
   <button type="button" id="toTop" class="to-top" title="回到顶部" aria-label="回到顶部">↑</button>
 
@@ -3014,6 +3080,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.14.0  2026-10-21
+  //    + 🌙 夜间模式（用户要的简易版）：右上角 🌙 按钮 → 跟随时间 / 开 / 关
+  //      · 跟随时间 = 19:00–07:00 自动开；每分钟检查一次
+  //      · 深绿黑底 + 深灰卡片 + 浅色文字；金额/收款色块保留原色（钱一眼看清）
+  //      · 存本机 localStorage（不同设备各自记），默认关
   //  v3.13.4  2026-10-21
   //    + 「📊 汇率对照」弹窗里的表格补上样式（之前完全没样式，列挤在一起）
   //  v3.13.3  2026-10-21
@@ -3553,7 +3624,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.13.4";
+  var APP_VER = "v3.14.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -7339,6 +7410,67 @@ function pullTableStates() {
   //     · 企业微信机器人等  直接 POST（浏览器可能被 CORS 挡 ✗ 但请求已发出 ✓）
   //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
   // ============================================================
+  // 🌙 夜间模式（v3.14.0）：跟随时间（19:00–07:00）/ 开 / 关，存本机
+  var UI_NIGHT_KEY = "mahjong_ui_night";
+  var uiNightMode = (function () {
+    try {
+      var v = localStorage.getItem(UI_NIGHT_KEY);
+      if (v === "auto" || v === "on" || v === "off") return v;
+    } catch (e) {}
+    return "off";
+  })();
+  function uiNightActive() {
+    if (uiNightMode === "on") return true;
+    if (uiNightMode === "off") return false;
+    var h = new Date().getHours();
+    return h >= 19 || h < 7;
+  }
+  function applyNight() {
+    try {
+      var on = uiNightActive();
+      document.body.classList.toggle("dark", on);
+      var b = document.getElementById("nightBtn");
+      if (b) b.classList.toggle("on", on);
+    } catch (e) {}
+  }
+  applyNight();
+  setInterval(applyNight, 60 * 1000);
+
+  // 🌙 夜间模式面板：跟随时间 / 开 / 关
+  (function () {
+    var btn = document.getElementById("nightBtn");
+    var pop = document.getElementById("nightPop");
+    if (!btn || !pop) return;
+    var opts = pop.querySelectorAll("button[data-night]");
+    function paint() {
+      for (var i = 0; i < opts.length; i++) {
+        opts[i].classList.toggle("active", opts[i].getAttribute("data-night") === uiNightMode);
+      }
+    }
+    btn.addEventListener("click", function (e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      pop.classList.toggle("show");
+      paint();
+    });
+    pop.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("button[data-night]") : null;
+      if (!b) return;
+      uiNightMode = b.getAttribute("data-night");
+      try { localStorage.setItem(UI_NIGHT_KEY, uiNightMode); } catch (x) {}
+      applyNight();
+      paint();
+    });
+    document.addEventListener("click", function (e) {
+      if (!pop.classList.contains("show")) return;
+      if (pop.contains(e.target) || btn.contains(e.target)) return;
+      pop.classList.remove("show");
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && pop.classList.contains("show")) pop.classList.remove("show");
+    });
+    paint();
+  })();
+
   // 🅰️ 字号面板：点「Aa 字号」打开，选完立刻生效并记住
   (function () {
     var btn = document.getElementById("fontBtn");
