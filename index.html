@@ -1002,7 +1002,7 @@
   /* ===== 夜间模式配色（v3.14.0） ===== */
   body.dark {
     --bg: #0d141b; --card: #17222c; --ink: #e8eef4; --muted: #93a3b3; --line: #2a3846;
-    --green: #2f9e6a; --green-dark: #1d6a49; --red: #ff6b5e; --amber: #e0a33a;
+    --green: #2f9e6a; --green-dark: #5ee2a0; --red: #ff6b5e; --amber: #e0a33a;
     background: #0d141b !important; color: var(--ink) !important;
     color-scheme: dark;
   }
@@ -1038,6 +1038,11 @@
   body.dark .emp-status { color: #93a3b3 !important; }
   body.dark .emp-status.on { color: #4fd18f !important; }
   body.dark h1, body.dark h2, body.dark h3 { color: var(--ink) !important; }
+  body.dark .mem-acts .act-in:hover { background: #1f8a5a !important; border-color: #1f8a5a !important; }
+  /* 行内写死的绿色文字也提亮（统计合计里的台费/营业额） */
+  body.dark [style*="color:#145a3a"], body.dark [style*="color: #145a3a"] { color: #5ee2a0 !important; }
+  body.dark [style*="color:#1d7a4f"], body.dark [style*="color: #1d7a4f"] { color: #7fe0b0 !important; }
+
   /* 收款色块：夜间改成「深底 + 亮字 + 细边」，色相保留（一看还是能分清刷卡/现金/人民币/会员） */
   body.dark .chip { filter: none; }
   body.dark .chip.card   { background: #1b2f45 !important; color: #8fc6f0 !important; border: 1px solid #35597c !important; }
@@ -3180,6 +3185,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.14.4  2026-10-21
+  //    + 夜间模式：所有绿色数字统一提亮成同一个亮绿（用户要求：
+  //      商品价格 / 小计 / 应收 / 统计金额等原来偏暗，看不清）
+  //      --green-dark 在夜间改成 #5ee2a0；行内写死的 #145a3a / #1d7a4f 也一起提亮
   //  v3.14.3  2026-10-21
   //    + 夜间模式：收款色块改成「深底 + 亮字 + 细边」，
   //      色相保留（刷卡蓝 / 现金绿 / 人民币金 / 会员紫 / 混合青），不再夜里刺眼
@@ -3733,7 +3742,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.14.3";
+  var APP_VER = "v3.14.4";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
