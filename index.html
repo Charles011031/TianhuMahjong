@@ -956,6 +956,23 @@
   .banner button { padding: 6px 12px; font-size: 13px; }
   .banner .sp { margin-left: auto; }
 
+  /* ===== 字号调节面板（v3.13.0） ===== */
+  .font-pop {
+    position: fixed; z-index: 90; left: 50%; top: 38%; transform: translate(-50%, 0);
+    display: none; width: 260px; padding: 14px;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .22);
+  }
+  .font-pop.show { display: block; }
+  .font-pop .fp-title { font-size: 14px; font-weight: 800; color: var(--muted); margin-bottom: 10px; }
+  .font-pop .fp-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .font-pop .fp-opts button {
+    padding: 12px 6px; font-size: 16px; font-weight: 700; border-radius: 10px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .font-pop .fp-opts button.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .font-pop .fp-hint { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; }
+
   /* ===== 左下角「回到顶部」按钮（v3.11.0） ===== */
   .to-top {
     position: fixed; z-index: 60;
@@ -1417,8 +1434,10 @@
           <span class="cur">点</span>
         </div>
       </div>
+      <button type="button" class="btn-ghost sm" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）"
+              style="margin-left:8px;white-space:nowrap;">Aa 字号</button>
       <button type="button" class="btn-ghost sm" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）"
-              style="margin-left:8px;white-space:nowrap;">🔄 刷新</button>
+              style="margin-left:6px;white-space:nowrap;">🔄 刷新</button>
     </div>
   </header>
 
@@ -2485,6 +2504,18 @@
     </div>
   </div>
 
+  <!-- 字号调节面板 -->
+  <div class="font-pop" id="fontPop">
+    <div class="fp-title">字号</div>
+    <div class="fp-opts">
+      <button type="button" data-fs="0.9">小</button>
+      <button type="button" data-fs="1" class="active">标准</button>
+      <button type="button" data-fs="1.12">大</button>
+      <button type="button" data-fs="1.25">特大</button>
+    </div>
+    <div class="fp-hint">调完自动保存在这台设备</div>
+  </div>
+
   <!-- 左下角：回到顶部（往下滚一屏才出现） -->
   <button type="button" id="toTop" class="to-top" title="回到顶部" aria-label="回到顶部">↑</button>
 
@@ -2918,33 +2949,49 @@
   //      如果跟着重算，缩放会跳来跳去 → 所以只有【宽度变了】才重算。
   //    · 13 寸宽度 >1400 不缩放。
   // ============================================================
-  (function () {
-    function uiScale() {
-      var w = window.innerWidth, h = window.innerHeight;
-      if (w < 641 || w > 1400) return 1;   // ≤640 走手机版；>1400（13 寸宽屏）不缩放
-      if (h <= 740) return 0.85;
-      if (h <= 800) return 0.89;
-      if (h <= 880) return 0.94;
-      return 1;
-    }
-    var lastW = 0;
-    function apply(force) {
-      var w = window.innerWidth;
-      if (!force && Math.abs(w - lastW) < 20) return;   // 只变高度（工具栏收起）→ 不重算
-      lastW = w;
-      var z = uiScale();
-      document.body.style.zoom = (z === 1 ? "" : String(z));
-    }
-    apply(true);
-    window.addEventListener("orientationchange", function () { setTimeout(function () { apply(true); }, 300); });
-    window.addEventListener("resize", function () { apply(false); });
+  // 🅰️ 字号调节（v3.13.0）：用户选的倍数，存在本机（不跟着云端同步）
+  var UI_FONT_KEY = "mahjong_ui_font";
+  var UI_FONT_STEPS = [0.9, 1, 1.12, 1.25];   // 小 / 标准 / 大 / 特大
+  var uiFontScale = (function () {
+    try {
+      var v = parseFloat(localStorage.getItem(UI_FONT_KEY));
+      if (UI_FONT_STEPS.indexOf(v) >= 0) return v;
+    } catch (e) {}
+    return 1;
   })();
+
+  function uiAutoScale() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (w < 641 || w > 1400) return 1;   // ≤640 走手机版；>1400（13 寸宽屏）不缩放
+    if (h <= 740) return 0.85;
+    if (h <= 800) return 0.89;
+    if (h <= 880) return 0.94;
+    return 1;
+  }
+  var uiLastW = 0;
+  function applyUiZoom(force) {
+    try {
+      if (!force && Math.abs(window.innerWidth - uiLastW) < 20) return;   // 只变高度 → 不重算
+      uiLastW = window.innerWidth;
+      var z = uiAutoScale() * uiFontScale;
+      z = Math.round(z * 1000) / 1000;
+      document.body.style.zoom = (z === 1 ? "" : String(z));
+    } catch (e) {}
+  }
+  applyUiZoom(true);
+  window.addEventListener("orientationchange", function () { setTimeout(function () { applyUiZoom(true); }, 300); });
+  window.addEventListener("resize", function () { applyUiZoom(false); });
 
   // ===== 版本号 =====
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.13.0  2026-10-21
+  //    + 🅰️ 字号调节（用户要求：长辈 / 暗光看不清）★★
+  //      · 顶部「Aa 字号」按钮 → 小(0.9) / 标准(1) / 大(1.12) / 特大(1.25)
+  //      · 整页等比放大（图标/按钮/卡片一起大），和自动缩放相乘（上限保护）
+  //      · 存在本机 localStorage（不同设备各自记，不跟云端同步）
   //  v3.12.0  2026-10-21
   //    + 💻 平板竖屏适配（iPad 11 竖着用 / 768~834 宽的小窗口）★★
   //      · 原来平板竖屏走桌面表格，「收款」列要横向滑 → 现在走手机版布局
@@ -3466,7 +3513,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.12.0";
+  var APP_VER = "v3.13.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -7216,6 +7263,42 @@ function pullTableStates() {
   //     · 企业微信机器人等  直接 POST（浏览器可能被 CORS 挡 ✗ 但请求已发出 ✓）
   //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
   // ============================================================
+  // 🅰️ 字号面板：点「Aa 字号」打开，选完立刻生效并记住
+  (function () {
+    var btn = document.getElementById("fontBtn");
+    var pop = document.getElementById("fontPop");
+    if (!btn || !pop) return;
+    var opts = pop.querySelectorAll("button[data-fs]");
+    function paint() {
+      for (var i = 0; i < opts.length; i++) {
+        var v = parseFloat(opts[i].getAttribute("data-fs"));
+        opts[i].classList.toggle("active", Math.abs(v - uiFontScale) < 0.001);
+      }
+    }
+    btn.addEventListener("click", function (e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      pop.classList.toggle("show");
+      paint();
+    });
+    pop.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("button[data-fs]") : null;
+      if (!b) return;
+      uiFontScale = parseFloat(b.getAttribute("data-fs"));
+      try { localStorage.setItem(UI_FONT_KEY, String(uiFontScale)); } catch (x) {}
+      applyUiZoom(true);
+      paint();
+    });
+    document.addEventListener("click", function (e) {
+      if (!pop.classList.contains("show")) return;
+      if (pop.contains(e.target) || btn.contains(e.target)) return;
+      pop.classList.remove("show");
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && pop.classList.contains("show")) pop.classList.remove("show");
+    });
+    paint();
+  })();
+
   // ⬆️ 左下角「回到顶部」：往下滚过半屏才出现（桌面/手机都有）
   (function () {
     var btn = document.getElementById("toTop");
