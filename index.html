@@ -67,6 +67,19 @@
   }
   header h1 { font-size: 22px; font-weight: 700; }
   header .sub { font-size: 13px; opacity: .85; margin-top: 2px; }
+  /* 右上角：字号 / 刷新（小图标按钮） */
+  .head-top { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
+  .head-title { min-width: 0; }
+  .head-actions { margin-left: auto; display: flex; gap: 6px; flex: 0 0 auto; }
+  .head-actions .icon-btn {
+    width: 34px; height: 34px; padding: 0; border-radius: 9px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .38);
+    color: #fff; font-size: 15px; font-weight: 800; line-height: 1; cursor: pointer;
+  }
+  .head-actions .icon-btn:hover { background: rgba(255, 255, 255, .26); }
+  .head-actions .icon-btn:active { transform: scale(.94); }
+
   .settings {
     margin-left: auto;
     display: flex;
@@ -1001,6 +1014,8 @@
   @media (max-width: 640px),
          (min-width: 641px) and (max-width: 1000px) and (max-height: 500px),
          (min-width: 641px) and (max-width: 900px) and (min-height: 700px) {
+    .head-actions .icon-btn { width: 32px; height: 32px; font-size: 14px; border-radius: 8px; }
+
     .to-top {
       left: calc(14px + env(safe-area-inset-left, 0px));
       bottom: calc(34px + env(safe-area-inset-bottom, 0px));
@@ -1399,9 +1414,15 @@
 <body>
   <div id="errBar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.25);"></div>
   <header>
-    <div>
-      <h1>🀄 天胡麻将馆 <span class="ver" id="appVer">v0</span></h1>
-      <div class="sub">6 张桌台 · 独立计时 · 统一价格（澳币 AUD）· 手续费可调 · 支持人民币结算</div>
+    <div class="head-top">
+      <div class="head-title">
+        <h1>🀄 天胡麻将馆 <span class="ver" id="appVer">v0</span></h1>
+        <div class="sub">6 张桌台 · 独立计时 · 统一价格（澳币 AUD）· 手续费可调 · 支持人民币结算</div>
+      </div>
+      <div class="head-actions">
+        <button type="button" class="icon-btn" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）">Aa</button>
+        <button type="button" class="icon-btn" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）">↻</button>
+      </div>
     </div>
     <div class="settings">
       <div class="rate-box">
@@ -1434,10 +1455,6 @@
           <span class="cur">点</span>
         </div>
       </div>
-      <button type="button" class="btn-ghost sm" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）"
-              style="margin-left:8px;white-space:nowrap;">Aa 字号</button>
-      <button type="button" class="btn-ghost sm" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）"
-              style="margin-left:6px;white-space:nowrap;">🔄 刷新</button>
     </div>
   </header>
 
@@ -2987,6 +3004,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.13.1  2026-10-21
+  //    + 顶部「Aa 字号 / ↻ 刷新」挪到右上角，并改成小图标按钮（用户要求）
+  //      · 不再挤在设置行里；手机/桌面都在标题右上角，只留符号
   //  v3.13.0  2026-10-21
   //    + 🅰️ 字号调节（用户要求：长辈 / 暗光看不清）★★
   //      · 顶部「Aa 字号」按钮 → 小(0.9) / 标准(1) / 大(1.12) / 特大(1.25)
@@ -3513,7 +3533,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.13.0";
+  var APP_VER = "v3.13.1";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
