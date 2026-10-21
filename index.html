@@ -978,9 +978,12 @@
      桌面端完全不受影响（只在 ≤640px 生效）
      ============================================================ */
   /* 手机横屏（宽 641~1000、高 ≤500）也走手机版布局：
-     横屏时宽度够，用「手机版 + 2 列记录卡」比桌面表格更好看 */
+     横屏时宽度够，用「手机版 + 2 列记录卡」比桌面表格更好看。
+     平板竖屏（宽 641~900、高 ≥700，v3.12.0）也走手机版：
+     原来平板竖屏是桌面表格，「收款」列要横向滑，改成 2 列记录卡更好读。 */
   @media (max-width: 640px),
-         (min-width: 641px) and (max-width: 1000px) and (max-height: 500px) {
+         (min-width: 641px) and (max-width: 1000px) and (max-height: 500px),
+         (min-width: 641px) and (max-width: 900px) and (min-height: 700px) {
     .to-top {
       left: calc(14px + env(safe-area-inset-left, 0px));
       bottom: calc(34px + env(safe-area-inset-bottom, 0px));
@@ -1181,6 +1184,7 @@
 
     /* --- 记录摘要卡：主信息一行、明细一行、收款/操作一行 --- */
     .rec-cards { display: block; }
+    .rec-cards:empty { display: none !important; }
     #historyWrap > table, #snackHistoryWrap > table, #vapeHistoryWrap > table,
     #memberTxnWrap > table, #attWrap > table, #stTxnWrap > table { display: none !important; }
     .rec-card {
@@ -1245,7 +1249,8 @@
      标签页一行 6 个、商品卡更大、记录卡/按钮都放大一点。
      ============================================================ */
   @media (min-width: 561px) and (max-width: 640px),
-         (min-width: 641px) and (max-width: 1000px) and (max-height: 500px) {
+         (min-width: 641px) and (max-width: 1000px) and (max-height: 500px),
+         (min-width: 641px) and (max-width: 900px) and (min-height: 700px) {
     body { padding: 14px 18px; }
     .tabs { gap: 8px; }
     .tab {
@@ -1272,6 +1277,15 @@
     .emp-main .emp-status { font-size: 12px; }
     .emp-more { width: 36px; height: 36px; font-size: 18px; }
     .history-wrap-scroll { max-height: 58vh; }
+  }
+
+  /* 平板竖屏 / 宽屏：会员卡两列，别一行一个占满整屏 */
+  @media (min-width: 641px) and (max-width: 900px) and (min-height: 700px) {
+    #memberList tbody {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start;
+    }
+    #memberList tbody tr { margin: 0; }
+    #memberList tbody tr:last-child { margin: 0; }
   }
 
   /* --- 手机横屏：竖着空间紧张，顶部再压扁一点，记录区留高一些 --- */
@@ -2931,6 +2945,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.12.0  2026-10-21
+  //    + 💻 平板竖屏适配（iPad 11 竖着用 / 768~834 宽的小窗口）★★
+  //      · 原来平板竖屏走桌面表格，「收款」列要横向滑 → 现在走手机版布局
+  //      · 结算/零食/鸭嘴兽/统计/交易明细/打卡：记录卡两列，读起来更舒服
+  //      · 会员卡也两列；空记录不再留一条空白
   //  v3.11.1  2026-10-21
   //    + 微调「回到顶部」按钮位置：手机抬到距底 34px（原来 14px）——
   //      避免被屏幕圆角/手势条压住；桌面 24px
@@ -3447,7 +3466,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.11.1";
+  var APP_VER = "v3.12.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
