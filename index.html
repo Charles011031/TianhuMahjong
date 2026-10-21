@@ -77,6 +77,7 @@
     background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .38);
     color: #fff; font-size: 15px; font-weight: 800; line-height: 1; cursor: pointer;
   }
+  .head-actions #fxCompare { font-size: 16px; }
   .head-actions .icon-btn:hover { background: rgba(255, 255, 255, .26); }
   .head-actions .icon-btn:active { transform: scale(.94); }
 
@@ -1420,6 +1421,7 @@
         <div class="sub">6 张桌台 · 独立计时 · 统一价格（澳币 AUD）· 手续费可调 · 支持人民币结算</div>
       </div>
       <div class="head-actions">
+        <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）">📊</button>
         <button type="button" class="icon-btn" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）">Aa</button>
         <button type="button" class="icon-btn" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）">↻</button>
       </div>
@@ -1446,7 +1448,6 @@
           <span class="cur">人民币/澳币</span>
         </div>
         <button type="button" class="fx-btn" id="fxRefresh">实时</button>
-        <button type="button" class="fx-btn" id="fxCompare" title="看每天"支付宝手动汇率"和"API 市场汇率"的差值" style="margin-left:4px;">📊</button>
       </div>
       <div class="rate-box">
         <label>营业日起算</label>
@@ -3004,6 +3005,8 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.13.3  2026-10-21
+  //    + 「📊 汇率对照」也挪到右上角（和 Aa / ↻ 并排），不再挤在汇率输入框旁边
   //  v3.13.2  2026-10-21
   //    + 修：多台设备同步时，汇率对照记录会被"整条覆盖"冲少（用户：昨天记录没了）
   //      · 某台设备昨天没开 / 是新电脑（本地只有今天）→ 一保存就把记录覆盖成 1 天
@@ -3539,7 +3542,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.13.2";
+  var APP_VER = "v3.13.3";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
