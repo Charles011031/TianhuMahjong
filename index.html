@@ -1043,6 +1043,25 @@
   body.dark [style*="color:#145a3a"], body.dark [style*="color: #145a3a"] { color: #5ee2a0 !important; }
   body.dark [style*="color:#1d7a4f"], body.dark [style*="color: #1d7a4f"] { color: #7fe0b0 !important; }
 
+  /* 结算弹窗里由 JS 控制显示/隐藏的浅色块（style 被 JS 重写后属性选择器匹配不到） */
+  body.dark #sMoreWrap, body.dark #splitPanel {
+    background: #12202a !important; border-color: #2f4050 !important;
+  }
+  body.dark #sShortWrap { background: #2a2013 !important; border-color: #5a4320 !important; }
+  body.dark #sFineBox { background: #241d10 !important; border-color: #5a4320 !important; }
+  body.dark #opLogList { background: #17222c !important; border-color: #2a3846 !important; }
+  body.dark #keepMonths { background: #0f1922 !important; color: var(--ink) !important; border-color: #2f4050 !important; }
+  body.dark #avPick { background: #0f1922 !important; }
+  /* 兜底：行内颜色被浏览器序列化成 rgb(...) 时也能匹配（JS 改过 style 的元素会这样） */
+  body.dark [style*="rgb(255, 255, 255)"] { background: #17222c !important; }
+  body.dark [style*="rgb(250, 250, 250)"] { background: #17222c !important; }
+  body.dark [style*="rgb(248, 250, 252)"] { background: #17222c !important; }
+  body.dark [style*="rgb(247, 249, 248)"] { background: #17222c !important; }
+  body.dark [style*="rgb(243, 244, 246)"] { background: #1d2b37 !important; }
+  body.dark [style*="rgb(240, 247, 243)"] { background: #12202a !important; }
+  body.dark [style*="rgb(255, 251, 243)"] { background: #241d10 !important; }
+  body.dark [style*="rgb(255, 248, 225)"] { background: #2a2013 !important; }
+
   /* 收款色块：夜间改成「深底 + 亮字 + 细边」，色相保留（一看还是能分清刷卡/现金/人民币/会员） */
   body.dark .chip { filter: none; }
   body.dark .chip.card   { background: #1b2f45 !important; color: #8fc6f0 !important; border: 1px solid #35597c !important; }
@@ -2063,7 +2082,7 @@
           <button type="button" class="btn-start sm" id="sShareFee4">👥 台费 4 人分</button>
         </div>
         <!-- ★ 罚款：算进【台费】✗ 所以「台费 4 人分」会自动把它一起平摊 ✓ -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;
+        <div id="sFineBox" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;
                     padding:8px 10px;border:1px solid #f0d9b5;border-radius:10px;background:#fffbf3;">
           <span style="font-size:13px;font-weight:700;color:#92400e;">⚖️ 罚款</span>
           <input type="number" id="sFine" min="0" step="0.5" value="0"
@@ -3185,6 +3204,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.14.5  2026-10-21
+  //    + 修：夜间模式下结算弹窗里「更多选项」那块（零食其它费用/合并另一桌/平分）
+  //      还是白色 —— 这些块的 style 被 JS 改过，属性选择器匹配不到，改成按 id 显式配色
+  //    + 顺手：罚款块、操作日志、导出设置里的浅色块也一起压暗
   //  v3.14.4  2026-10-21
   //    + 夜间模式：所有绿色数字统一提亮成同一个亮绿（用户要求：
   //      商品价格 / 小计 / 应收 / 统计金额等原来偏暗，看不清）
@@ -3742,7 +3765,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.14.4";
+  var APP_VER = "v3.14.5";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
