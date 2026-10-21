@@ -970,6 +970,15 @@
   .banner button { padding: 6px 12px; font-size: 13px; }
   .banner .sp { margin-left: auto; }
 
+  /* ===== 汇率对照弹窗里的表格（v3.13.4） ===== */
+  #fxLogBody table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #fxLogBody thead th {
+    font-size: 12px; color: var(--muted); font-weight: 700;
+    padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; text-align: left;
+  }
+  #fxLogBody tbody td { padding: 7px 8px; border-bottom: 1px dashed var(--line); }
+  #fxLogBody th.num, #fxLogBody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
   /* ===== 字号调节面板（v3.13.0） ===== */
   .font-pop {
     position: fixed; z-index: 90; left: 50%; top: 38%; transform: translate(-50%, 0);
@@ -3005,6 +3014,8 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.13.4  2026-10-21
+  //    + 「📊 汇率对照」弹窗里的表格补上样式（之前完全没样式，列挤在一起）
   //  v3.13.3  2026-10-21
   //    + 「📊 汇率对照」也挪到右上角（和 Aa / ↻ 并排），不再挤在汇率输入框旁边
   //  v3.13.2  2026-10-21
@@ -3542,7 +3553,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.13.3";
+  var APP_VER = "v3.13.4";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
