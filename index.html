@@ -1038,7 +1038,13 @@
   body.dark .emp-status { color: #93a3b3 !important; }
   body.dark .emp-status.on { color: #4fd18f !important; }
   body.dark h1, body.dark h2, body.dark h3 { color: var(--ink) !important; }
-  body.dark .chip { filter: saturate(.9) brightness(.92); }
+  /* 收款色块：夜间改成「深底 + 亮字 + 细边」，色相保留（一看还是能分清刷卡/现金/人民币/会员） */
+  body.dark .chip { filter: none; }
+  body.dark .chip.card   { background: #1b2f45 !important; color: #8fc6f0 !important; border: 1px solid #35597c !important; }
+  body.dark .chip.cash   { background: #123524 !important; color: #6ee7a8 !important; border: 1px solid #2a6a48 !important; }
+  body.dark .chip.rmb    { background: #3a2a12 !important; color: #f0b95a !important; border: 1px solid #6b4d20 !important; }
+  body.dark .chip.member { background: #2f2144 !important; color: #c4a6ff !important; border: 1px solid #513a7a !important; }
+  body.dark .chip.mix    { background: #12333a !important; color: #7fd6e8 !important; border: 1px solid #2a5f6b !important; }
   body.dark .icon-btn.on { background: rgba(255, 255, 255, .34) !important; }
   body.dark .font-pop { background: #17222c !important; border-color: #2a3846 !important; }
   body.dark .font-pop .fp-title { color: #b9c6d3 !important; }
@@ -3174,6 +3180,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.14.3  2026-10-21
+  //    + 夜间模式：收款色块改成「深底 + 亮字 + 细边」，
+  //      色相保留（刷卡蓝 / 现金绿 / 人民币金 / 会员紫 / 混合青），不再夜里刺眼
   //  v3.14.2  2026-10-21
   //    + 夜间模式再补：员工「开始时间」行、徽章、小按钮、表单块、横幅等小白块
   //  v3.14.1  2026-10-21
@@ -3724,7 +3733,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.14.2";
+  var APP_VER = "v3.14.3";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
