@@ -1050,6 +1050,100 @@
   }
   body.dark .font-pop .fp-hint { color: #8fa1b3 !important; }
 
+  /* ★ v3.14.1：把桌面端「表格 / 汇总卡 / 各种按钮」的白色也换成深色 */
+  body.dark .history-wrap-scroll { background: #17222c !important; }
+  body.dark .history thead th, body.dark .history-wrap-scroll thead th,
+  body.dark .mem-table th {
+    background: #1d2b37 !important; color: #b9c6d3 !important;
+    box-shadow: inset 0 -1px 0 #2a3846 !important; border-bottom-color: #2a3846 !important;
+  }
+  body.dark .history th, body.dark .history td, body.dark .mem-table th, body.dark .mem-table td {
+    border-bottom-color: #2a3846 !important;
+  }
+  body.dark .history tbody tr:hover, body.dark .mem-table tbody tr:hover { background: #1b2836 !important; }
+  body.dark .history tbody tr.txn-grp td { background: #12202a !important; }
+  body.dark .history tbody tr.txn-grp .gn {
+    background: #3a2a12 !important; border-color: #5a4320 !important; color: #f0b95a !important;
+  }
+  body.dark .history td.grand, body.dark .rec-amt { color: #5ee2a0 !important; }
+  body.dark .stat-card { background: #17222c !important; border-color: #2a3846 !important; }
+  body.dark .stat-card .k, body.dark .stat-card .s { color: #93a3b3 !important; }
+  body.dark .stat-card .v { color: #5ee2a0 !important; }
+  body.dark .cart-total { background: #12202a !important; color: var(--ink) !important; }
+  body.dark .cart-total b { color: #5ee2a0 !important; }
+  body.dark .list-scroll { background: #17222c !important; border-color: #2a3846 !important; }
+  body.dark .mem-acts button, body.dark .mini-del,
+  body.dark .emp-editbtn, body.dark .emp-dragbtn {
+    background: #1d2b37 !important; color: #cfe0ee !important; border-color: #2f4050 !important;
+  }
+  body.dark .mem-acts .act-in, body.dark .btn-start { background: #2f9e6a !important; color: #fff !important; border-color: #2f9e6a !important; }
+  body.dark .mem-acts .act-out { background: #3a2a12 !important; color: #f0b95a !important; border-color: #5a4320 !important; }
+  body.dark .snack-tab { background: #1d2b37 !important; color: #b9c6d3 !important; border-color: #2f4050 !important; }
+  body.dark .snack-tab.on { background: #2f9e6a !important; color: #fff !important; border-color: #2f9e6a !important; }
+  body.dark .vape-sum .vs { background: #17222c !important; border-color: #2a3846 !important; }
+  body.dark .vape-sum .vs b { color: var(--ink) !important; }
+  body.dark .vape-sum .vs.g1 b { color: #5ee2a0 !important; }
+  body.dark .vape-sum .vs.g2 b { color: #c4a6ff !important; }
+  /* 行内写死的浅色背景（只匹配带分号 / 明确色值，避免误伤 #fff3cd 这类） */
+  body.dark [style*="background:#fff;"], body.dark [style*="background: #fff;"],
+  body.dark [style*="background:white;"], body.dark [style*="background: white;"],
+  body.dark [style*="background:#ffffff"], body.dark [style*="background:#f7f9f8"],
+  body.dark [style*="background: #f7f9f8"], body.dark [style*="background:#f3f7f5"],
+  body.dark [style*="background:#f0f5f2"], body.dark [style*="background:#f4f6f5"],
+  body.dark [style*="background:#f8faf9"], body.dark [style*="background:#eef2f0"],
+  body.dark [style*="background:#f3f4f6"], body.dark [style*="background:#fff7e6"] {
+    background: #17222c !important;
+  }
+  /* 行内写死的深色文字 → 提亮（金额的绿/红/金色保留） */
+  body.dark [style*="color:#1d4e89"], body.dark [style*="color: #1d4e89"] { color: #8fc6f0 !important; }
+  body.dark [style*="color:#8a5a00"], body.dark [style*="color: #8a5a00"] { color: #f0b95a !important; }
+  body.dark [style*="color:#b45309"], body.dark [style*="color: #b45309"] { color: #f0b95a !important; }
+  body.dark [style*="color:#b91c1c"], body.dark [style*="color: #b91c1c"] { color: #ff8a80 !important; }
+  body.dark [style*="color:#0f5132"], body.dark [style*="color: #0f5132"] { color: #6ee7a8 !important; }
+  /* 合计条 / 挂桌行 / 行内浅色块（#fff 开头的浅色统一压暗） */
+  body.dark .txn-sum { background: #12202a !important; border-color: #2a3846 !important; color: var(--ink) !important; }
+  body.dark [style*="background:#fff"], body.dark [style*="background: #fff"] {
+    background: #17222c !important;
+  }
+  body.dark [style*="background:#e6f4ec"], body.dark [style*="background: #e6f4ec"] {
+    background: #123524 !important;
+  }
+  body.dark [style*="background:#f0f7f3"], body.dark [style*="background: #f0f7f3"],
+  body.dark [style*="background:#f7fbf8"], body.dark [style*="background: #f7fbf8"],
+  body.dark [style*="background:#fafafa"], body.dark [style*="background: #fafafa"],
+  body.dark [style*="background:#f8fafc"], body.dark [style*="background: #f8fafc"] {
+    background: #17222c !important;
+  }
+  body.dark [style*="background:#fee2e2"], body.dark [style*="background: #fee2e2"] {
+    background: #3a1a1a !important; color: #ff9a90 !important; border-color: #5a2a2a !important;
+  }
+
+  /* ★ v3.14.2：再补一圈小白块（员工「开始时间」行 / 徽章 / 小按钮 / 表单块…） */
+  body.dark .emp-inrow, body.dark .mini, body.dark .me-add, body.dark .me-actions,
+  body.dark .me-row, body.dark .result, body.dark .table-extras, body.dark .res-form,
+  body.dark .menu-head, body.dark .list-scroll .menu-head,
+  body.dark .toast, body.dark .drag-float, body.dark .emp-card.ph, body.dark .menu-row.ph,
+  body.dark .txnf, body.dark .cart-thumb, body.dark .me-photo, body.dark .me-photo-del,
+  body.dark .attach-row {
+    background: #17222c !important; border-color: #2a3846 !important; color: var(--ink) !important;
+  }
+  body.dark .badge, body.dark .badge.running, body.dark .badge.paused, body.dark .badge-res,
+  body.dark .snack-count, body.dark .snack-card .snack-tag,
+  body.dark .snack-card .snack-step button,
+  body.dark .emp-inrow input {
+    background: #1d2b37 !important; color: #b9c6d3 !important; border-color: #2f4050 !important;
+  }
+  body.dark .badge.running { background: #123524 !important; color: #6ee7a8 !important; }
+  body.dark .badge.paused { background: #3a2a12 !important; color: #f0b95a !important; }
+  body.dark .table.ended { background: #241d10 !important; }
+  body.dark .banner, body.dark .rmb-line {
+    background: #2a2013 !important; border-color: #5a4320 !important; color: #f0b95a !important;
+  }
+  body.dark .mem-row:hover td, body.dark .mem-row.mem-active td { background: #1b2836 !important; }
+  body.dark .menu-row[data-dragid]:hover { background: #1b2836 !important; }
+  body.dark .snack-card.added { background: #123524 !important; }
+  body.dark .emp-inrow { background: #12202a !important; }
+
   /* ===== 左下角「回到顶部」按钮（v3.11.0） ===== */
   .to-top {
     position: fixed; z-index: 60;
@@ -3080,6 +3174,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.14.2  2026-10-21
+  //    + 夜间模式再补：员工「开始时间」行、徽章、小按钮、表单块、横幅等小白块
+  //  v3.14.1  2026-10-21
+  //    + 夜间模式补全：桌面端表格 / 表头 / 分组行 / 统计汇总卡 / 当前点单 /
+  //      会员卡按钮 / 充值档位 / 电子烟库存汇总的白色块都换成深色；
+  //      行内写死的深色文字（amber/蓝/红）提亮，金额颜色保留
   //  v3.14.0  2026-10-21
   //    + 🌙 夜间模式（用户要的简易版）：右上角 🌙 按钮 → 跟随时间 / 开 / 关
   //      · 跟随时间 = 19:00–07:00 自动开；每分钟检查一次
@@ -3624,7 +3724,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.14.0";
+  var APP_VER = "v3.14.2";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
