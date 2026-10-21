@@ -3004,6 +3004,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.13.2  2026-10-21
+  //    + 修：多台设备同步时，汇率对照记录会被"整条覆盖"冲少（用户：昨天记录没了）
+  //      · 某台设备昨天没开 / 是新电脑（本地只有今天）→ 一保存就把记录覆盖成 1 天
+  //      · 现在【按日期合并】，两边各有的都保留；同一天取信息更全的那条
+  //      · 本机一条都没有时不上传（防止空日志把云端冲掉）
+  //      · 已经丢的：让还留着那条记录的设备打开一次 → 会自动合并回云端
   //  v3.13.1  2026-10-21
   //    + 顶部「Aa 字号 / ↻ 刷新」挪到右上角，并改成小图标按钮（用户要求）
   //      · 不再挤在设置行里；手机/桌面都在标题右上角，只留符号
@@ -3533,7 +3539,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.13.1";
+  var APP_VER = "v3.13.2";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4326,6 +4332,39 @@
       state.fxLog.sort(function (a, b) { return String(a.d) < String(b.d) ? -1 : 1; });
       save();
     } catch (x) {}
+  }
+
+  // ★ v3.13.2：汇率对照记录是「每天一条、跟设置一起同步」的。
+  //   原来是【整条覆盖】：某台设备如果昨天没开 / 是新设备（本地只有今天），
+  //   它一保存就把"设置"里的汇率对照整条覆盖成只有今天 → 别的设备的昨天记录被冲掉。
+  //   现在改成【按日期合并】：两边各有的都留着，同一天取信息更全的那条。
+  function mergeFxLog(local, cloud) {
+    var out = [], byD = {};
+    function score(e) {
+      var s = 0;
+      if (Number(e.auto) > 0) s += 2;
+      if (Number(e.manual) > 0) s += 2;
+      if (Number(e.market) > 0) s += 1;
+      if (e.at) s += 1;
+      return s;
+    }
+    function add(e) {
+      if (!e || !e.d) return;
+      var d = String(e.d);
+      var cur = byD[d];
+      if (!cur) { byD[d] = e; out.push(e); return; }
+      if (score(e) >= score(cur)) {
+        var at = out.indexOf(cur);
+        if (at >= 0) out[at] = e;
+        byD[d] = e;
+      }
+    }
+    var i;
+    for (i = 0; i < (local || []).length; i++) add(local[i]);
+    for (i = 0; i < (cloud || []).length; i++) add(cloud[i]);
+    out.sort(function (a, b) { return String(a.d) < String(b.d) ? -1 : 1; });
+    if (out.length > 365) out = out.slice(-365);
+    return out;
   }
 
   // 📊 汇率对照：渲染 + 统计
@@ -6806,8 +6845,11 @@ function inventoryPayloads() {
     } catch (e) {}
     // ★ 汇率对照记录（每天一条 ✗ 最多 365 天 ✓ JSON 存 ✓）
     try {
-      out.push({ id: "set_fxlog", key: "汇率对照记录",
-                 value: JSON.stringify(state.fxLog || []) });
+      // ★ 空日志不上传：新设备第一次用只会带空列表，不能拿它把云端的记录冲掉
+      if ((state.fxLog || []).length) {
+        out.push({ id: "set_fxlog", key: "汇率对照记录",
+                   value: JSON.stringify(state.fxLog) });
+      }
     } catch (e) {}
     // 电子烟阶梯价 + 员工价
     var g1 = state.vapePrice.g1 || {}, g2 = state.vapePrice.g2 || {};
@@ -7042,7 +7084,7 @@ function verifyConfigPush(done) {
     if (byLabel["汇率对照记录"]) {
       try {
         var fl = JSON.parse(byLabel["汇率对照记录"]);
-        if (Array.isArray(fl)) state.fxLog = fl;
+        if (Array.isArray(fl)) state.fxLog = mergeFxLog(state.fxLog || [], fl);   // ★ 合并，不覆盖
       } catch (e) {}
     }
     state.vapePrice.g1.retail = num("一代零售价", state.vapePrice.g1.retail);
