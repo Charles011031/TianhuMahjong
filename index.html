@@ -3204,6 +3204,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.14.6  2026-10-21
+  //    + 结算弹窗：整单走【人民币】时，大字显示人民币 ¥，小字显示 ≈ 澳币 $
+  //      （用户要求：点人民币就希望第一眼看到的是人民币金额）
+  //      · 收款明细上方那句「当前：整单走 人民币」也改成 ¥ 金额
   //  v3.14.5  2026-10-21
   //    + 修：夜间模式下结算弹窗里「更多选项」那块（零食其它费用/合并另一桌/平分）
   //      还是白色 —— 这些块的 style 被 JS 改过，属性选择器匹配不到，改成按 id 显式配色
@@ -3765,7 +3769,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.14.5";
+  var APP_VER = "v3.14.6";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -5312,20 +5316,40 @@
     if (qi) {
       if (settleParts.length === 1) {
         var p0 = settleParts[0], nm0 = { cash: "现金", card: "刷卡", rmb: "人民币", member: "会员余额" }[p0.payType] || "现金";
-        qi.innerHTML = '当前：整单走 <b>' + nm0 + '</b>　$' + (Number(p0.amount) || 0).toFixed(2) + ' ✓';
+        var amtTxt0 = "$" + (Number(p0.amount) || 0).toFixed(2);
+        if (p0.payType === "rmb") {
+          var rv0 = partRmb(p0);
+          if (rv0 != null && rv0 > 0) amtTxt0 = "¥" + rv0.toFixed(2) + "（≈ $" + (Number(p0.amount) || 0).toFixed(2) + "）";
+        }
+        qi.innerHTML = '当前：整单走 <b>' + nm0 + '</b>　' + amtTxt0 + ' ✓';
       } else {
         qi.innerHTML = '当前：分成 <b>' + settleParts.length + ' 笔</b> 收（见下面的收款明细）';
       }
     }
-    document.getElementById("sGrand").textContent = fmtMoney(t.collected);
-    document.getElementById("sGrandRmb").textContent = t.rmbActual > 0
-      ? ("其中人民币 ¥" + t.rmbActual.toFixed(2))
-      : (fx > 0 ? "≈ ¥" + (t.collected * fx).toFixed(2) + " 人民币" : "");
-    document.getElementById("sRemain").innerHTML =
-      "应收 <b>$" + b.due.toFixed(2) + "</b>　实收 <b>$" + t.collected.toFixed(2) + "</b>" +
-      (shortBy > 0.005 ? '　<span class="warn-note">未收 $' + shortBy.toFixed(2) + "</span>" : "") +
+    // ★ 整单走人民币时：大字显示【人民币】，小字显示澳币（用户要求）
+    var allRmb = settleParts.length > 0;
+    for (var rp0 = 0; rp0 < settleParts.length; rp0++) {
+      if (settleParts[rp0].payType !== "rmb") { allRmb = false; break; }
+    }
+    var rmbShow = t.rmbActual > 0 ? t.rmbActual : (fx > 0 ? round2(t.collected * fx) : 0);
+    var grandEl = document.getElementById("sGrand");
+    var grandSubEl = document.getElementById("sGrandRmb");
+    if (allRmb && rmbShow > 0) {
+      grandEl.textContent = "¥" + rmbShow.toFixed(2);
+      grandSubEl.textContent = "≈ $" + t.collected.toFixed(2) + " 澳币";
+    } else {
+      grandEl.textContent = fmtMoney(t.collected);
+      grandSubEl.textContent = t.rmbActual > 0
+        ? ("其中人民币 ¥" + t.rmbActual.toFixed(2))
+        : (fx > 0 ? "≈ ¥" + (t.collected * fx).toFixed(2) + " 人民币" : "");
+    }
+    var remainHtml = (allRmb && rmbShow > 0)
+      ? ("应收 <b>$" + b.due.toFixed(2) + "</b> 澳币　实收 <b>¥" + rmbShow.toFixed(2) + "</b>")
+      : ("应收 <b>$" + b.due.toFixed(2) + "</b>　实收 <b>$" + t.collected.toFixed(2) + "</b>");
+    remainHtml += (shortBy > 0.005 ? '　<span class="warn-note">未收 $' + shortBy.toFixed(2) + "</span>" : "") +
       (memberOver > 0.005 ? '<br><span class="warn-note">⚠️ 会员扣款 $' + memberSum.toFixed(2) + " 超过台费 $" + tableCap.toFixed(2) +
         "，多出的 $" + memberOver.toFixed(2) + " 是零食饮料，请改用现金/刷卡/人民币</span>" : "");
+    document.getElementById("sRemain").innerHTML = remainHtml;
   }
 
   // ============================================================
