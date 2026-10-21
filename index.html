@@ -956,6 +956,23 @@
   .banner button { padding: 6px 12px; font-size: 13px; }
   .banner .sp { margin-left: auto; }
 
+  /* ===== 左下角「回到顶部」按钮（v3.11.0） ===== */
+  .to-top {
+    position: fixed; z-index: 60;
+    left: calc(16px + env(safe-area-inset-left, 0px));
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    width: 44px; height: 44px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--line); background: rgba(255, 255, 255, .96);
+    color: var(--green-dark); font-size: 20px; font-weight: 800; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .14);
+    opacity: 0; visibility: hidden; transform: translateY(6px);
+    transition: opacity .18s, transform .18s, visibility .18s;
+    cursor: pointer;
+  }
+  .to-top.show { opacity: 1; visibility: visible; transform: none; }
+  .to-top:active { transform: scale(.94); }
+
   /* ============================================================
      手机适配（v3.10.0）：记录表 → 一行一张卡；头部/标签页更紧凑
      桌面端完全不受影响（只在 ≤640px 生效）
@@ -964,6 +981,8 @@
      横屏时宽度够，用「手机版 + 2 列记录卡」比桌面表格更好看 */
   @media (max-width: 640px),
          (min-width: 641px) and (max-width: 1000px) and (max-height: 500px) {
+    .to-top { left: 12px; bottom: 14px; width: 40px; height: 40px; font-size: 18px; }
+
     /* --- 顶部更紧凑（省出竖直空间） --- */
     header { padding: 14px 16px; gap: 10px; border-radius: 14px; }
     header h1 { font-size: 19px; }
@@ -2448,6 +2467,9 @@
     </div>
   </div>
 
+  <!-- 左下角：回到顶部（往下滚一屏才出现） -->
+  <button type="button" id="toTop" class="to-top" title="回到顶部" aria-label="回到顶部">↑</button>
+
   <!-- 换桌弹窗 -->
   <div class="overlay" id="moveOverlay">
     <div class="modal">
@@ -2905,6 +2927,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.11.0  2026-10-21
+  //    + ⬆️ 左下角「回到顶部」按钮（用户提议）★
+  //      · 固定左下角（右下角已有零食/鸭嘴兽购物车金额浮标，放左边不打架）
+  //      · 往下滚过半屏（>420px）才淡入出现，点一下平滑回顶部（有兜底硬跳）
+  //      · 手机 40px、桌面 44px；避开刘海/home 条（safe-area）
   //  v3.10.9  2026-10-21
   //    + 📱 手机横屏适配（用户反馈：横屏时各种记录显示很乱）
   //      · 横屏（宽 641~1000、高 ≤500）也套用手机版布局：
@@ -3413,7 +3440,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.10.9";
+  var APP_VER = "v3.11.0";
   var APP_DATE = "2026-10-21";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -7163,6 +7190,33 @@ function pullTableStates() {
   //     · 企业微信机器人等  直接 POST（浏览器可能被 CORS 挡 ✗ 但请求已发出 ✓）
   //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
   // ============================================================
+  // ⬆️ 左下角「回到顶部」：往下滚过半屏才出现（桌面/手机都有）
+  (function () {
+    var btn = document.getElementById("toTop");
+    if (!btn) return;
+    function topY() {
+      try {
+        return window.pageYOffset ||
+               (document.documentElement && document.documentElement.scrollTop) ||
+               window.scrollY || 0;
+      } catch (e) { return 0; }
+    }
+    function upd() {
+      if (topY() > 420) btn.classList.add("show"); else btn.classList.remove("show");
+    }
+    window.addEventListener("scroll", upd, { passive: true });
+    btn.addEventListener("click", function () {
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); }
+      catch (e) {}
+      // 平滑动画被某些浏览器/代理吞掉时兜底：700ms 后还没到顶就硬跳
+      setTimeout(function () {
+        if (topY() > 2) { try { window.scrollTo(0, 0); } catch (e) {} }
+        upd();
+      }, 700);
+    });
+    upd();
+  })();
+
   // 🔔 通知按钮：点一下填 webhook 地址 ✗ 填完会发一条测试消息 ✓
   // 🔄 顶部刷新按钮：重新加载页面（带一个时间戳参数，绕过缓存）→ 等于退出重进
   (function () {
