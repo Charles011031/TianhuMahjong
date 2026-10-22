@@ -2531,7 +2531,7 @@
       <div class="error" id="attError" style="display:none;"></div>
       <div class="modal-btns">
         <button id="attSave" class="btn-start">保存</button>
-        <button id="attDelete" class="btn-settle" style="display:none;">删除这条记录</button>
+        <button id="attDelete" class="btn-settle" data-armkey="att-edit-del" style="display:none;">删除这条记录</button>
         <button id="attCancel" class="btn-ghost">取消</button>
       </div>
     </div>
@@ -3253,6 +3253,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.15.3  2026-10-23
+  //    + 所有「删除」统一改成两下确认（第一下亮红提示「再点一次」，第二下才真删）★
+  //      · 新增：店铺待办删除
+  //      · 补上原来一下就没的：充值档位、打卡记录（编辑弹窗里）、预约、挂桌零食「清除」
+  //      · 已有的（结算记录/零食/鸭嘴兽/会员/员工/打卡列表/操作日志/归档）原来就是两下 ✓
   //  v3.15.2  2026-10-23
   //    + 修：勾选完成 / 取消完成 / 删除待办时，面板会被误关掉
   //      （重渲染把被点的节点摘掉了 → 点到 document 时 e.target 已不在文档里，
@@ -3831,7 +3836,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.15.2";
+  var APP_VER = "v3.15.3";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4038,6 +4043,14 @@
       var b = document.getElementById("veDelete");
       if (b) { b.removeAttribute("data-arming"); b.textContent = "删除这条记录"; }
     });
+    armRegister("note-del", function () { renderNotes(); });
+    armRegister("tier-del", function () { renderTiers(); });
+    armRegister("res-del", function () { renderReservations(); });
+    armRegister("extras-clear", function () { render(); });
+    armRegister("att-edit-del", function () {
+      var b = document.getElementById("attDelete");
+      if (b) { b.textContent = "删除这条记录"; b.style.background = ""; b.style.color = ""; }
+    });
   }
 
   // ===== 「再点一次确认」统一管理 =====
@@ -4114,7 +4127,10 @@
           exSum += (Number(t.extras[e2].price) || 0) * (Number(t.extras[e2].qty) || 0);
           exTxt.push(esc(t.extras[e2].name) + "×" + t.extras[e2].qty);
         }
-        html += '  <div class="table-extras">🍜 ' + exTxt.join("、") + ' = $' + exSum.toFixed(2) + '<button class="btn-ghost" data-act="clearextras" data-id="' + i + '">清除</button></div>';
+        html += '  <div class="table-extras">🍜 ' + exTxt.join("、") + ' = $' + exSum.toFixed(2) +
+                '<button class="btn-ghost" data-act="clearextras" data-id="' + i + '" data-armkey="extras-clear"' +
+                (armGet("extras-clear") === String(i) ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+                (armGet("extras-clear") === String(i) ? "再点一次" : "清除") + "</button></div>";
       }
       html += '  <div class="note"><label>备注</label><input type="text" placeholder="备注…" data-field="note" data-id="' + i + '" value="' + esc(t.note) + '"></div>';
       html += '  <div class="btns">';
@@ -4436,6 +4452,12 @@
         save(); render();
       }
     } else if (act === "clearextras") {
+      if (armGet("extras-clear") !== String(id)) {               // 第一下：亮红提示
+        armSet("extras-clear", String(id));
+        render();
+        return;
+      }
+      armSet("extras-clear", null);                              // 第二下：真的清
       for (var ce = 0; ce < (t.extras || []).length; ce++) {     // 撤掉零食 → 库存加回
         for (var ck = 0; ck < state.snackMenu.length; ck++) {
           if (state.snackMenu[ck].name === t.extras[ce].name) {
@@ -7739,7 +7761,9 @@ function pullTableStates() {
           '<div class="note-meta">' + esc(n.by || "—") + " · " + noteTimeTxt(n.at) +
             (n.done ? "　✓ 已完成" + (n.doneAt ? " " + noteTimeTxt(n.doneAt) : "") : "") + '</div>' +
         '</div>' +
-        '<button type="button" class="btn-ghost sm note-del" data-note-del="' + esc(n.id) + '">删</button>' +
+        '<button type="button" class="btn-ghost sm note-del" data-note-del="' + esc(n.id) + '" data-armkey="note-del"' +
+          (armGet("note-del") === n.id ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+          (armGet("note-del") === n.id ? "再点一次" : "删") + "</button>" +
       '</div>';
     }
     wrap.innerHTML = h;
@@ -7793,6 +7817,12 @@ function pullTableStates() {
       if (db) {
         var n2 = noteById(db.getAttribute("data-note-del"));
         if (n2) {
+          if (armGet("note-del") !== n2.id) {       // 第一下：只亮红提示
+            armSet("note-del", n2.id);
+            renderNotes();
+            return;
+          }
+          armSet("note-del", null);                 // 第二下：真的删
           n2.del = true;
           n2.up = Date.now();
           save();
@@ -11896,7 +11926,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
           '" data-tier="bonus" data-id="' + t.id + '" style="width:120px;color:#b45309;"></span>' +
         '<span style="text-align:center;font-size:15px;font-weight:700;color:var(--green-dark);font-variant-numeric:tabular-nums;" ' +
           'data-tier-sum="' + t.id + '">$' + round2(pay + bonus).toFixed(2) + "</span>" +
-        '<button class="mini-del" data-tier="del" data-id="' + t.id + '" title="删除这个档位">✕</button>' +
+        '<button class="mini-del" data-tier="del" data-id="' + t.id + '" data-armkey="tier-del" title="删除这个档位"' +
+          (armGet("tier-del") === t.id ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+          (armGet("tier-del") === t.id ? "再点" : "✕") + "</button>" +
         "</div>";
     }
     wrap.innerHTML = h;
@@ -11924,6 +11956,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var btn = e.target.closest('button[data-tier="del"]');
     if (!btn) return;
     var id = btn.getAttribute("data-id");
+    if (armGet("tier-del") !== id) {                 // 第一下：亮红提示
+      armSet("tier-del", id);
+      renderTiers();
+      return;
+    }
+    armSet("tier-del", null);                        // 第二下：真的删
     state.rechargeTiers = state.rechargeTiers.filter(function (x) { return x.id !== id; });
     save(); renderTiers();
   });
@@ -13089,6 +13127,13 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   });
   document.getElementById("attDelete").addEventListener("click", function () {
     if (!attEditId) return;
+    var b = document.getElementById("attDelete");
+    if (armGet("att-edit-del") !== attEditId) {       // 第一下：亮红提示
+      armSet("att-edit-del", attEditId);
+      if (b) { b.textContent = "再点一次确认删除"; b.style.background = "#fee2e2"; b.style.color = "#b91c1c"; }
+      return;
+    }
+    armSet("att-edit-del", null);                     // 第二下：真的删
     state.attendance = state.attendance.filter(function (x) { return x.id !== attEditId; });
     save(); renderAttendance(); closeAttModal();
   });
@@ -13198,7 +13243,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         badge +
         '<button class="btn-ghost sm" data-res="arrived" data-id="' + r.id + '">到店</button>' +
         '<button class="btn-ghost sm" data-res="cancel" data-id="' + r.id + '">取消</button>' +
-        '<button class="btn-ghost sm" data-res="del" data-id="' + r.id + '">删除</button>' +
+        '<button class="btn-ghost sm" data-res="del" data-id="' + r.id + '" data-armkey="res-del"' +
+          (armGet("res-del") === r.id ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+          (armGet("res-del") === r.id ? "再点一次" : "删除") + "</button>" +
         '</div>';
     }
     wrap.innerHTML = html;
@@ -13234,6 +13281,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var act = btn.getAttribute("data-res");
     var id = btn.getAttribute("data-id");
     if (act === "del") {
+      if (armGet("res-del") !== id) {                 // 第一下：亮红提示
+        armSet("res-del", id);
+        renderReservations();
+        return;
+      }
+      armSet("res-del", null);                        // 第二下：真的删
       state.reservations = state.reservations.filter(function (r) { return r.id !== id; });
     } else {
       for (var i = 0; i < state.reservations.length; i++) {
