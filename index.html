@@ -999,6 +999,37 @@
   #nightPop { width: 300px; }
   #nightPop .fp-opts button { font-size: 13px; padding: 11px 4px; white-space: nowrap; }
 
+  /* ===== 店铺待办（v3.15.0） ===== */
+  .note-pop { width: 340px; }
+  .note-pop .note-sub { font-weight: 600; font-size: 11px; color: var(--muted); margin-left: 6px; }
+  .note-add { display: flex; gap: 6px; margin-top: 8px; }
+  .note-add input {
+    flex: 1; min-width: 0; padding: 9px 10px; border: 1px solid var(--line);
+    border-radius: 9px; font-size: 14px;
+  }
+  .note-list { margin-top: 8px; max-height: 38vh; overflow: auto; }
+  .note-item { display: flex; align-items: flex-start; gap: 9px; padding: 9px 0; border-top: 1px dashed var(--line); }
+  .note-item input[type=checkbox] { margin-top: 3px; width: 18px; height: 18px; flex: 0 0 auto; cursor: pointer; }
+  .note-main { flex: 1; min-width: 0; }
+  .note-text { font-size: 14px; line-height: 1.35; word-break: break-word; }
+  .note-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .note-item.done .note-text { text-decoration: line-through; color: var(--muted); }
+  .note-del { padding: 4px 8px !important; font-size: 12px !important; }
+  .note-who { margin-top: 8px; }
+  .note-who input {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px;
+  }
+  .head-actions .icon-btn { position: relative; }
+  .icon-btn .note-badge {
+    position: absolute; top: -6px; right: -6px; min-width: 17px; height: 17px; padding: 0 4px;
+    border-radius: 9px; background: #e53e3e; color: #fff; font-size: 10px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+    box-shadow: 0 0 0 2px var(--green-dark);
+  }
+  @media (max-width: 640px) {
+    .note-pop { width: min(340px, calc(100vw - 24px)); }
+  }
+
   /* ===== 夜间模式配色（v3.14.0） ===== */
   body.dark {
     --bg: #0d141b; --card: #17222c; --ink: #e8eef4; --muted: #93a3b3; --line: #2a3846;
@@ -1608,6 +1639,7 @@
         <div class="sub">6 张桌台 · 独立计时 · 统一价格（澳币 AUD）· 手续费可调 · 支持人民币结算</div>
       </div>
       <div class="head-actions">
+        <button type="button" class="icon-btn" id="noteBtn" title="店铺待办（补餐巾纸 / 垃圾袋…）">📌<span class="note-badge" id="noteBadge" hidden>0</span></button>
         <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）">📊</button>
         <button type="button" class="icon-btn" id="nightBtn" title="夜间模式（跟随时间 / 开 / 关）">🌙</button>
         <button type="button" class="icon-btn" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）">Aa</button>
@@ -2722,6 +2754,20 @@
     <div class="fp-hint">调完自动保存在这台设备</div>
   </div>
 
+  <!-- 店铺待办面板 -->
+  <div class="font-pop note-pop" id="notePop">
+    <div class="fp-title">📌 店铺待办 <span class="note-sub" id="noteCount"></span></div>
+    <div class="note-add">
+      <input type="text" id="noteInput" maxlength="80" placeholder="要提醒什么？如：补餐巾纸 / 垃圾袋没了">
+      <button type="button" class="btn-start sm" id="noteAddBtn">添加</button>
+    </div>
+    <div class="note-list" id="noteList"></div>
+    <div class="note-who">
+      <input type="text" id="noteWho" maxlength="12" placeholder="我的名字（可选，方便别人知道是谁要的）">
+    </div>
+    <div class="fp-hint">打勾就完成 · 完成/删除的记录自动保留 7 天 · 多台设备同步</div>
+  </div>
+
   <!-- 夜间模式面板 -->
   <div class="font-pop" id="nightPop">
     <div class="fp-title">夜间模式</div>
@@ -2792,6 +2838,7 @@
       // ★ 汇率对照记录：每天一条 ✓
       //   { d:"2026-10-20", at:"17:33", market:4.6662, markup:0.33, auto:4.6816, manual:4.6814 }
       fxLog: [],
+      staffNotes: [],              // 📌 店铺待办（v3.15.0）
       tables: tables, history: [],
       snackMenu: [], snackCart: [], snackHistory: [],
       vapes: [], vapeCart: [], vapeHistory: [],
@@ -2836,6 +2883,7 @@
     if (typeof s.fbPath !== "string") s.fbPath = "";
     if (s.fbSeeded === undefined) s.fbSeeded = false;
     if (!Array.isArray(s.history)) s.history = [];
+    if (!Array.isArray(s.staffNotes)) s.staffNotes = [];
     if (!Array.isArray(s.snackMenu)) s.snackMenu = [];
     for (var smi = 0; smi < s.snackMenu.length; smi++) {
       if (typeof s.snackMenu[smi].stock !== "number") s.snackMenu[smi].stock = 0;
@@ -3204,6 +3252,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.15.0  2026-10-23
+  //    + 📌 店铺待办（用户要求：补餐巾纸 / 垃圾袋没了 / 塑料瓶要带走…）★★
+  //      · 顶栏 📌 图标 + 红色未完成角标；点开可添加 / 打勾完成 / 删除
+  //      · 每条记：内容 / 谁加的 / 时间；「我的名字」记在本机
+  //      · 跟设置一起多设备同步；同一条按 id 合并（避免被别的设备冲掉 / 复活）
+  //      · 完成/删除的记录保留 7 天后自动清掉
   //  v3.14.6  2026-10-21
   //    + 结算弹窗：整单走【人民币】时，大字显示人民币 ¥，小字显示 ≈ 澳币 $
   //      （用户要求：点人民币就希望第一眼看到的是人民币金额）
@@ -3769,8 +3823,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.14.6";
-  var APP_DATE = "2026-10-21";
+  var APP_VER = "v3.15.0";
+  var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
@@ -7101,6 +7155,13 @@ function inventoryPayloads() {
                    value: JSON.stringify(state.fxLog) });
       }
     } catch (e) {}
+    // ★ 店铺待办（v3.15.0）：跟设置一起同步（一条都没有时不传，免得冲掉云端）
+    try {
+      if ((state.staffNotes || []).length) {
+        out.push({ id: "set_staffnotes", key: "店铺待办",
+                   value: JSON.stringify(state.staffNotes || []) });
+      }
+    } catch (e) {}
     // 电子烟阶梯价 + 员工价
     var g1 = state.vapePrice.g1 || {}, g2 = state.vapePrice.g2 || {};
     out.push({ id: "set_vp1r", key: "一代零售价", value: String(g1.retail || 0) });
@@ -7335,6 +7396,15 @@ function verifyConfigPush(done) {
       try {
         var fl = JSON.parse(byLabel["汇率对照记录"]);
         if (Array.isArray(fl)) state.fxLog = mergeFxLog(state.fxLog || [], fl);   // ★ 合并，不覆盖
+      } catch (e) {}
+    }
+    if (byLabel["店铺待办"]) {
+      try {
+        var sn2 = JSON.parse(byLabel["店铺待办"]);
+        if (Array.isArray(sn2)) {
+          state.staffNotes = noteMerge(state.staffNotes || [], sn2);   // ★ 按 id 合并（带墓碑）
+          try { renderNotes(); } catch (e3) {}
+        }
       } catch (e) {}
     }
     state.vapePrice.g1.retail = num("一代零售价", state.vapePrice.g1.retail);
@@ -7575,6 +7645,164 @@ function pullTableStates() {
   //     · 企业微信机器人等  直接 POST（浏览器可能被 CORS 挡 ✗ 但请求已发出 ✓）
   //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
   // ============================================================
+  // 📌 店铺待办（v3.15.0）：补餐巾纸 / 垃圾袋没了… 这类口头提醒
+  //   · 存 state.staffNotes，跟设置一起同步（多设备共享）
+  //   · 同一条按 id 合并（up 大的赢），删除用 del 墓碑，避免被别的设备复活
+  //   · 完成/删除的自动保留 7 天再清掉
+  var NOTE_WHO_KEY = "mahjong_note_who";
+  var NOTE_KEEP_MS = 7 * 24 * 3600 * 1000;
+  function staffNotes() {
+    if (!Array.isArray(state.staffNotes)) state.staffNotes = [];
+    return state.staffNotes;
+  }
+  function notePrune() {
+    var list = staffNotes(), out = [], now = Date.now();
+    for (var i = 0; i < list.length; i++) {
+      var n = list[i];
+      if (!n || !n.id) continue;
+      var ts = Number(n.up) || Number(n.at) || 0;
+      if ((n.del || n.done) && now - ts > NOTE_KEEP_MS) continue;
+      out.push(n);
+    }
+    if (out.length !== list.length) state.staffNotes = out;
+  }
+  function noteMerge(local, cloud) {
+    var by = {}, out = [];
+    function add(n) {
+      if (!n || !n.id) return;
+      var cur = by[n.id];
+      if (!cur) { by[n.id] = n; out.push(n); return; }
+      if ((Number(n.up) || 0) > (Number(cur.up) || 0)) {
+        var i = out.indexOf(cur);
+        if (i >= 0) out[i] = n;
+        by[n.id] = n;
+      }
+    }
+    for (var i = 0; i < (local || []).length; i++) add(local[i]);
+    for (var j = 0; j < (cloud || []).length; j++) add(cloud[j]);
+    return out;
+  }
+  function noteTimeTxt(ts) {
+    if (!ts) return "";
+    var d = new Date(Number(ts));
+    if (isNaN(d.getTime())) return "";
+    var today = fmtDate(Date.now()) === fmtDate(Number(ts));
+    return (today ? "" : fmtDate(Number(ts)).slice(5) + " ") +
+      ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+  }
+  function noteWhoGet() {
+    try { return String(localStorage.getItem(NOTE_WHO_KEY) || "").trim(); } catch (e) { return ""; }
+  }
+  function noteById(id) {
+    var list = staffNotes();
+    for (var i = 0; i < list.length; i++) if (list[i] && list[i].id === id) return list[i];
+    return null;
+  }
+  function renderNotes() {
+    notePrune();
+    var list = staffNotes().filter(function (n) { return !n.del; });
+    list.sort(function (a, b) {
+      var ad = a.done ? 1 : 0, bd = b.done ? 1 : 0;
+      if (ad !== bd) return ad - bd;
+      return (Number(b.at) || 0) - (Number(a.at) || 0);
+    });
+    var open = 0;
+    for (var i = 0; i < list.length; i++) if (!list[i].done) open++;
+    var badge = document.getElementById("noteBadge");
+    if (badge) {
+      badge.hidden = !open;
+      badge.textContent = open > 99 ? "99+" : String(open);
+    }
+    var cnt = document.getElementById("noteCount");
+    if (cnt) cnt.textContent = open ? ("未完成 " + open + " 条") : (list.length ? "都做完了 ✓" : "");
+    var wrap = document.getElementById("noteList");
+    if (!wrap) return;
+    if (!list.length) {
+      wrap.innerHTML = '<div class="empty-mini" style="margin:10px 0;">还没有待办 — 上面输入一条，比如「补餐巾纸」</div>';
+      return;
+    }
+    var h = "";
+    for (var k = 0; k < list.length; k++) {
+      var n = list[k];
+      h += '<div class="note-item' + (n.done ? " done" : "") + '">' +
+        '<input type="checkbox" data-note-done="' + esc(n.id) + '"' + (n.done ? " checked" : "") + '>' +
+        '<div class="note-main">' +
+          '<div class="note-text">' + esc(n.text || "") + '</div>' +
+          '<div class="note-meta">' + esc(n.by || "—") + " · " + noteTimeTxt(n.at) +
+            (n.done ? "　✓ 已完成" + (n.doneAt ? " " + noteTimeTxt(n.doneAt) : "") : "") + '</div>' +
+        '</div>' +
+        '<button type="button" class="btn-ghost sm note-del" data-note-del="' + esc(n.id) + '">删</button>' +
+      '</div>';
+    }
+    wrap.innerHTML = h;
+  }
+  function noteAdd() {
+    var inp = document.getElementById("noteInput");
+    if (!inp) return;
+    var text = String(inp.value || "").trim();
+    if (!text) { try { toast("先写点要提醒的内容", "#b45309"); } catch (e) {} inp.focus(); return; }
+    var now = Date.now();
+    staffNotes().push({ id: genId(), text: text, by: noteWhoGet() || "—", at: now, done: false, up: now });
+    inp.value = "";
+    save();
+    renderNotes();
+    try { toast("已添加待办 ✓", "var(--green-dark)"); } catch (e) {}
+  }
+  (function () {
+    var btn = document.getElementById("noteBtn");
+    var pop = document.getElementById("notePop");
+    if (!btn || !pop) return;
+    var addBtn = document.getElementById("noteAddBtn");
+    var inp = document.getElementById("noteInput");
+    var who = document.getElementById("noteWho");
+    try { if (who) who.value = noteWhoGet(); } catch (e) {}
+    btn.addEventListener("click", function (e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      pop.classList.toggle("show");
+      renderNotes();
+    });
+    if (addBtn) addBtn.addEventListener("click", noteAdd);
+    if (inp) inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); noteAdd(); }
+    });
+    if (who) who.addEventListener("input", function () {
+      try { localStorage.setItem(NOTE_WHO_KEY, String(who.value || "").trim()); } catch (e) {}
+    });
+    pop.addEventListener("click", function (e) {
+      var cb = e.target.closest ? e.target.closest("input[data-note-done]") : null;
+      if (cb) {
+        var n1 = noteById(cb.getAttribute("data-note-done"));
+        if (n1) {
+          n1.done = !!cb.checked;
+          n1.doneAt = n1.done ? Date.now() : 0;
+          n1.up = Date.now();
+          save();
+          renderNotes();
+        }
+        return;
+      }
+      var db = e.target.closest ? e.target.closest("button[data-note-del]") : null;
+      if (db) {
+        var n2 = noteById(db.getAttribute("data-note-del"));
+        if (n2) {
+          n2.del = true;
+          n2.up = Date.now();
+          save();
+          renderNotes();
+        }
+      }
+    });
+    document.addEventListener("click", function (e) {
+      if (!pop.classList.contains("show")) return;
+      if (pop.contains(e.target) || btn.contains(e.target)) return;
+      pop.classList.remove("show");
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && pop.classList.contains("show")) pop.classList.remove("show");
+    });
+    renderNotes();
+  })();
+
   // 🌙 夜间模式（v3.14.0）：跟随时间（19:00–07:00）/ 开 / 关，存本机
   var UI_NIGHT_KEY = "mahjong_ui_night";
   var uiNightMode = (function () {
@@ -14100,6 +14328,7 @@ document.addEventListener("mousedown", function (e) {
   renderReservations();
   renderWages();
   renderStats();
+  renderNotes();
   switchTab(state.currentTab || "tables");   // 刷新后回到上次停留的页签
   if (fxNeedsRefresh()) fetchFxRate(); else updateFxInput();
   setInterval(fxAutoTick, 10 * 60 * 1000);
