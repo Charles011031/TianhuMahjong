@@ -1020,6 +1020,7 @@
     width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px;
   }
   .head-actions .icon-btn { position: relative; }
+  .icon-btn .note-badge[hidden] { display: none !important; }
   .icon-btn .note-badge {
     position: absolute; top: -6px; right: -6px; min-width: 17px; height: 17px; padding: 0 4px;
     border-radius: 9px; background: #e53e3e; color: #fff; font-size: 10px; font-weight: 800;
@@ -3252,6 +3253,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.15.1  2026-10-23
+  //    + 修：店铺待办没有未完成事项时，右上角还是显示「0」——
+  //      [hidden] 被 .note-badge 的 display:flex 覆盖了，补一条 [hidden]{display:none}
   //  v3.15.0  2026-10-23
   //    + 📌 店铺待办（用户要求：补餐巾纸 / 垃圾袋没了 / 塑料瓶要带走…）★★
   //      · 顶栏 📌 图标 + 红色未完成角标；点开可添加 / 打勾完成 / 删除
@@ -3823,7 +3827,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.15.0";
+  var APP_VER = "v3.15.1";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
