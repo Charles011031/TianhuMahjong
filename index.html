@@ -1710,12 +1710,7 @@
     .rb-total-box .amt { font-size: 24px; }
     .rb-total-box.rmb .amt { font-size: 30px; }
   }
-  @media print {
-    body > *:not(#rmbBillOverlay) { display: none !important; }
-    #rmbBillOverlay { position: static !important; inset: auto !important; background: #fff !important; display: block !important; }
-    #rmbBillOverlay .modal { box-shadow: none !important; border: 0 !important; }
-    .rb-actions { display: none !important; }
-  }
+
 </style>
 </head>
 <body>
@@ -3934,7 +3929,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.17.0";
+  var APP_VER = "v3.17.1";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -15193,16 +15188,15 @@ document.addEventListener("mousedown", function (e) {
     document.getElementById("rmbBillOverlay").classList.add("show");
   }
   function closeRmbBill() { document.getElementById("rmbBillOverlay").classList.remove("show"); }
-  (function () {
+  // 账单弹窗在脚本之后才插入 DOM，所以用事件委托绑定（否则关闭按钮绑不上）
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    if (t.closest("#rmbBillClose")) { closeRmbBill(); return; }
+    if (t.closest("#sRmbBillBtn")) { if (settleData) openRmbBill(settleData.id); return; }
     var ov = document.getElementById("rmbBillOverlay");
-    var cl = document.getElementById("rmbBillClose");
-    var pr = document.getElementById("rmbBillPrint");
-    if (cl) cl.onclick = closeRmbBill;
-    if (pr) pr.onclick = function () { try { window.print(); } catch (e) {} };
-    if (ov) ov.addEventListener("click", function (e) { if (e.target === ov) closeRmbBill(); });
-    var sBtn = document.getElementById("sRmbBillBtn");
-    if (sBtn) sBtn.onclick = function () { if (settleData) openRmbBill(settleData.id); };
-  })();
+    if (ov && t === ov) closeRmbBill();
+  });
 
   render();
   renderSnacks();
@@ -16472,7 +16466,6 @@ try { fbMaybeMigrateTableStates(); } catch (x) {}
   <div class="modal rmb-bill-modal">
     <div id="rmbBillBody"></div>
     <div class="rb-actions">
-      <button type="button" class="btn-ghost" id="rmbBillPrint">🖨 打印</button>
       <button type="button" class="btn-settle" id="rmbBillClose">关闭</button>
     </div>
   </div>
