@@ -1680,9 +1680,46 @@
   #splitPanel .sp-feehint { font-size: 11.5px; color: #92400e; margin-top: 3px; }
   #splitPanel #sMoreBtn { margin-top: 8px; }
   #splitPanel #sMoreWrap { margin-top: 8px; }
+
+  /* ===== 人民币账单（只读展示） ===== */
+  #rmbBillOverlay { z-index: 90; }
+  .rmb-bill-modal { width: min(94vw, 760px); max-height: 94vh; overflow: auto; background: #fff; color: #1f2933; text-align: left; padding: 22px 24px; }
+  .rb-store { font-size: 20px; font-weight: 800; color: #145a3a; }
+  .rb-sub { font-size: 13px; color: #6b7280; margin-top: 3px; }
+  .rb-meta { font-size: 13px; color: #374151; margin-top: 10px; line-height: 1.7; }
+  .rb-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13.5px; }
+  .rb-table th { text-align: left; color: #6b7280; font-weight: 700; font-size: 12px; padding: 6px 6px; border-bottom: 1px solid #e5e7eb; }
+  .rb-table td { padding: 8px 6px; border-bottom: 1px dashed #e5e7eb; vertical-align: top; }
+  .rb-table td.num, .rb-table th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rb-table td.name { font-weight: 700; }
+  .rb-table .unit { color: #6b7280; font-size: 11.5px; display: block; margin-top: 2px; }
+  .rb-table tfoot td { border-bottom: 0; border-top: 2px solid #145a3a; font-weight: 800; font-size: 15px; padding-top: 10px; }
+  .rb-rate { margin-top: 12px; font-size: 12px; color: #6b7280; line-height: 1.6; }
+  .rb-totals { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #d1d5db; }
+  .rb-total-box { flex: 1 1 220px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px 14px; background: #f8fafc; }
+  .rb-total-box .lab { font-size: 12px; color: #6b7280; }
+  .rb-total-box .amt { font-size: 28px; font-weight: 900; color: #145a3a; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .rb-total-box.rmb { background: #eef7f1; border-color: #9fd6b5; }
+  .rb-total-box.rmb .amt { color: #0f5132; font-size: 34px; }
+  .rb-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .rb-actions button { flex: 1; min-height: 44px; }
+  @media (max-width: 520px) {
+    .rmb-bill-modal { padding: 16px 14px; }
+    .rb-table { font-size: 12px; }
+    .rb-table th, .rb-table td { padding: 6px 4px; }
+    .rb-total-box .amt { font-size: 24px; }
+    .rb-total-box.rmb .amt { font-size: 30px; }
+  }
+  @media print {
+    body > *:not(#rmbBillOverlay) { display: none !important; }
+    #rmbBillOverlay { position: static !important; inset: auto !important; background: #fff !important; display: block !important; }
+    #rmbBillOverlay .modal { box-shadow: none !important; border: 0 !important; }
+    .rb-actions { display: none !important; }
+  }
 </style>
 </head>
 <body>
+
 
   <div id="errBar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.25);"></div>
   <header>
@@ -2151,6 +2188,7 @@
     <div class="modal">
       <h3 id="sTitle">结算</h3>
       <div class="rows" id="sInfo"></div>
+      <button type="button" class="btn-ghost sm" id="sRmbBillBtn" style="margin-top:6px;">📄 看人民币账单</button>
       <div class="divider"></div>
       <div class="field">
         <label>怎么收？</label>
@@ -3896,7 +3934,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.16.0";
+  var APP_VER = "v3.17.0";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4222,6 +4260,9 @@
         }
         html += '<button class="btn-ghost" data-act="reset" data-id="' + i + '">清零</button>';
       }
+      if (t.status !== "idle") {
+        html += '<button class="btn-ghost" data-act="bill" data-id="' + i + '">📄 看账单</button>';
+      }
       html += '  </div>';
       html += '  <button class="btn-manual" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
       // ★ v3.5.5：桌台卡片上的「上次结果」整块删掉了 ★（用户要求）
@@ -4498,6 +4539,8 @@
       document.getElementById("sInfo").innerHTML =
         "上次未付：<b style='color:#b45309;'>$" + cc.toFixed(2) + "</b><br>" +
         "<span style='color:var(--muted);font-size:13px;'>收多少填多少；没收齐的会继续记在桌上，下次还能再补收 ✓</span>";
+    } else if (act === "bill") {
+      openRmbBill(id);
     } else if (act === "settle2") {
       openSettleModal(id, t.sessionStart || (t.endedAt - 60000), t.endedAt || Date.now());
     } else if (act === "unend") {
@@ -15077,6 +15120,90 @@ document.addEventListener("mousedown", function (e) {
   resetCfgSyncBaseline();
   // 查看设备：一打开就先把主机的桌台状态拉一次（不用等第一轮定时轮询）
 
+  // ============================================================
+  //  🧾 人民币账单（只看，不发送）
+  //  每一行同时显示澳币和人民币；零食按「单价 × 数量」两栏都乘
+  // ============================================================
+  function rmbBillInfo(id) {
+    var t = state.tables[id];
+    if (!t) return null;
+    var now = Date.now();
+    var ms = 0, startTs = t.sessionStart, endTs = t.endedAt;
+    if (t.status === "paused") { ms = Number(t.elapsedAtPause) || 0; endTs = null; }
+    else if (t.status === "ended") { ms = Math.max(0, (t.endedAt || now) - (t.sessionStart || t.endedAt || now)); }
+    else { ms = t.sessionStart ? Math.max(0, now - t.sessionStart) : 0; endTs = null; }
+    var fee = tableFeeOf(ms), fx = Number(state.fxRate) || 0;
+    var lines = [], totalAud = 0, totalRmb = 0;
+    // 台费
+    lines.push({
+      name: "台费", qty: (ms / 3600000).toFixed(1) + " 小时",
+      audTxt: fmtMoney(fee), rmbTxt: fx > 0 ? "¥" + round2(fee * fx).toFixed(2) : "—",
+      aud: fee, rmb: fx > 0 ? round2(fee * fx) : 0
+    });
+    totalAud = round2(fee); totalRmb = fx > 0 ? round2(fee * fx) : 0;
+    // 零食：单价 × 数量，两栏都按数量乘
+    (t.extras || []).forEach(function (ex) {
+      var qty = Number(ex.qty) || 0;
+      if (qty <= 0) return;
+      var price = Number(ex.price) || 0;
+      var audLine = round2(price * qty);
+      var rmbUnit = fx > 0 ? round2(price * fx) : 0;
+      var rmbLine = fx > 0 ? round2(rmbUnit * qty) : 0;
+      lines.push({
+        name: ex.name, qty: String(qty),
+        audTxt: fmtMoney(price) + " × " + qty + " = " + fmtMoney(audLine),
+        rmbTxt: fx > 0 ? ("¥" + rmbUnit.toFixed(2) + " × " + qty + " = ¥" + rmbLine.toFixed(2)) : "—",
+        aud: audLine, rmb: rmbLine
+      });
+      totalAud = round2(totalAud + audLine);
+      totalRmb = round2(totalRmb + rmbLine);
+    });
+    return { t: t, ms: ms, startTs: startTs, endTs: endTs, fee: fee, fx: fx, lines: lines, totalAud: totalAud, totalRmb: totalRmb };
+  }
+  function openRmbBill(id) {
+    var info = rmbBillInfo(id);
+    if (!info) return;
+    var t = info.t, now = Date.now();
+    var h = '<div class="rb-store">🀄 天胡麻将馆</div>' +
+      '<div class="rb-sub">人民币账单 · 供员工查看 / 截图</div>' +
+      '<div class="rb-meta"><b>' + esc(t.name || (id + " 号桌")) + '</b>　' +
+      (t.status === "running" ? "进行中（预估）" : t.status === "paused" ? "已暂停" : "已结束") +
+      (info.startTs ? '　' + esc(fmtHM(info.startTs)) + ' – ' + (info.endTs ? esc(fmtHM(info.endTs)) : "进行中") : "") +
+      '　·　' + (info.ms / 3600000).toFixed(1) + ' 小时' +
+      (t.note ? '<br>备注：' + esc(t.note) : '') + '</div>' +
+      '<table class="rb-table"><thead><tr><th>项目</th><th class="num">数量</th><th class="num">澳币</th><th class="num">人民币</th></tr></thead><tbody>';
+    info.lines.forEach(function (ln) {
+      h += '<tr><td class="name">' + esc(ln.name) + '</td>' +
+        '<td class="num">' + esc(ln.qty) + '</td>' +
+        '<td class="num">' + esc(ln.audTxt) + '</td>' +
+        '<td class="num">' + esc(ln.rmbTxt) + '</td></tr>';
+    });
+    h += '</tbody><tfoot><tr><td>合计</td><td class="num"></td>' +
+      '<td class="num">' + fmtMoney(info.totalAud) + '</td>' +
+      '<td class="num">' + (info.fx > 0 ? "¥" + info.totalRmb.toFixed(2) : "—") + '</td></tr></tfoot></table>' +
+      '<div class="rb-rate">汇率：1 澳币 = ' + (info.fx || "—") + ' 人民币' +
+      (Number(state.fxMarkup) ? '（含加点 ' + state.fxMarkup + '%）' : '') +
+      '　·　人民币按单价四舍五入后 × 数量，合计为各项相加<br>报价时间：' + new Date().toLocaleString("zh-CN") +
+      '　·　本单仅为查看/截图，不发送、不收款</div>' +
+      '<div class="rb-totals">' +
+      '<div class="rb-total-box"><div class="lab">合计（澳币）</div><div class="amt">A$' + info.totalAud.toFixed(2) + '</div></div>' +
+      '<div class="rb-total-box rmb"><div class="lab">应付人民币</div><div class="amt">¥' + (info.fx > 0 ? info.totalRmb.toFixed(2) : "—") + '</div></div>' +
+      '</div>';
+    document.getElementById("rmbBillBody").innerHTML = h;
+    document.getElementById("rmbBillOverlay").classList.add("show");
+  }
+  function closeRmbBill() { document.getElementById("rmbBillOverlay").classList.remove("show"); }
+  (function () {
+    var ov = document.getElementById("rmbBillOverlay");
+    var cl = document.getElementById("rmbBillClose");
+    var pr = document.getElementById("rmbBillPrint");
+    if (cl) cl.onclick = closeRmbBill;
+    if (pr) pr.onclick = function () { try { window.print(); } catch (e) {} };
+    if (ov) ov.addEventListener("click", function (e) { if (e.target === ov) closeRmbBill(); });
+    var sBtn = document.getElementById("sRmbBillBtn");
+    if (sBtn) sBtn.onclick = function () { if (settleData) openRmbBill(settleData.id); };
+  })();
+
   render();
   renderSnacks();
   renderMembers();
@@ -16341,6 +16468,15 @@ try { fbMaybeMigrateTableStates(); } catch (x) {}
   }
 })();
 </script>
+<div class="overlay" id="rmbBillOverlay">
+  <div class="modal rmb-bill-modal">
+    <div id="rmbBillBody"></div>
+    <div class="rb-actions">
+      <button type="button" class="btn-ghost" id="rmbBillPrint">🖨 打印</button>
+      <button type="button" class="btn-settle" id="rmbBillClose">关闭</button>
+    </div>
+  </div>
+</div>
 <!-- PWA：把网页装成手机 App（只在 https 下注册成功） -->
 <script>
 (function(){ if(!('serviceWorker' in navigator)) return;
