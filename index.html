@@ -1629,9 +1629,61 @@
     .rate-box .cur { display: none; }
   }
 
+
+  /* ===== 结算 UI 改版：点号位分配 + 台费归属 ===== */
+  #splitPanel .sp-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  #splitPanel .sp-head label { font-size:14px; }
+  #splitPanel .sp-head input[type=number] { width:64px;padding:4px 8px;border:1px solid var(--line);border-radius:6px; }
+  #splitPanel .sp-head .sp-push { margin-left:auto; }
+  #splitPanel .sp-tip { font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5; }
+  #splitPanel .sp-item, #splitPanel .sp-person { border:1px solid var(--line);border-radius:12px;padding:9px 10px;margin-top:8px;background:var(--card); }
+  #splitPanel .sp-item-head { display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:14px; }
+  #splitPanel .sp-price { color:var(--muted);font-size:12.5px; }
+  #splitPanel .sp-assigned { margin-left:auto;font-size:12px;font-weight:700; }
+  #splitPanel .sp-assigned.ok { color:var(--green-dark); }
+  #splitPanel .sp-assigned.warn { color:#b45309; }
+  #splitPanel .sp-chips { display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center; }
+  #splitPanel .sp-chip { font-family:inherit;cursor:pointer;font-size:13px;font-weight:700;border-radius:999px;padding:9px 12px;min-height:40px;border:1px solid #e3e8e5;background:#fff;color:#6b7280; }
+  #splitPanel .sp-chip.on { border-color:#1d7a4f;background:#e2f4ea;color:#145a3a; }
+  #splitPanel .sp-chip.sp-minus { padding:8px 10px;border-color:#f0c98a;background:#fff7e6;color:#92400e; }
+  #splitPanel .sp-chip.sp-chip-fused { display:inline-flex; align-items:stretch; padding:0; overflow:hidden; }
+  #splitPanel .sp-chip.sp-chip-fused .sp-chip-name { padding:9px 10px 9px 12px; display:inline-flex; align-items:center; }
+  #splitPanel .sp-chip.sp-chip-fused .sp-chip-del { padding:9px 10px; display:inline-flex; align-items:center; border-left:1px solid #cfe8d7; color:#b45309; font-weight:900; }
+  body.dark #splitPanel .sp-chip.sp-chip-fused .sp-chip-del { border-left-color:#374151; color:#fbbf24; }
+  #splitPanel .sp-mini { font-family:inherit;cursor:pointer;font-size:12px;border-radius:999px;padding:6px 10px;border:1px solid var(--line);background:#fff;color:var(--muted); }
+  #splitPanel .sp-person-top { display:flex;align-items:baseline;gap:8px;font-size:15px; }
+  #splitPanel .sp-due { margin-left:auto;color:var(--green-dark); }
+  #splitPanel .sp-line { font-size:12.5px;color:var(--muted);margin-top:3px; }
+  #splitPanel .sp-payline { display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px; }
+  #splitPanel .sp-pay { font-family:inherit;cursor:pointer;font-size:12px;font-weight:700;border-radius:999px;padding:8px 10px;min-height:36px;border:1px solid #e3e8e5;background:#fff;color:#6b7280; }
+  #splitPanel .sp-pay.on { border-color:#1d7a4f;background:#1d7a4f;color:#fff; }
+  #splitPanel .sp-note { font-size:11.5px;color:#b45309;margin-top:3px; }
+  #splitPanel .sp-sum { font-size:13.5px;margin-top:10px; }
+  #splitPanel .sp-sum .ok { color:var(--green-dark);font-weight:700; }
+  #splitPanel .sp-sum .warn { color:#b45309;font-weight:700; }
+  #splitPanel .sp-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center; }
+  #splitPanel .sp-adv { margin-top:8px; }
+  body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person { background:#1f2933; }
+  body.dark #splitPanel .sp-chip, body.dark #splitPanel .sp-pay, body.dark #splitPanel .sp-mini { background:#111827;color:#d1d5db;border-color:#374151; }
+  body.dark #splitPanel .sp-chip.on { background:#145a3a;color:#fff;border-color:#1d7a4f; }
+  body.dark #splitPanel .sp-pay.on { background:#1d7a4f;color:#fff; }
+
+  /* ===== 收款明细用新面板替代：隐藏旧的按笔行 ===== */
+  #sSplitWrap > label, #sParts, #sAddRow, #sSplitBtn, #sSplitToggle, #sShareFee4,
+  #splitClose, #splitApply, #sRef { display: none !important; }
+  #splitPanel { display: block !important; margin-top: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+  #settleOverlay.sp-carry #splitPanel { display: none !important; }
+  #settleOverlay.sp-advanced #sParts, #settleOverlay.sp-advanced #sAddRow { display: block !important; }
+  #settleOverlay.sp-advanced #sSplitWrap > label { display: block !important; }
+  #splitPanel .sp-methodline { margin-top: 5px; }
+  #splitPanel .sp-methodline select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; max-width: 190px; }
+  #splitPanel .sp-feehint { font-size: 11.5px; color: #92400e; margin-top: 3px; }
+  #splitPanel #sMoreBtn { margin-top: 8px; }
+  #splitPanel #sMoreWrap { margin-top: 8px; }
 </style>
 </head>
 <body>
+
   <div id="errBar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.25);"></div>
   <header>
     <div class="head-top">
@@ -2108,7 +2160,7 @@
           <button type="button" class="btn-ghost" data-quickpay="rmb">🇨🇳 人民币</button>
           <button type="button" class="btn-ghost" data-quickpay="member">🎫 会员余额</button>
         </div>
-        <div class="hint" style="margin:6px 0 0;" id="sQuickInfo">点一下 → 整单走这个方式；要分开付就点下面的「分开付」<br>
+        <div class="hint" style="margin:6px 0 0;" id="sQuickInfo">点一下 → 整桌都按这个方式收；要每个人不同方式，直接点下面每张卡的「怎么付」<br>
           <span style="color:#b45309;">注意：会员余额只能抵台费 ✗ 有零食饮料的话，那部分要另付（刷卡/现金/人民币）✓</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;">
           <button type="button" class="btn-ghost sm" id="sSplitToggle">▸ 分开付 / 多人各付各的</button>
@@ -2120,7 +2172,7 @@
           <span style="font-size:13px;font-weight:700;color:#92400e;">⚖️ 罚款</span>
           <input type="number" id="sFine" min="0" step="0.5" value="0"
                  style="width:100px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
-          <span style="font-size:12px;color:var(--muted);">按【台费】算 ✗ 4 人分会一起平摊 ✓　会员余额也能抵 ✓</span>
+          <span style="font-size:12px;color:var(--muted);">按【台费】算，会跟着台费一起平摊 ✓　会员余额也能抵 ✓</span>
         </div>
       </div>
       <div class="field" id="sSplitWrap" style="display:none;">
@@ -2146,21 +2198,28 @@
           </div>
         </div>
         <div id="splitPanel" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#f8fafc;">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <b>按人分账</b>
-            <label style="font-size:14px;">几人：<input type="number" id="splitN" min="1" max="12" value="4" style="width:64px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;"></label>
-            <span class="hint" style="margin:0;">台费按人数平分；每样零食填「谁要了几个」，会校验有没有分完</span>
-            <label style="font-size:13px;display:flex;align-items:center;gap:4px;margin-left:auto;">
-              <input type="checkbox" id="splitMerge" checked> 台费+零食合成一笔收（免得同一人刷两次卡）</label>
-            <button type="button" class="btn-ghost sm" id="splitClose" style="margin-left:auto;">关闭</button>
+          <div id="spSingle"></div>
+          <div id="spSplit" style="display:none;">
+            <div class="sp-head">
+              <b>👥 按人分账</b>
+              <label>几人：<input type="number" id="splitN" min="1" max="12" value="4"></label>
+              <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="splitMerge" checked> 台费+零食合并一笔</label>
+              <button type="button" class="btn-ghost sm sp-push" id="spBackSingle">← 返回整单</button>
+            </div>
+            <div class="sp-tip">点号位 = 给这个人加 1 份零食；「台费谁付」不选就是各付各的（这里只合并台费，零食仍算吃的人）。应收和实收会实时更新。</div>
+            <div id="spSnacks"></div>
+            <div id="spPeople"></div>
+            <div id="spSummary"></div>
+            <div class="sp-adv"><button type="button" class="btn-ghost sm" id="spToggleTable">⌨ 表格填写（旧版）</button></div>
+            <div id="spTable" style="display:none;margin-top:8px;">
+              <div id="splitList"></div>
+              <div id="splitFee"></div>
+              <div id="splitResult"></div>
+            </div>
+            <button type="button" id="splitApply" style="display:none;">填入收款明细</button>
           </div>
-          <div id="splitList" style="margin-top:10px;"></div>
-          <div id="splitFee" style="margin-top:10px;padding:10px 0 2px;border-top:1px dashed var(--line);"></div>
-          <div id="splitResult" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);"></div>
-          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-            <button type="button" class="btn-start sm" id="splitApply">填入收款明细</button>
-            <span class="hint" id="splitMsg" style="margin:0;align-self:center;"></span>
-          </div>
+          <div class="sp-actions" id="spSharedActions"><span class="hint" id="splitMsg" style="margin:0;"></span></div>
+          <div class="sp-adv" id="spSharedAdv"><button type="button" class="btn-ghost sm" id="spToggleParts">💰 高级：按笔改金额</button></div>
         </div>
         <div class="hint" id="sRef" style="margin:8px 0 0;color:var(--ink);"></div>
         <div class="hint" id="sPartsInfo" style="margin:6px 0 0;"></div>
@@ -2990,6 +3049,7 @@
     bar.style.display = "block";
   }
   function save(skipConfigPush) {
+
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
       saveWarned = false;
@@ -3836,7 +3896,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.15.3";
+  var APP_VER = "v3.16.0";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4983,8 +5043,10 @@
     // 每次都从"收起"开始（用户要求界面简洁）。
     // 注意：不能用 sOther 来判断要不要展开 —— 那个值会被"桌上挂的零食"填上，
     // 几乎总是大于 0，结果就永远是展开的（踩过这个坑）。
+    // ★ 结算 UI 改版：不再需要「分开付」开关，收款明细直接用「按人分账」卡片
     var qw = document.getElementById("sSplitWrap"), qt = document.getElementById("sSplitToggle");
-    if (qw && qt) { qw.style.display = "none"; qt.textContent = "▸ 分开付 / 多人各付各的"; }
+    if (qw) qw.style.display = "block";
+    try { spOnSettleOpen(); } catch (e) { try { console.log(e); } catch (x) {} }
     var dw = document.getElementById("sDetailWrap"), dt = document.getElementById("sDetailToggle");
     if (dw && dt) { dw.style.display = "none"; dt.textContent = "▸ 账单明细 / 汇率"; }
     var mw = document.getElementById("sMoreWrap"), mb2 = document.getElementById("sMoreBtn");
@@ -4994,6 +5056,8 @@
 
   function closeSettleModal() {
     settleOverlay.classList.remove("show");
+    settleOverlay.classList.remove("sp-carry");
+    settleOverlay.classList.remove("sp-advanced");
     settleData = null;
     settleParts = [];
   }
@@ -5362,7 +5426,7 @@
 
     document.getElementById("sRef").innerHTML =
       "台费" + (b.fine > 0.005 ? "（含罚款）" : "") + " <b>" + fmtMoney(b.tableAll) +
-      "</b> ÷ 4 人 = <b>$" + b.perShare.toFixed(2) + "/人</b>" +
+      "</b> <span style='color:var(--muted);'>（按「按人分账」里的人数平分）</span>" +
       (b.carry > 0.005 ? "　＋ 上次未付 <b>$" + b.carry.toFixed(2) + "</b>" : "") +
       "　<span style='color:var(--green-dark);'>（会员余额可抵）</span>" +
       (b.other > 0.005 ? "　｜　零食饮料 <b>" + fmtMoney(b.other) + "</b>　<span style='color:#b45309;'>（只能用 现金/刷卡/人民币，会员余额不能抵）</span>" : "");
@@ -5407,7 +5471,7 @@
         }
         qi.innerHTML = '当前：整单走 <b>' + nm0 + '</b>　' + amtTxt0 + ' ✓';
       } else {
-        qi.innerHTML = '当前：分成 <b>' + settleParts.length + ' 笔</b> 收（见下面的收款明细）';
+        qi.innerHTML = '当前：分成 <b>' + settleParts.length + ' 笔</b> 收（见下面每人的方式）';
       }
     }
     // ★ 整单走人民币时：大字显示【人民币】，小字显示澳币（用户要求）
@@ -5625,9 +5689,9 @@
       var pt2 = settleParts[mci2];
       if (pt2.payType === "member" && !pt2.memberId) {
         document.getElementById("sPartsInfo").innerHTML =
-          '<span class="warn-note">⚠️ 第 ' + (mci2 + 1) + " 笔选了「会员扣款」✗ 但没选是哪个会员</span>" +
+          '<span class="warn-note">⚠️ 有一笔会员扣款还没选会员</span>' +
           '<div style="font-size:13px;color:var(--muted);margin-top:4px;">' +
-          "请在那一行的下拉框里选一下会员 ✓ 否则余额不会真的扣减 ✓</div>";
+          "请在每人卡片里选一下会员 ✓ 否则余额不会真的扣减 ✓</div>";
         try { document.getElementById("sPartsInfo").scrollIntoView({ block: "nearest" }); } catch (e) {}
         return;
       }
@@ -5884,6 +5948,636 @@
             : '　<span style="color:var(--green-dark);">✓ 全分完了</span>') + '</div>';
     document.getElementById("splitResult").innerHTML = rh;
   }
+
+  // ============================================================
+  //  👥 结算 UI 改版：点号位分配零食 + 每人「台费谁付」
+  //  数据仍然写在老的 splitQty / splitFeePayer 里，
+  //  点「填入收款明细」仍走原来的 splitApply → 老账本/统计/记录格式完全不变。
+  // ============================================================
+  function spAssignedQty(i) {
+    var m = splitQty[i] || {}, sum = 0;
+    for (var k in m) if (m.hasOwnProperty(k)) sum += Number(m[k]) || 0;
+    return sum;
+  }
+  function spCalcSplit() {
+    var n = splitCurrentN(), items = splitItems();
+    // 台费合计用 settleBill().tableAll：含罚款/合并桌，保证卡片合计 = 本次应收；
+    // 零食仍按桌上的 extras 逐项分配（老算法没变）
+    var fee = settleBill().tableAll;
+    var cents = Math.round(fee * 100), fbase = Math.floor(cents / n), frem = cents - fbase * n;
+    var myFee = {}, feePay = {}, snackOwn = {}, p;
+    for (p = 1; p <= n; p++) { myFee[p] = (fbase + (p <= frem ? 1 : 0)) / 100; feePay[p] = 0; snackOwn[p] = 0; }
+    for (p = 1; p <= n; p++) { var payer = splitFeePayer[p] || p; feePay[payer] = round2(feePay[payer] + myFee[p]); }
+    var itemTotal = 0, unassigned = 0;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i], qty = Number(it.qty) || 0, price = Number(it.price) || 0;
+      itemTotal = round2(itemTotal + round2(price * qty));
+      var m = splitQty[i] || {}, left = qty;
+      for (var k in m) if (m.hasOwnProperty(k)) {
+        var q = Number(m[k]) || 0;
+        if (q <= 0) continue;
+        var pp = parseInt(k, 10);
+        if (pp >= 1 && pp <= n) { snackOwn[pp] = round2(snackOwn[pp] + round2(price * q)); left -= q; }
+      }
+      if (left > 0) unassigned = round2(unassigned + round2(price * left));
+    }
+    return { n: n, items: items, fee: fee, myFee: myFee, feePay: feePay, snackOwn: snackOwn, itemTotal: itemTotal, unassigned: unassigned };
+  }
+  // 每个人选中的收款方式（cash/card/rmb/member）；默认现金
+  // ===== 结算界面两种模式：single = 整单一笔付（默认）；split = 按人分账 =====
+  var spMode = "single";
+  var SP_METHODS = [["cash", "现金"], ["card", "刷卡"], ["rmb", "人民币"], ["member", "会员"]];
+  var spSingleMethod = "cash", spSingleMember = "", spSingleSnackMethod = "cash", spSingleShortMethod = "cash";
+  var spSingleActual = null, spSingleRmb = null;
+  var spSingleShortActual = null, spSingleShortRmb = null, spSingleSnackActual = null, spSingleSnackRmb = null;
+  var splitMethods = {}, splitMembers = {}, splitSnackMethods = {}, splitShortMethods = {}, splitActual = {}, splitRmb = {};
+  var splitShortActual = {}, splitShortRmb = {}, splitSnackActual = {}, splitSnackRmb = {};
+
+  function spResetSingle() {
+    spSingleMethod = "card"; spSingleMember = ""; spSingleSnackMethod = "cash"; spSingleShortMethod = "cash";
+    spSingleActual = null; spSingleRmb = null;
+    spSingleShortActual = null; spSingleShortRmb = null; spSingleSnackActual = null; spSingleSnackRmb = null;
+  }
+  function spResetMethods() {
+    var n = splitCurrentN();
+    splitMethods = {}; splitMembers = {}; splitSnackMethods = {}; splitShortMethods = {}; splitActual = {}; splitRmb = {};
+    splitShortActual = {}; splitShortRmb = {}; splitSnackActual = {}; splitSnackRmb = {};
+    for (var p = 1; p <= n; p++) { splitMethods[p] = "cash"; splitMembers[p] = ""; splitSnackMethods[p] = "cash"; splitShortMethods[p] = "cash"; }
+  }
+  function spSnackHint(amount, method) {
+    amount = round2(amount);
+    if (method === "card") return '刷卡收 ' + fmtMoney(round2(amount + feeOf(amount))) + '（含手续费 ' + fmtMoney(feeOf(amount)) + '）';
+    if (method === "rmb") return '人民币 ≈ ¥' + round2(amount * (Number(state.fxRate) || 0)).toFixed(2) + '（汇率 ' + state.fxRate + '）';
+    return '现金收 ' + fmtMoney(amount);
+  }
+  function spSubInput(attr, p, amount, method, actual, rmb) {
+    var unit = method === "rmb" ? "¥" : "$";
+    var def = method === "rmb" ? round2(amount * (Number(state.fxRate) || 0))
+            : (method === "card" ? round2(amount + feeOf(amount)) : round2(amount));
+    var val = method === "rmb" ? ((rmb != null && rmb !== "") ? rmb : def)
+                               : ((actual != null && actual !== "") ? actual : def);
+    var attrName = attr + (method === "rmb" ? "rmb" : "actual") + '="' + p + '"';
+    return '<div class="sp-payline"><span>实收 ' + unit + '</span>' +
+      '<input type="number" step="0.01" ' + attrName + ' value="' + Number(val).toFixed(2) + '" ' +
+      'style="width:105px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;text-align:right;">' +
+      '<span class="sp-feehint" style="margin:0;">' + (method === "card" ? '含手续费' : (method === "rmb" ? '汇率 ' + state.fxRate : '可改')) + '</span></div>';
+  }
+  function spMemberOptions(sel) {
+    var h = '<option value="">请选择会员…</option>';
+    var mems = state.members || [];
+    for (var i = 0; i < mems.length; i++) {
+      h += '<option value="' + esc(mems[i].id) + '"' + (sel === mems[i].id ? " selected" : "") + '>' + esc(mems[i].name) + '（余额 ' + fmtMoney(mems[i].balance) + '）</option>';
+    }
+    return h;
+  }
+  function spBuildParts() {
+    if (!settleData) return;
+    if (spMode === "single") spBuildSingleParts(); else spBuildSplitParts();
+  }
+  function spBuildSingleParts() {
+    var b = settleBill(), due = b.due, parts = [], m = spSingleMethod || "cash";
+    if (m === "member") {
+      var fare = round2(b.tableAll + b.carry), snack = round2(b.other);
+      var mem0 = findMember(spSingleMember);
+      var bal0 = mem0 ? (Number(mem0.balance) || 0) : 0;
+      var memPart0 = round2(Math.min(fare, Math.max(0, bal0)));
+      var shortFare0 = round2(fare - memPart0);
+      if (memPart0 > 0.005) parts.push({ amount: memPart0, payType: "member", rmb: null, memberId: spSingleMember || "", memSearch: "", label: "台费（会员）" });
+      if (shortFare0 > 0.005) {
+        var shm0 = spSingleShortMethod || "cash";
+        if (shm0 === "card" && spSingleShortActual != null && spSingleShortActual !== "") {
+          var shAv = round2(spSingleShortActual);
+          parts.push({ amount: amountFromDue(shAv), payType: "card", dueOverride: shAv, rmb: null, memberId: "", memSearch: "", label: "台费差额" });
+        } else if (shm0 === "rmb") {
+          var shRmb = (spSingleShortRmb != null && spSingleShortRmb !== "") ? round2(spSingleShortRmb) : ((Number(state.fxRate) || 0) > 0 ? round2(shortFare0 * state.fxRate) : null);
+          parts.push({ amount: shortFare0, payType: "rmb", rmb: shRmb, memberId: "", memSearch: "", label: "台费差额" });
+        } else {
+          var shAmt = (spSingleShortActual != null && spSingleShortActual !== "") ? round2(spSingleShortActual) : shortFare0;
+          parts.push({ amount: shAmt, payType: "cash", rmb: null, memberId: "", memSearch: "", label: "台费差额" });
+        }
+      }
+      if (snack > 0.005) {
+        var snm0 = spSingleSnackMethod || "cash";
+        if (snm0 === "card" && spSingleSnackActual != null && spSingleSnackActual !== "") {
+          var snAv = round2(spSingleSnackActual);
+          parts.push({ amount: amountFromDue(snAv), payType: "card", dueOverride: snAv, rmb: null, memberId: "", memSearch: "", label: "零食" });
+        } else if (snm0 === "rmb") {
+          var snRmb = (spSingleSnackRmb != null && spSingleSnackRmb !== "") ? round2(spSingleSnackRmb) : ((Number(state.fxRate) || 0) > 0 ? round2(snack * state.fxRate) : null);
+          parts.push({ amount: snack, payType: "rmb", rmb: snRmb, memberId: "", memSearch: "", label: "零食" });
+        } else {
+          var snAmt = (spSingleSnackActual != null && spSingleSnackActual !== "") ? round2(spSingleSnackActual) : snack;
+          parts.push({ amount: snAmt, payType: "cash", rmb: null, memberId: "", memSearch: "", label: "零食" });
+        }
+      }
+    } else if (due > 0.005) {
+      if (m === "card") {
+        if (spSingleActual != null && spSingleActual !== "") {
+          var av = round2(spSingleActual);
+          parts.push({ amount: amountFromDue(av), payType: "card", dueOverride: av, rmb: null, memberId: "", memSearch: "", label: "" });
+        } else {
+          parts.push({ amount: due, payType: "card", rmb: null, memberId: "", memSearch: "", label: "" });
+        }
+      } else if (m === "rmb") {
+        var rv = (spSingleRmb != null && spSingleRmb !== "") ? round2(spSingleRmb) : ((Number(state.fxRate) || 0) > 0 ? round2(due * state.fxRate) : null);
+        parts.push({ amount: due, payType: "rmb", rmb: rv, memberId: "", memSearch: "", label: "" });
+      } else {
+        var ca = (spSingleActual != null && spSingleActual !== "") ? round2(spSingleActual) : due;
+        parts.push({ amount: ca, payType: "cash", rmb: null, memberId: "", memSearch: "", label: "" });
+      }
+    }
+    setSettleParts(parts);
+  }
+  function spBuildSplitParts() {
+    var c = spCalcSplit(), parts = [], p;
+    var mge = document.getElementById("splitMerge");
+    var mergeOn = !mge || mge.checked;
+    var memberUsed = {};
+    for (p = 1; p <= c.n; p++) {
+      var fee = c.feePay[p] || 0, snack = c.snackOwn[p] || 0;
+      if (fee + snack <= 0.005) continue;
+      var method = splitMethods[p] || "cash";
+      var label = (c.n > 1 ? (p + " 号 ") : "");
+      if (method === "member") {
+        var memP = findMember(splitMembers[p]);
+        var balP = memP ? Math.max(0, (Number(memP.balance) || 0) - (memberUsed[memP.id] || 0)) : 0;
+        var memPartP = round2(Math.min(fee, balP));
+        var shortP = round2(fee - memPartP);
+        if (memPartP > 0.005) {
+          if (memP) memberUsed[memP.id] = round2((memberUsed[memP.id] || 0) + memPartP);
+          parts.push({ amount: memPartP, payType: "member", rmb: null, memberId: splitMembers[p] || "", memSearch: "", label: label + "台费（会员）" });
+        }
+        if (shortP > 0.005) {
+          var shm = splitShortMethods[p] || "cash";
+          if (shm === "card" && splitShortActual[p] != null && splitShortActual[p] !== "") {
+            var shAv2 = round2(splitShortActual[p]);
+            parts.push({ amount: amountFromDue(shAv2), payType: "card", dueOverride: shAv2, rmb: null, memberId: "", memSearch: "", label: label + "台费差额" });
+          } else if (shm === "rmb") {
+            var shRmb2 = (splitShortRmb[p] != null && splitShortRmb[p] !== "") ? round2(splitShortRmb[p]) : ((Number(state.fxRate) || 0) > 0 ? round2(shortP * state.fxRate) : null);
+            parts.push({ amount: shortP, payType: "rmb", rmb: shRmb2, memberId: "", memSearch: "", label: label + "台费差额" });
+          } else {
+            var shAmt2 = (splitShortActual[p] != null && splitShortActual[p] !== "") ? round2(splitShortActual[p]) : shortP;
+            parts.push({ amount: shAmt2, payType: "cash", rmb: null, memberId: "", memSearch: "", label: label + "台费差额" });
+          }
+        }
+        if (snack > 0.005) {
+          var snm = splitSnackMethods[p] || "cash";
+          if (snm === "card" && splitSnackActual[p] != null && splitSnackActual[p] !== "") {
+            var snAv2 = round2(splitSnackActual[p]);
+            parts.push({ amount: amountFromDue(snAv2), payType: "card", dueOverride: snAv2, rmb: null, memberId: "", memSearch: "", label: "零食" });
+          } else if (snm === "rmb") {
+            var snRmb2 = (splitSnackRmb[p] != null && splitSnackRmb[p] !== "") ? round2(splitSnackRmb[p]) : ((Number(state.fxRate) || 0) > 0 ? round2(snack * state.fxRate) : null);
+            parts.push({ amount: snack, payType: "rmb", rmb: snRmb2, memberId: "", memSearch: "", label: "零食" });
+          } else {
+            var snAmt2 = (splitSnackActual[p] != null && splitSnackActual[p] !== "") ? round2(splitSnackActual[p]) : round2(snack);
+            parts.push({ amount: snAmt2, payType: "cash", rmb: null, memberId: "", memSearch: "", label: "零食" });
+          }
+        }
+        continue;
+      }
+      if (mergeOn) {
+        if (method === "card") {
+          if (splitActual[p] != null && splitActual[p] !== "") {
+            var av2 = round2(splitActual[p]);
+            parts.push({ amount: amountFromDue(av2), payType: "card", dueOverride: av2, rmb: null, memberId: "", memSearch: "", label: label + "台费+零食", feeAmt: round2(fee), snackAmt: round2(snack) });
+          } else {
+            parts.push({ amount: round2(fee + snack), payType: "card", rmb: null, memberId: "", memSearch: "", label: label + "台费+零食", feeAmt: round2(fee), snackAmt: round2(snack) });
+          }
+        } else if (method === "rmb") {
+          var rv2 = (splitRmb[p] != null && splitRmb[p] !== "") ? round2(splitRmb[p]) : ((Number(state.fxRate) || 0) > 0 ? round2((fee + snack) * state.fxRate) : null);
+          parts.push({ amount: round2(fee + snack), payType: "rmb", rmb: rv2, memberId: "", memSearch: "", label: label + "台费+零食", feeAmt: round2(fee), snackAmt: round2(snack) });
+        } else {
+          var ca2 = (method === "cash" && splitActual[p] != null && splitActual[p] !== "") ? round2(splitActual[p]) : round2(fee + snack);
+          parts.push({ amount: ca2, payType: "cash", rmb: null, memberId: "", memSearch: "", label: label + "台费+零食", feeAmt: round2(fee), snackAmt: round2(snack) });
+        }
+      } else {
+        if (fee > 0.005) parts.push({ amount: round2(fee), payType: method, rmb: method === "rmb" ? ((Number(state.fxRate) || 0) > 0 ? round2(fee * state.fxRate) : null) : null, memberId: "", memSearch: "", label: label + "台费", feeAmt: round2(fee), snackAmt: 0 });
+        if (snack > 0.005) parts.push({ amount: round2(snack), payType: method, rmb: method === "rmb" ? ((Number(state.fxRate) || 0) > 0 ? round2(snack * state.fxRate) : null) : null, memberId: "", memSearch: "", label: "零食", feeAmt: 0, snackAmt: round2(snack) });
+      }
+    }
+    if (c.unassigned > 0.005) parts.push({ amount: c.unassigned, payType: "cash", rmb: null, memberId: "", memSearch: "", label: "未分完的零食" });
+    setSettleParts(parts);
+  }
+  function spSetupPanelChrome() {
+    var mb = document.getElementById("sMoreBtn"), mw = document.getElementById("sMoreWrap");
+    var acts = document.getElementById("spSharedActions");
+    var panel = document.getElementById("splitPanel"), adv = document.getElementById("spSharedAdv");
+    if (acts && mb && mb.parentNode !== acts) acts.appendChild(mb);
+    if (panel && mw && adv && mw.parentNode !== panel) panel.insertBefore(mw, adv);
+  }
+  function spOnSettleOpen() {
+    spResetSingle(); spResetMethods();
+    var ov = document.getElementById("settleOverlay");
+    ov.classList.remove("sp-carry");
+    var panel = document.getElementById("splitPanel");
+    if (panel) panel.style.display = "block";
+    spSetupPanelChrome();
+    splitReset();
+    spSetMode("single");
+  }
+  function spSetMode(mode) {
+    spMode = mode;
+    var s1 = document.getElementById("spSingle"), s2 = document.getElementById("spSplit");
+    if (s1) s1.style.display = (mode === "single" ? "block" : "none");
+    if (s2) s2.style.display = (mode === "split" ? "block" : "none");
+    if (mode === "single") { renderSingleUI(); spBuildSingleParts(); }
+    else { renderSplitAll(); spBuildSplitParts(); }
+  }
+  function spRenderCurrent() {
+    if (spMode === "single") renderSingleUI(); else renderSplitUI();
+  }
+  function renderSingleUI() {
+    var box = document.getElementById("spSingle");
+    if (!box) return;
+    var b = settleBill(), due = b.due, m = spSingleMethod || "cash";
+    var h = '<div class="sp-person"><div class="sp-person-top"><b>整单收款</b><b class="sp-due">应收 ' + fmtMoney(due) + '</b></div>' +
+      '<div class="sp-line">台费 ' + fmtMoney(b.tableAll) +
+      (b.other > 0.005 ? '　·　零食 ' + fmtMoney(b.other) : '') +
+      (b.carry > 0.005 ? '　·　上次未付 ' + fmtMoney(b.carry) : '') + '</div>' +
+      '<div class="sp-payline sp-methodline"><span>怎么收</span>';
+    for (var i = 0; i < SP_METHODS.length; i++) {
+      h += '<button type="button" class="sp-pay' + (m === SP_METHODS[i][0] ? ' on' : '') + '" data-spsinglemethod="' + SP_METHODS[i][0] + '">' + SP_METHODS[i][1] + '</button>';
+    }
+    h += '</div>';
+    if (m === "member") {
+      h += '<div class="sp-methodline" style="margin-top:5px;">会员：<select data-spsinglemember="1">' + spMemberOptions(spSingleMember) + '</select></div>';
+      var fareS = round2(b.tableAll + b.carry), snackS = round2(b.other);
+      var memS = findMember(spSingleMember);
+      if (memS) {
+        var balS = Number(memS.balance) || 0;
+        var shortS = round2(Math.max(0, fareS - Math.min(fareS, balS)));
+        if (shortS > 0.005) {
+          h += '<div class="sp-note" style="color:#b45309;">会员余额 ' + fmtMoney(balS) + '，台费 ' + fmtMoney(fareS) + '，还差 ' + fmtMoney(shortS) + '</div>';
+          h += '<div class="sp-payline"><span>差额走</span>';
+          var shl2 = [["cash", "现金"], ["card", "刷卡"], ["rmb", "人民币"]];
+          for (var shi2 = 0; shi2 < shl2.length; shi2++) {
+            h += '<button type="button" class="sp-pay' + ((spSingleShortMethod || "cash") === shl2[shi2][0] ? ' on' : '') + '" data-spsingleshortm="' + shl2[shi2][0] + '">' + shl2[shi2][1] + '</button>';
+          }
+          h += '</div>' + spSubInput("data-spsingleshort", 1, shortS, spSingleShortMethod, spSingleShortActual, spSingleShortRmb);
+        } else {
+          h += '<div class="sp-note">会员余额 ' + fmtMoney(balS) + '，够付台费 ' + fmtMoney(fareS) + '</div>';
+        }
+      } else {
+        h += '<div class="sp-note">选会员后显示余额；余额不够时再选差额怎么付。</div>';
+      }
+      if (snackS > 0.005) {
+        h += '<div class="sp-payline"><span>零食 ' + fmtMoney(snackS) + ' 走</span>';
+        var sml = [["cash", "现金"], ["card", "刷卡"], ["rmb", "人民币"]];
+        var smS = spSingleSnackMethod || "cash";
+        for (var si = 0; si < sml.length; si++) {
+          h += '<button type="button" class="sp-pay' + (smS === sml[si][0] ? ' on' : '') + '" data-spsinglesnackm="' + sml[si][0] + '">' + sml[si][1] + '</button>';
+        }
+        h += '</div>' + spSubInput("data-spsinglesnack", 1, snackS, smS, spSingleSnackActual, spSingleSnackRmb) + '<div class="sp-note">会员余额不能抵零食。</div>';
+      }
+    } else {
+      var def, cur, unit;
+      if (m === "rmb") { def = round2(due * (Number(state.fxRate) || 0)); cur = spSingleRmb; unit = "¥"; }
+      else { def = (m === "card" ? round2(due + feeOf(due)) : due); cur = spSingleActual; unit = "$"; }
+      var val = (cur != null && cur !== "") ? cur : def;
+      h += '<div class="sp-payline"><span>实收 ' + unit + '</span>' +
+        '<input type="number" step="0.01" data-spsingle' + (m === "rmb" ? "rmb" : "actual") + '="1" value="' + Number(val).toFixed(2) + '" ' +
+        'style="width:120px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-weight:700;text-align:right;">' +
+        '<span class="sp-feehint" style="margin:0;">' + (m === "card" ? '含手续费，可改' : (m === "rmb" ? '汇率 ' + state.fxRate : '可改，抹零')) + '</span></div>';
+    }
+    h += '<div class="sp-payline" style="margin-top:8px;"><button type="button" class="btn-start sm" data-spgosplit="1">👥 按人分账</button>' +
+         '<span class="hint" style="margin:0;">要分开付才点这里</span></div></div>';
+    box.innerHTML = h;
+  }
+  function renderSplitUI() {
+    var panel = document.getElementById("splitPanel");
+    if (!panel || panel.style.display === "none" || spMode !== "split") return;
+    var _msg0 = document.getElementById("splitMsg");
+    if (_msg0) _msg0.textContent = "";
+    var c = spCalcSplit(), h = "", p, i;
+    var snackBox = document.getElementById("spSnacks");
+    if (snackBox) {
+      if (!c.items.length) h = '<div class="hint" style="margin:6px 0 0;">这桌没挂零食，只分台费。</div>';
+      for (i = 0; i < c.items.length; i++) {
+        var it = c.items[i], qty = Number(it.qty) || 0, assigned = spAssignedQty(i), done = (assigned === qty);
+        h += '<div class="sp-item"><div class="sp-item-head"><b>' + esc(it.name) + '</b>' +
+             '<span class="sp-price">' + fmtMoney(it.price) + ' × ' + qty + '</span>' +
+             '<span class="sp-assigned ' + (done ? 'ok' : 'warn') + '">已分 ' + assigned + '/' + qty + (done ? ' ✓' : '') + '</span></div><div class="sp-chips">';
+        for (p = 1; p <= c.n; p++) {
+          var cnt = Number((splitQty[i] || {})[p] || 0);
+          if (cnt > 0) {
+            h += '<button type="button" class="sp-chip on sp-chip-fused"><span class="sp-chip-name" data-spq="' + i + '|' + p + '">' + p + ' 号 ×' + cnt + '</span><span class="sp-chip-del" data-spqsub="' + i + '|' + p + '">−</span></button>';
+          } else {
+            h += '<button type="button" class="sp-chip" data-spq="' + i + '|' + p + '">' + p + ' 号</button>';
+          }
+        }
+        h += '<button type="button" class="sp-mini" data-speven="' + i + '">平分</button>' +
+             '<button type="button" class="sp-mini" data-spclear="' + i + '">清空</button></div></div>';
+      }
+      snackBox.innerHTML = h;
+    }
+    var peopleBox = document.getElementById("spPeople");
+    if (peopleBox) {
+      h = "";
+      var memberRunning = {};
+      for (p = 1; p <= c.n; p++) {
+        var paidBy = splitFeePayer[p] || p;
+        var snack = c.snackOwn[p] || 0;
+        var total = round2((c.feePay[p] || 0) + snack);
+        var payOthers = [];
+        for (var x = 1; x <= c.n; x++) if (x !== p && (splitFeePayer[x] || x) === p) payOthers.push(x);
+        h += '<div class="sp-person"><div class="sp-person-top"><b>' + p + ' 号</b><b class="sp-due">应收 ' + fmtMoney(total) + '</b></div>' +
+             '<div class="sp-line">台费 ' + fmtMoney(c.feePay[p] || 0) +
+             (payOthers.length ? '（含代付 ' + payOthers.join('、') + ' 号台费）' : '') +
+             '　·　零食 ' + fmtMoney(snack) + '</div>' +
+             '<div class="sp-payline"><span>台费谁付</span>' +
+             '<button type="button" class="sp-pay' + (paidBy === p ? ' on' : '') + '" data-sppay="' + p + '|' + p + '">自己</button>';
+        for (var q2 = 1; q2 <= c.n; q2++) {
+          if (q2 === p) continue;
+          h += '<button type="button" class="sp-pay' + (paidBy === q2 ? ' on' : '') + '" data-sppay="' + p + '|' + q2 + '">' + q2 + ' 号付</button>';
+        }
+        h += '</div>' + (paidBy !== p ? '<div class="sp-note">本号台费由 ' + paidBy + ' 号 付</div>' : '');
+        var method = splitMethods[p] || "cash";
+        h += '<div class="sp-payline sp-methodline"><span>怎么付</span>';
+        for (var mi = 0; mi < SP_METHODS.length; mi++) {
+          h += '<button type="button" class="sp-pay' + (method === SP_METHODS[mi][0] ? ' on' : '') + '" data-spmethod="' + p + '|' + SP_METHODS[mi][0] + '">' + SP_METHODS[mi][1] + '</button>';
+        }
+        h += '</div>';
+        if (method === "member") {
+          h += '<div class="sp-methodline" style="margin-top:5px;">会员：<select data-spmember="' + p + '">' + spMemberOptions(splitMembers[p]) + '</select></div>';
+          var feeDue = c.feePay[p] || 0;
+          var memP2 = findMember(splitMembers[p]);
+          if (memP2) {
+            var balP2 = Math.max(0, (Number(memP2.balance) || 0) - (memberRunning[memP2.id] || 0));
+            var memPart2 = round2(Math.min(feeDue, balP2));
+            memberRunning[memP2.id] = round2((memberRunning[memP2.id] || 0) + memPart2);
+            var shortP2 = round2(Math.max(0, feeDue - memPart2));
+            if (shortP2 > 0.005) {
+              h += '<div class="sp-note" style="color:#b45309;">会员可用余额 ' + fmtMoney(balP2) + '，台费 ' + fmtMoney(feeDue) + '，还差 ' + fmtMoney(shortP2) + '</div>';
+              h += '<div class="sp-payline"><span>差额走</span>';
+              var shl = [["cash", "现金"], ["card", "刷卡"], ["rmb", "人民币"]];
+              var sh0 = splitShortMethods[p] || "cash";
+              for (var shi = 0; shi < shl.length; shi++) {
+                h += '<button type="button" class="sp-pay' + (sh0 === shl[shi][0] ? ' on' : '') + '" data-spshortm="' + p + '|' + shl[shi][0] + '">' + shl[shi][1] + '</button>';
+              }
+              h += '</div>' + spSubInput("data-spshort", p, shortP2, sh0, splitShortActual[p], splitShortRmb[p]);
+            } else {
+              h += '<div class="sp-note">会员可用余额 ' + fmtMoney(balP2) + '，够付台费 ' + fmtMoney(feeDue) + '</div>';
+            }
+          } else {
+            h += '<div class="sp-note">选会员后显示余额；余额不够时再选差额怎么付。</div>';
+          }
+          if (snack > 0.005) {
+            h += '<div class="sp-payline"><span>零食 ' + fmtMoney(snack) + ' 走</span>';
+            var sml2 = [["cash", "现金"], ["card", "刷卡"], ["rmb", "人民币"]];
+            var sm0 = splitSnackMethods[p] || "cash";
+            for (var smi = 0; smi < sml2.length; smi++) {
+              h += '<button type="button" class="sp-pay' + (sm0 === sml2[smi][0] ? ' on' : '') + '" data-spsnackm="' + p + '|' + sml2[smi][0] + '">' + sml2[smi][1] + '</button>';
+            }
+            h += '</div>' + spSubInput("data-spsnack", p, snack, sm0, splitSnackActual[p], splitSnackRmb[p]) + '<div class="sp-note">会员余额不能抵零食。</div>';
+          }
+        } else {
+          var def2, cur2, unit2;
+          if (method === "rmb") { def2 = round2(total * (Number(state.fxRate) || 0)); cur2 = splitRmb[p]; unit2 = "¥"; }
+          else { def2 = (method === "card" ? round2(total + feeOf(total)) : total); cur2 = splitActual[p]; unit2 = "$"; }
+          var val2 = (cur2 != null && cur2 !== "") ? cur2 : def2;
+          h += '<div class="sp-payline"><span>实收 ' + unit2 + '</span>' +
+            '<input type="number" step="0.01" data-spsplit' + (method === "rmb" ? "rmb" : "actual") + '="' + p + '" value="' + Number(val2).toFixed(2) + '" ' +
+            'style="width:105px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;text-align:right;">' +
+            '<span class="sp-feehint" style="margin:0;">' + (method === "card" ? '含手续费' : (method === "rmb" ? '汇率 ' + state.fxRate : '可改')) + '</span></div>';
+        }
+        h += '</div>';
+      }
+      peopleBox.innerHTML = h;
+    }
+    var sumBox = document.getElementById("spSummary");
+    if (sumBox) {
+      var totalAll = 0;
+      for (p = 1; p <= c.n; p++) totalAll = round2(totalAll + (c.feePay[p] || 0) + (c.snackOwn[p] || 0));
+      var bill = round2(c.fee + c.itemTotal);
+      var diff = round2(bill - totalAll);
+      sumBox.innerHTML = '<div class="sp-sum"><b>分账合计 ' + fmtMoney(totalAll) + '</b>　／　账单 ' + fmtMoney(bill) +
+        (Math.abs(diff) < 0.005 ? '　<span class="ok">✔ 一致</span>' : '　<span class="warn">差 ' + fmtMoney(diff) + '</span>') +
+        (c.unassigned > 0.005 ? '　<span class="warn">还有 ' + fmtMoney(c.unassigned) + ' 零食没分完（会单独列一笔）</span>' : '') +
+        '</div>';
+    }
+  }
+  // 顶部「怎么收？」：整单模式改整单方式；分账模式改所有人的默认方式
+  (function () {
+    var qp = document.getElementById("sQuickPay");
+    if (!qp) return;
+    qp.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest("[data-quickpay]") : null;
+      if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      var m = b.getAttribute("data-quickpay");
+      if (spMode === "single") {
+        spSingleMethod = m; spSingleMember = ""; spSingleActual = null; spSingleRmb = null;
+        renderSingleUI(); spBuildSingleParts();
+        return;
+      }
+      var n = splitCurrentN();
+      for (var p = 1; p <= n; p++) { splitMethods[p] = m; if (m !== "member") splitMembers[p] = ""; }
+      splitActual = {}; splitRmb = {}; splitShortActual = {}; splitShortRmb = {}; splitSnackActual = {}; splitSnackRmb = {};
+      renderSplitUI(); spBuildSplitParts();
+    }, true);
+  })();
+  // 罚款 / 合并 / 台费+零食合并开关变了 → 当前模式重绘并重算
+  (function () {
+    ["sFine", "sMerge"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", function () { spRenderCurrent(); spBuildParts(); });
+      el.addEventListener("change", function () { spRenderCurrent(); spBuildParts(); });
+    });
+    var mg = document.getElementById("splitMerge");
+    if (mg) mg.addEventListener("change", function () { spRenderCurrent(); spBuildParts(); });
+  })();
+  // 确认前：会员没选人时直接指到对应卡片（整单 / 分账都管）
+  (function () {
+    var btn = document.getElementById("sConfirm");
+    if (!btn) return;
+    btn.addEventListener("click", function (e) {
+      if (spMode === "single") {
+        var b = settleBill();
+        var fare = round2(b.tableAll + b.carry);
+        if (spSingleMethod === "member" && !spSingleMember && fare > 0.005) {
+          e.preventDefault(); e.stopPropagation();
+          var sel0 = document.querySelector("#spSingle select[data-spsinglemember]");
+          if (sel0) { try { sel0.scrollIntoView({ block: "center" }); } catch (x0) {} sel0.focus(); }
+          var msg0 = document.getElementById("splitMsg");
+          if (msg0) msg0.innerHTML = '<span style="color:#b45309;">选了会员，但还没选是哪个会员，先在整单卡里选一下。</span>';
+        }
+        return;
+      }
+      var c;
+      try { c = spCalcSplit(); } catch (x) { return; }
+      var miss = 0;
+      for (var p = 1; p <= c.n; p++) {
+        if ((c.feePay[p] || 0) > 0.005 && (splitMethods[p] || "cash") === "member" && !splitMembers[p]) { miss = p; break; }
+      }
+      if (!miss) return;
+      e.preventDefault(); e.stopPropagation();
+      var sel = document.querySelector('#spPeople select[data-spmember="' + miss + '"]');
+      if (sel) { try { sel.scrollIntoView({ block: "center" }); } catch (x2) {} sel.focus(); }
+      var msg = document.getElementById("splitMsg");
+      if (msg) msg.innerHTML = '<span style="color:#b45309;">' + miss + ' 号选了会员，但还没选是哪个会员，先在上面选一下。</span>';
+    }, true);
+  })();
+  function renderSplitAll() {
+    renderSplit();        // 老表格（给「表格填写」和旧逻辑用）
+    renderSplitUI();      // 新卡片界面
+  }
+  // 会员下拉：选会员后立刻重算（未选会员时确认结算会被老逻辑拦下）
+  (function () {
+    var panel2 = document.getElementById("splitPanel");
+    if (!panel2) return;
+    panel2.addEventListener("change", function (e) {
+      var sel = e.target;
+      if (!sel || !sel.getAttribute) return;
+      if (sel.getAttribute("data-spsinglemember")) { spSingleMember = sel.value; renderSingleUI(); spBuildSingleParts(); return; }
+      if (sel.getAttribute("data-spmember")) {
+        splitMembers[Number(sel.getAttribute("data-spmember"))] = sel.value;
+        spBuildSplitParts();
+        renderSplitUI();
+      }
+    });
+  })();
+  // 实收可自定义：整单 / 分账 共四个输入口
+  (function () {
+    var panel = document.getElementById("splitPanel");
+    if (!panel) return;
+    panel.addEventListener("input", function (e) {
+      var el = e.target;
+      if (!el || !el.getAttribute) return;
+      if (el.getAttribute("data-spsingleactual")) { spSingleActual = el.value; spBuildSingleParts(); return; }
+      if (el.getAttribute("data-spsinglermb")) { spSingleRmb = el.value; spBuildSingleParts(); return; }
+      if (el.getAttribute("data-spsingleshortactual")) { spSingleShortActual = el.value; spBuildSingleParts(); return; }
+      if (el.getAttribute("data-spsingleshortrmb")) { spSingleShortRmb = el.value; spBuildSingleParts(); return; }
+      if (el.getAttribute("data-spsinglesnackactual")) { spSingleSnackActual = el.value; spBuildSingleParts(); return; }
+      if (el.getAttribute("data-spsinglesnackrmb")) { spSingleSnackRmb = el.value; spBuildSingleParts(); return; }
+      var psh = el.getAttribute("data-spshortactual");
+      if (psh) { splitShortActual[Number(psh)] = el.value; spBuildSplitParts(); return; }
+      var psh2 = el.getAttribute("data-spshortrmb");
+      if (psh2) { splitShortRmb[Number(psh2)] = el.value; spBuildSplitParts(); return; }
+      var psn = el.getAttribute("data-spsnackactual");
+      if (psn) { splitSnackActual[Number(psn)] = el.value; spBuildSplitParts(); return; }
+      var psn2 = el.getAttribute("data-spsnackrmb");
+      if (psn2) { splitSnackRmb[Number(psn2)] = el.value; spBuildSplitParts(); return; }
+      var pa = el.getAttribute("data-spsplitactual");
+      if (pa) { splitActual[Number(pa)] = el.value; spBuildSplitParts(); return; }
+      var pr = el.getAttribute("data-spsplitrmb");
+      if (pr) { splitRmb[Number(pr)] = el.value; spBuildSplitParts(); return; }
+    });
+  })();
+  // 新界面点击：分零食 / 减 / 平分 / 清空 / 台费谁付
+  (function () {
+    var panel = document.getElementById("splitPanel");
+    if (!panel) return;
+    panel.addEventListener("click", function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var q1 = t.closest("[data-spq]");
+      var q2 = t.closest("[data-spqsub]");
+      var q3 = t.closest("[data-speven]");
+      var q4 = t.closest("[data-spclear]");
+      var q5 = t.closest("[data-sppay]");
+      var m1 = t.closest("[data-spmethod]");
+      var m2 = t.closest("[data-spsnackm]");
+      var sm1 = t.closest("[data-spsinglemethod]");
+      var sm2 = t.closest("[data-spsinglesnackm]");
+      if (sm1) {
+        spSingleMethod = sm1.getAttribute("data-spsinglemethod");
+        spSingleActual = null; spSingleRmb = null;
+        renderSingleUI(); spBuildSingleParts();
+        return;
+      }
+      if (sm2) {
+        spSingleSnackMethod = sm2.getAttribute("data-spsinglesnackm");
+        spSingleSnackActual = null; spSingleSnackRmb = null;
+        renderSingleUI(); spBuildSingleParts();
+        return;
+      }
+      if (t.closest("[data-spgosplit]")) { spSetMode("split"); return; }
+      if (t.closest("#spBackSingle")) { spSetMode("single"); return; }
+      var sh1 = t.closest("[data-spshortm]");
+      if (sh1) {
+        var psh = sh1.getAttribute("data-spshortm").split("|");
+        splitShortMethods[Number(psh[0])] = psh[1];
+        delete splitShortActual[Number(psh[0])]; delete splitShortRmb[Number(psh[0])];
+        renderSplitUI(); spBuildSplitParts();
+        return;
+      }
+      var sh2 = t.closest("[data-spsingleshortm]");
+      if (sh2) {
+        spSingleShortMethod = sh2.getAttribute("data-spsingleshortm");
+        spSingleShortActual = null; spSingleShortRmb = null;
+        renderSingleUI(); spBuildSingleParts();
+        return;
+      }
+      if (m1) {
+        var pm = m1.getAttribute("data-spmethod").split("|"), pwho = Number(pm[0]), pmethod = pm[1];
+        splitMethods[pwho] = pmethod;
+        if (pmethod !== "member") splitMembers[pwho] = "";
+        renderSplitUI(); spBuildParts();
+        return;
+      }
+      if (m2) {
+        var ps = m2.getAttribute("data-spsnackm").split("|");
+        splitSnackMethods[Number(ps[0])] = ps[1];
+        delete splitSnackActual[Number(ps[0])]; delete splitSnackRmb[Number(ps[0])];
+        renderSplitUI(); spBuildParts();
+        return;
+      }
+      if (q1) {
+        var pr = q1.getAttribute("data-spq").split("|"), i = Number(pr[0]), p = Number(pr[1]);
+        var items = splitItems(), it = items[i] || {}, qty = Number(it.qty) || 0;
+        var used = spAssignedQty(i);
+        if (used >= qty) { var m0 = document.getElementById("splitMsg"); if (m0) m0.innerHTML = '<span style="color:#b45309;">这样零食已经分完了，先点「−」再改。</span>'; return; }
+        splitQty[i] = splitQty[i] || {};
+        splitQty[i][p] = (Number(splitQty[i][p]) || 0) + 1;
+        renderSplitUI(); spBuildParts();
+        return;
+      }
+      if (q2) {
+        var pr2 = q2.getAttribute("data-spqsub").split("|"), i2 = Number(pr2[0]), p2 = Number(pr2[1]);
+        if (splitQty[i2]) {
+          var v = (Number(splitQty[i2][p2]) || 0) - 1;
+          if (v > 0) splitQty[i2][p2] = v; else delete splitQty[i2][p2];
+        }
+        renderSplitUI(); spBuildParts();
+        return;
+      }
+      if (q3) {
+        var i3 = Number(q3.getAttribute("data-speven"));
+        var items3 = splitItems(), it3 = items3[i3] || {}, qty3 = Number(it3.qty) || 0, n3 = splitCurrentN();
+        splitQty[i3] = {};
+        for (var k3 = 0; k3 < qty3; k3++) { var who3 = (k3 % n3) + 1; splitQty[i3][who3] = (Number(splitQty[i3][who3]) || 0) + 1; }
+        renderSplitUI(); spBuildParts();
+        return;
+      }
+      if (q4) {
+        var i4 = Number(q4.getAttribute("data-spclear"));
+        splitQty[i4] = {};
+        renderSplitUI(); spBuildParts();
+        return;
+      }
+      if (q5) {
+        var pr5 = q5.getAttribute("data-sppay").split("|");
+        var who5 = Number(pr5[0]), payer5 = Number(pr5[1]);
+        // 如果对方正好在替自己付，先取消那个反向选择，避免变成"互相代付"的绕圈
+        if (payer5 !== who5 && (splitFeePayer[payer5] || payer5) === who5) splitFeePayer[payer5] = payer5;
+        splitFeePayer[who5] = payer5;
+        renderSplitUI(); spBuildParts();
+        return;
+      }
+      if (t.closest("#spToggleTable")) {
+        var box = document.getElementById("spTable");
+        var open = (box.style.display === "none" || !box.style.display);
+        box.style.display = open ? "block" : "none";
+        if (open) renderSplit();
+        return;
+      }
+      if (t.closest("#spToggleParts")) {
+        document.getElementById("settleOverlay").classList.toggle("sp-advanced");
+        return;
+      }
+    });
+  })();
+
   // ★ 快捷收款：点一下 → 整单走这一个方式（最常见的情况：一个人一次付清）
   function quickPay(type) {
     var b = settleBill();
@@ -5943,14 +6637,14 @@
     var pn = document.getElementById("splitPanel");
     pn.style.display = (pn.style.display === "none" || !pn.style.display) ? "block" : "none";
     splitReset();
-    renderSplit();
+    renderSplitAll();
   });
   var sc2 = document.getElementById("splitClose");
   if (sc2) sc2.addEventListener("click", function () {
     document.getElementById("splitPanel").style.display = "none";
   });
   var sn = document.getElementById("splitN");
-  if (sn) sn.addEventListener("input", function () { splitReset(); renderSplit(); });
+  if (sn) sn.addEventListener("input", function () { if (spMode === "split") { splitReset(); spResetMethods(); renderSplitAll(); spBuildSplitParts(); } });
   // 数量格改动：只更新结果，不重建表格（否则输入框会失去焦点）
   document.addEventListener("input", function (e) {
     var inp = e.target;
@@ -5960,6 +6654,13 @@
     var q = parseInt(inp.value, 10);
     if (isNaN(q) || q < 0) q = 0;
     if (!splitQty[idx]) splitQty[idx] = {};
+    // 改版修复：单个号位不能把数量分超（例如 qty=2 已给别人 1，这里最多只能填 1）
+    var _items0 = splitItems(), _it0 = _items0[idx] || {}, _qty0 = Number(_it0.qty) || 0;
+    var _cur0 = Number(splitQty[idx][who] || 0);
+    var _other0 = 0;
+    for (var _k0 in splitQty[idx]) if (splitQty[idx].hasOwnProperty(_k0) && String(_k0) !== String(who)) _other0 += Number(splitQty[idx][_k0]) || 0;
+    var _max0 = Math.max(0, _qty0 - _other0);
+    if (q > _max0) { q = _max0; inp.value = String(q); }
     if (q > 0) splitQty[idx][who] = q; else delete splitQty[idx][who];
     // 更新那一行的"已分 x/y"
     var items = splitItems(), it = items[idx] || {}, qty = Number(it.qty) || 0;
@@ -5974,6 +6675,8 @@
       }
     }
     renderSplitResult();
+    renderSplitUI();
+    spBuildParts();
   });
   document.addEventListener("change", function (e) {
     var sel = e.target;
@@ -5981,6 +6684,8 @@
     var who = parseInt(sel.getAttribute("data-splitfee"), 10);
     splitFeePayer[who] = parseInt(sel.value, 10) || who;
     renderSplitResult();
+    renderSplitUI();
+    spBuildParts();
   });
   // ★ 在收款明细里把某一笔改成【会员余额】时：
   //   如果这桌有零食 ✗（而那笔是"台费+零食"合并的）→ 自动拆成
