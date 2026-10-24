@@ -3929,7 +3929,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.17.1";
+  var APP_VER = "v3.17.2";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -15129,13 +15129,19 @@ document.addEventListener("mousedown", function (e) {
     else { ms = t.sessionStart ? Math.max(0, now - t.sessionStart) : 0; endTs = null; }
     var fee = tableFeeOf(ms), fx = Number(state.fxRate) || 0;
     var lines = [], totalAud = 0, totalRmb = 0;
-    // 台费
+    // 台费：按 4 人平摊，显示「一个人的台费 × 4 = 总台费」
+    var PERSON_N = 4;
+    var perFee = round2(fee / PERSON_N);
+    var feeTotal = round2(perFee * PERSON_N);
+    var perRmb = fx > 0 ? round2(perFee * fx) : 0;
+    var feeRmbTotal = fx > 0 ? round2(perRmb * PERSON_N) : 0;
     lines.push({
-      name: "台费", qty: (ms / 3600000).toFixed(1) + " 小时",
-      audTxt: fmtMoney(fee), rmbTxt: fx > 0 ? "¥" + round2(fee * fx).toFixed(2) : "—",
-      aud: fee, rmb: fx > 0 ? round2(fee * fx) : 0
+      name: "台费", qty: PERSON_N + " 人",
+      audTxt: fmtMoney(perFee) + " × " + PERSON_N + " = " + fmtMoney(feeTotal),
+      rmbTxt: fx > 0 ? ("¥" + perRmb.toFixed(2) + " × " + PERSON_N + " = ¥" + feeRmbTotal.toFixed(2)) : "—",
+      aud: feeTotal, rmb: feeRmbTotal
     });
-    totalAud = round2(fee); totalRmb = fx > 0 ? round2(fee * fx) : 0;
+    totalAud = feeTotal; totalRmb = feeRmbTotal;
     // 零食：单价 × 数量，两栏都按数量乘
     (t.extras || []).forEach(function (ex) {
       var qty = Number(ex.qty) || 0;
@@ -15178,7 +15184,7 @@ document.addEventListener("mousedown", function (e) {
       '<td class="num">' + (info.fx > 0 ? "¥" + info.totalRmb.toFixed(2) : "—") + '</td></tr></tfoot></table>' +
       '<div class="rb-rate">汇率：1 澳币 = ' + (info.fx || "—") + ' 人民币' +
       (Number(state.fxMarkup) ? '（含加点 ' + state.fxMarkup + '%）' : '') +
-      '　·　人民币按单价四舍五入后 × 数量，合计为各项相加<br>报价时间：' + new Date().toLocaleString("zh-CN") +
+      '　·　人民币按单价四舍五入后 × 数量，合计为各项相加<br>台费按 4 人平摊，每人金额四舍五入后 × 4<br>报价时间：' + new Date().toLocaleString("zh-CN") +
       '　·　本单仅为查看/截图，不发送、不收款</div>' +
       '<div class="rb-totals">' +
       '<div class="rb-total-box"><div class="lab">合计（澳币）</div><div class="amt">A$' + info.totalAud.toFixed(2) + '</div></div>' +
