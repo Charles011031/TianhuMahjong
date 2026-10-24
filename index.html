@@ -3929,7 +3929,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.17.2";
+  var APP_VER = "v3.17.3";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -15166,7 +15166,6 @@ document.addEventListener("mousedown", function (e) {
     if (!info) return;
     var t = info.t, now = Date.now();
     var h = '<div class="rb-store">🀄 天胡麻将馆</div>' +
-      '<div class="rb-sub">人民币账单 · 供员工查看 / 截图</div>' +
       '<div class="rb-meta"><b>' + esc(t.name || (id + " 号桌")) + '</b>　' +
       (t.status === "running" ? "进行中（预估）" : t.status === "paused" ? "已暂停" : "已结束") +
       (info.startTs ? '　' + esc(fmtHM(info.startTs)) + ' – ' + (info.endTs ? esc(fmtHM(info.endTs)) : "进行中") : "") +
@@ -15184,8 +15183,7 @@ document.addEventListener("mousedown", function (e) {
       '<td class="num">' + (info.fx > 0 ? "¥" + info.totalRmb.toFixed(2) : "—") + '</td></tr></tfoot></table>' +
       '<div class="rb-rate">汇率：1 澳币 = ' + (info.fx || "—") + ' 人民币' +
       (Number(state.fxMarkup) ? '（含加点 ' + state.fxMarkup + '%）' : '') +
-      '　·　人民币按单价四舍五入后 × 数量，合计为各项相加<br>台费按 4 人平摊，每人金额四舍五入后 × 4<br>报价时间：' + new Date().toLocaleString("zh-CN") +
-      '　·　本单仅为查看/截图，不发送、不收款</div>' +
+      '　·　报价时间：' + new Date().toLocaleString("zh-CN") + '</div>' +
       '<div class="rb-totals">' +
       '<div class="rb-total-box"><div class="lab">合计（澳币）</div><div class="amt">A$' + info.totalAud.toFixed(2) + '</div></div>' +
       '<div class="rb-total-box rmb"><div class="lab">应付人民币</div><div class="amt">¥' + (info.fx > 0 ? info.totalRmb.toFixed(2) : "—") + '</div></div>' +
