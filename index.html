@@ -2172,6 +2172,7 @@
       <div class="modal-btns">
         <button id="tEnd" class="btn-pause">⏹ 结束计时（稍后再结算）</button>
         <button id="tSettle" class="btn-settle">💰 结束并结算收费</button>
+        <button id="tRmbBill" class="btn-ghost">📄 看人民币账单</button>
         <button id="tApplyStart" class="btn-ghost">只改开始时间，继续计时</button>
         <button id="tCancel" class="btn-ghost">取消</button>
       </div>
@@ -3929,7 +3930,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.17.3";
+  var APP_VER = "v3.17.4";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -5009,6 +5010,15 @@
     closeTimeModal();
   });
 
+  document.getElementById("tRmbBill").addEventListener("click", function () {
+    var s0 = combineToTs(document.getElementById("tStartDate").value, document.getElementById("tStartTime").value);
+    var e0 = combineToTs(document.getElementById("tEndDate").value, document.getElementById("tEndTime").value);
+    var t0 = state.tables[currentTimeId];
+    if (!s0 && t0) s0 = t0.sessionStart;
+    if (!e0) e0 = Date.now();
+    if (!s0 || !e0 || e0 <= s0) { try { toast("结束时间要晚于开始时间", "#b45309"); } catch (e) {} return; }
+    openRmbBill(currentTimeId, s0, e0);
+  });
   document.getElementById("tCancel").addEventListener("click", closeTimeModal);
   timeOverlay.addEventListener("click", function (e) {
     if (e.target === timeOverlay) closeTimeModal();
@@ -15119,7 +15129,7 @@ document.addEventListener("mousedown", function (e) {
   //  🧾 人民币账单（只看，不发送）
   //  每一行同时显示澳币和人民币；零食按「单价 × 数量」两栏都乘
   // ============================================================
-  function rmbBillInfo(id) {
+  function rmbBillInfo(id, startOverride, endOverride) {
     var t = state.tables[id];
     if (!t) return null;
     var now = Date.now();
@@ -15127,6 +15137,10 @@ document.addEventListener("mousedown", function (e) {
     if (t.status === "paused") { ms = Number(t.elapsedAtPause) || 0; endTs = null; }
     else if (t.status === "ended") { ms = Math.max(0, (t.endedAt || now) - (t.sessionStart || t.endedAt || now)); }
     else { ms = t.sessionStart ? Math.max(0, now - t.sessionStart) : 0; endTs = null; }
+    var forced = false;
+    if (startOverride && endOverride && endOverride > startOverride) {
+      ms = endOverride - startOverride; startTs = startOverride; endTs = endOverride; forced = true;
+    }
     var fee = tableFeeOf(ms), fx = Number(state.fxRate) || 0;
     var lines = [], totalAud = 0, totalRmb = 0;
     // 台费：按 4 人平摊，显示「一个人的台费 × 4 = 总台费」
@@ -15159,15 +15173,15 @@ document.addEventListener("mousedown", function (e) {
       totalAud = round2(totalAud + audLine);
       totalRmb = round2(totalRmb + rmbLine);
     });
-    return { t: t, ms: ms, startTs: startTs, endTs: endTs, fee: fee, fx: fx, lines: lines, totalAud: totalAud, totalRmb: totalRmb };
+    return { t: t, ms: ms, startTs: startTs, endTs: endTs, forced: forced, fee: fee, fx: fx, lines: lines, totalAud: totalAud, totalRmb: totalRmb };
   }
-  function openRmbBill(id) {
-    var info = rmbBillInfo(id);
+  function openRmbBill(id, startOverride, endOverride) {
+    var info = rmbBillInfo(id, startOverride, endOverride);
     if (!info) return;
     var t = info.t, now = Date.now();
     var h = '<div class="rb-store">🀄 天胡麻将馆</div>' +
       '<div class="rb-meta"><b>' + esc(t.name || (id + " 号桌")) + '</b>　' +
-      (t.status === "running" ? "进行中（预估）" : t.status === "paused" ? "已暂停" : "已结束") +
+      (info.forced ? "按所选时间" : (t.status === "running" ? "进行中（预估）" : t.status === "paused" ? "已暂停" : "已结束")) +
       (info.startTs ? '　' + esc(fmtHM(info.startTs)) + ' – ' + (info.endTs ? esc(fmtHM(info.endTs)) : "进行中") : "") +
       '　·　' + (info.ms / 3600000).toFixed(1) + ' 小时' +
       (t.note ? '<br>备注：' + esc(t.note) : '') + '</div>' +
