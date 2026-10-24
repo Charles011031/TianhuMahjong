@@ -3930,7 +3930,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.17.4";
+  var APP_VER = "v3.17.5";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -16065,6 +16065,25 @@ function fbPendDrop(id) {
   save(); render(); fbPushPending();
 }
 
+// 待结算【看账单】：临时挂一张虚拟桌，复用主版的 openRmbBill
+function fbPendBill(id) {
+  var p = fbPendFind(id);
+  if (!p) return;
+  var key = "pb_" + id;
+  state.tables[key] = {
+    name: p.tableName || (p.tableNo + " 号桌"),
+    status: "ended",
+    sessionStart: p.startTs,
+    endedAt: p.endTs,
+    elapsedAtPause: 0,
+    extras: (p.extras || []).slice(),
+    note: p.note || "",
+    mahjongType: p.mahjongType || "108"
+  };
+  try { openRmbBill(key); } catch (e) { try { toast("账单打开失败：" + e.message, "#b45309"); } catch (x) {} }
+  try { delete state.tables[key]; } catch (x) {}
+}
+
 // ---------- 面板渲染 ----------
 function fbRenderPending() {
   var box = document.getElementById("fbPendingBox");
@@ -16101,6 +16120,7 @@ function fbRenderPending() {
          '　＝ 应收 <b style="color:var(--green-dark);font-size:16px;">$' + total.toFixed(2) + '</b></div>' +
          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">' +
          '<button class="btn-start sm" data-fbpend="settle" data-id="' + esc(p.id) + '">💰 结算收款</button>' +
+         '<button class="btn-ghost sm" data-fbpend="bill" data-id="' + esc(p.id) + '">📄 看账单</button>' +
          '<button class="btn-ghost sm" data-fbpend="back" data-id="' + esc(p.id) + '">↩ 搬回 ' + esc(p.tableName) + '</button>' +
          '<button class="btn-ghost sm" data-fbpend="drop" data-id="' + esc(p.id) + '">✕ 删掉</button>' +
          '</div></div>';
@@ -16159,6 +16179,7 @@ if (typeof document !== "undefined" && document.addEventListener) {
       return;
     }
     if (what === "take") { e.preventDefault(); fbPendTakeFromTable(Number(id)); }
+    else if (what === "bill") { e.preventDefault(); fbPendBill(id); }
     else if (what === "settle") { e.preventDefault(); fbPendSettle(id); }
     else if (what === "back") { e.preventDefault(); fbPendRestore(id); }
     else if (what === "drop") {
