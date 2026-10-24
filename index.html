@@ -3930,7 +3930,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.17.5";
+  var APP_VER = "v3.17.6";
   var APP_DATE = "2026-10-23";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -10608,6 +10608,20 @@ jsonpGet(t, onRes);
     if (String(it.name || "").toLowerCase().indexOf(q) >= 0) return true;
     return (snackCatOf(it) === "drink" ? "饮料 drink 喝的" : "零食 snack 吃的").indexOf(q) >= 0;
   }
+  // 库存为 0 的排到最后；其余保持原来的相对顺序（拖拽顺序不会被破坏）
+  function stockOutLast(list) {
+    var pairs = [], i;
+    for (i = 0; i < list.length; i++) {
+      pairs.push({ v: list[i], i: i, out: (Number(list[i].stock) || 0) <= 0 });
+    }
+    pairs.sort(function (a, b) {
+      if (a.out !== b.out) return a.out ? 1 : -1;
+      return a.i - b.i;
+    });
+    var out = [];
+    for (i = 0; i < pairs.length; i++) out.push(pairs[i].v);
+    return out;
+  }
   function snackListOf(cat) {
     var out = [], q = snackQuery.trim().toLowerCase(), i;
     for (i = 0; i < state.snackMenu.length; i++) {
@@ -10616,7 +10630,7 @@ jsonpGet(t, onRes);
       if (q && !snackMatchQ(it, q)) continue;
       out.push(it);
     }
-    return out;
+    return stockOutLast(out);
   }
 
   // 卡片上的 − / ＋：直接改点单数量（减到 0 自动移出点单）
@@ -11987,7 +12001,8 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
       for (var k = 0; k < state.vapes.length; k++) {
         if ((Number(state.vapes[k].gen) === 2 ? 2 : 1) === gens[gi].g) glist.push(state.vapes[k]);
       }
-      // ★ 不再按名字排序：顺序就是数据里的顺序（拖动排序改的就是它）
+      // ★ 库存为 0 的排最后；其余按数据里的顺序（拖动排序改的就是它）
+      glist = stockOutLast(glist);
       h += '<section class="snack-col ' + (gens[gi].g === 1 ? "c-g1" : "c-g2") +
            '" data-catbox="g' + gens[gi].g + '">' +
            '<h3>' + gens[gi].title + ' <span class="cnt">' + glist.length + " 个</span></h3>" +
