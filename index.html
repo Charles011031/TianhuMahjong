@@ -1667,6 +1667,31 @@
   body.dark #splitPanel .sp-chip, body.dark #splitPanel .sp-pay, body.dark #splitPanel .sp-mini { background:#111827;color:#d1d5db;border-color:#374151; }
   body.dark #splitPanel .sp-chip.on { background:#145a3a;color:#fff;border-color:#1d7a4f; }
   body.dark #splitPanel .sp-pay.on { background:#1d7a4f;color:#fff; }
+  /* 应收旁边的小字说明：刷卡含手续费 / 人民币折澳币（v3.18.0） */
+  #splitPanel .sp-due-sub { margin-left:5px;font-size:11.5px;color:var(--muted);font-weight:400; }
+  /* 会员搜索选择（v3.18.0）：会员多时下拉太难找，改成打字筛选 + 点选 */
+  #splitPanel .sp-memsearch { width:150px;max-width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:var(--ink); }
+  #splitPanel .sp-memlist { display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;max-height:138px;overflow:auto; }
+  #splitPanel .sp-mem { font-family:inherit;cursor:pointer;font-size:12.5px;font-weight:700;border-radius:999px;padding:7px 11px;border:1px solid #e3e8e5;background:#fff;color:#374151;display:inline-flex;align-items:center;gap:6px; }
+  #splitPanel .sp-mem.on { border-color:#1d7a4f;background:#1d7a4f;color:#fff; }
+  #splitPanel .sp-mem .sp-membal { font-weight:400;font-size:11.5px;opacity:.85; }
+  body.dark #splitPanel .sp-mem { background:#111827;color:#d1d5db;border-color:#374151; }
+  body.dark #splitPanel .sp-mem.on { background:#1d7a4f;color:#fff; }
+  body.dark #splitPanel .sp-memsearch { background:#111827;color:#e5e7eb;border-color:#374151; }
+
+  /* ===== 挂桌零食 / 饮料编辑弹窗（v3.18.0） ===== */
+  .ex-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line); }
+  .ex-row:last-child { border-bottom:0; }
+  .ex-name { flex:1 1 auto;min-width:0;text-align:left; }
+  .ex-name b { font-size:14.5px; }
+  .ex-name .ex-price { color:var(--muted);font-size:12px;margin-left:6px; }
+  .ex-step { display:flex;align-items:center;gap:4px;flex:0 0 auto; }
+  .ex-step button { width:34px;height:34px;padding:0;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:18px;line-height:1;cursor:pointer; }
+  .ex-step input { width:52px;height:34px;text-align:center;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;background:#fff;color:var(--ink); }
+  .ex-del { flex:0 0 auto;padding:7px 10px;border-radius:8px;border:1px solid #fca5a5;background:#fff;color:#b91c1c;font-size:12.5px;font-weight:700;cursor:pointer; }
+  .ex-empty { color:var(--muted);font-size:13.5px;padding:16px 0;text-align:center; }
+  body.dark .ex-step button, body.dark .ex-step input { background:#111827;color:#e5e7eb;border-color:#374151; }
+  body.dark .ex-del { background:#111827; }
 
   /* ===== 收款明细用新面板替代：隐藏旧的按笔行 ===== */
   #sSplitWrap > label, #sParts, #sAddRow, #sSplitBtn, #sSplitToggle, #sShareFee4,
@@ -2892,6 +2917,18 @@
     </div>
   </div>
 
+  <!-- 挂桌零食 / 饮料编辑弹窗（v3.18.0） -->
+  <div class="overlay" id="extrasOverlay">
+    <div class="modal">
+      <h3 id="extrasTitle">挂桌零食</h3>
+      <div id="extrasBody" style="max-height:60vh;overflow:auto;text-align:left;"></div>
+      <div class="modal-btns">
+        <button id="extrasSave" class="btn-start">保存</button>
+        <button id="extrasCancel" class="btn-ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 (function () {
   "use strict";
@@ -3347,6 +3384,23 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.18.0  2026-10-26
+  //    + 按人分账：每人的「应收」跟着收款方式变（用户要求）★
+  //      · 刷卡 → 显示含手续费的实际要收金额 + 注明含多少手续费
+  //      · 人民币 → 大字 ¥ + 灰色小字 ≈ 澳币（和整单结算 v3.14.6 规则一致）
+  //    + 按人分账默认改成【刷卡】（原来默认现金）
+  //    + 按人分账选会员：改成「搜姓名/电话 → 点一下选中」（会员多，下拉太难找）
+  //    + 挂桌零食 / 饮料可以编辑了（改数量 / 删掉，库存自动扣回）★
+  //      · 桌台卡片上「✎ 编辑」；待结算区也加了「✎ 改零食」
+  //    + 修【换桌把目标桌的挂账零食冲掉】★★★（用户实测）
+  //      · 根因：换桌时 dst.extras = src.extras 直接覆盖 ✗
+  //      · 现在两边合并（同品名同单价数量相加）；上次未付也相加，不再互相覆盖
+  //    + 修【待结算有时会莫名其妙消失】★★★（用户反馈）
+  //      · 待结算同步合并规则改了：本机新建、还没被云端确认的条目不再被空快照抹掉
+  //        （以前离线/REST 轮询时收进待结算 → 一刷新就没了）
+  //      · 结算弹窗关掉时不再按「记录条数变多」判断有没有收款，
+  //        只认这次虚拟桌自己产生的记录（以前别的设备进来一条记录就会误删待结算）
+  //      · REST 兜底模式也会拉待结算了
   //  v3.15.3  2026-10-23
   //    + 所有「删除」统一改成两下确认（第一下亮红提示「再点一次」，第二下才真删）★
   //      · 新增：店铺待办删除
@@ -3930,8 +3984,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.17.6";
-  var APP_DATE = "2026-10-23";
+  var APP_VER = "v3.18.0";
+  var APP_DATE = "2026-10-26";
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
@@ -4222,8 +4276,9 @@
           exTxt.push(esc(t.extras[e2].name) + "×" + t.extras[e2].qty);
         }
         html += '  <div class="table-extras">🍜 ' + exTxt.join("、") + ' = $' + exSum.toFixed(2) +
+                '<button class="btn-ghost" data-act="editextras" data-id="' + i + '" style="margin-left:auto;">✎ 编辑</button>' +
                 '<button class="btn-ghost" data-act="clearextras" data-id="' + i + '" data-armkey="extras-clear"' +
-                (armGet("extras-clear") === String(i) ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+                (armGet("extras-clear") === String(i) ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;margin-left:0;"' : ' style="margin-left:0;"') + ">" +
                 (armGet("extras-clear") === String(i) ? "再点一次" : "清除") + "</button></div>";
       }
       html += '  <div class="note"><label>备注</label><input type="text" placeholder="备注…" data-field="note" data-id="' + i + '" value="' + esc(t.note) + '"></div>';
@@ -4567,6 +4622,8 @@
       }
       t.extras = [];
       save(); render();
+    } else if (act === "editextras") {
+      openExtrasEditor(id);
     } else if (act === "move") {
       openMoveModal(id);
     } else if (act === "cancel") {
@@ -6031,7 +6088,8 @@
     }
     return { n: n, items: items, fee: fee, myFee: myFee, feePay: feePay, snackOwn: snackOwn, itemTotal: itemTotal, unassigned: unassigned };
   }
-  // 每个人选中的收款方式（cash/card/rmb/member）；默认现金
+  // 每个人选中的收款方式（cash/card/rmb/member）
+  // ★ v3.18.0：按人分账默认改成【刷卡】（用户要求；整单本来就默认刷卡）
   // ===== 结算界面两种模式：single = 整单一笔付（默认）；split = 按人分账 =====
   var spMode = "single";
   var SP_METHODS = [["cash", "现金"], ["card", "刷卡"], ["rmb", "人民币"], ["member", "会员"]];
@@ -6039,6 +6097,7 @@
   var spSingleActual = null, spSingleRmb = null;
   var spSingleShortActual = null, spSingleShortRmb = null, spSingleSnackActual = null, spSingleSnackRmb = null;
   var splitMethods = {}, splitMembers = {}, splitSnackMethods = {}, splitShortMethods = {}, splitActual = {}, splitRmb = {};
+  var splitMemberSearch = {};   // 会员搜索框里打的字（按人分账用，v3.18.0）
   var splitShortActual = {}, splitShortRmb = {}, splitSnackActual = {}, splitSnackRmb = {};
 
   function spResetSingle() {
@@ -6049,8 +6108,10 @@
   function spResetMethods() {
     var n = splitCurrentN();
     splitMethods = {}; splitMembers = {}; splitSnackMethods = {}; splitShortMethods = {}; splitActual = {}; splitRmb = {};
+    splitMemberSearch = {};
     splitShortActual = {}; splitShortRmb = {}; splitSnackActual = {}; splitSnackRmb = {};
-    for (var p = 1; p <= n; p++) { splitMethods[p] = "cash"; splitMembers[p] = ""; splitSnackMethods[p] = "cash"; splitShortMethods[p] = "cash"; }
+    // ★ v3.18.0：按人分账默认【刷卡】（现金要找零、客人多数刷卡）；差额和零食默认现金
+    for (var p = 1; p <= n; p++) { splitMethods[p] = "card"; splitMembers[p] = ""; splitSnackMethods[p] = "cash"; splitShortMethods[p] = "cash"; }
   }
   function spSnackHint(amount, method) {
     amount = round2(amount);
@@ -6077,6 +6138,77 @@
       h += '<option value="' + esc(mems[i].id) + '"' + (sel === mems[i].id ? " selected" : "") + '>' + esc(mems[i].name) + '（余额 ' + fmtMoney(mems[i].balance) + '）</option>';
     }
     return h;
+  }
+  // ============ 按人分账：会员可搜索（v3.18.0） ============
+  // 会员 60~70 个，原生下拉在手机上翻很久；改成「打字筛选 + 点一下选中」
+  function spMemberMatched(p) {
+    var f = (splitMemberSearch[p] || "").trim().toLowerCase();
+    var out = [], mems = state.members || [];
+    for (var i = 0; i < mems.length; i++) {
+      var m = mems[i];
+      if (f) {
+        var hay = ((m.name || "") + " " + (m.phone || "")).toLowerCase();
+        if (hay.indexOf(f) < 0) continue;
+      }
+      out.push(m);
+    }
+    return out;
+  }
+  function spMemberListHtml(p, list, limit) {
+    if (!list.length) return '<div class="hint" style="margin:0;font-size:12px;">没有匹配的会员</div>';
+    var sel = splitMembers[p] || "", h = "", n = 0;
+    for (var i = 0; i < list.length && n < limit; i++) {
+      var m = list[i];
+      h += '<button type="button" class="sp-mem' + (m.id === sel ? ' on' : '') + '" data-spmset="' + p + '|' + esc(m.id) + '">' +
+           esc(m.name) + '<span class="sp-membal">$' + (Number(m.balance) || 0).toFixed(2) + '</span></button>';
+      n++;
+    }
+    if (list.length > n) h += '<span class="hint" style="margin:0;font-size:12px;">还有 ' + (list.length - n) + ' 个，继续打字搜索</span>';
+    return h;
+  }
+  function spRenderMemberList(p) {
+    var box = document.querySelector('#spPeople [data-spmlist="' + p + '"]');
+    if (!box) return;
+    var f = (splitMemberSearch[p] || "").trim();
+    box.innerHTML = spMemberListHtml(p, spMemberMatched(p), f ? 30 : 10);
+  }
+  function spMemberPicker(p) {
+    var sel = splitMembers[p] || "";
+    var picked = sel ? findMember(sel) : null;
+    var f = (splitMemberSearch[p] || "").trim();
+    return '<div class="sp-methodline sp-memwrap" style="margin-top:6px;display:block;">' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+      '<span style="font-size:12.5px;">会员</span>' +
+      '<input type="search" class="sp-memsearch" data-spmsearch="' + p + '" placeholder="搜姓名 / 电话…" value="' + esc(splitMemberSearch[p] || "") + '" autocomplete="off">' +
+      (picked ? '<span style="font-size:12.5px;color:var(--green-dark);font-weight:700;">已选：' + esc(picked.name) + '</span>'
+              : '<span class="hint" style="margin:0;font-size:12px;">先搜索，再点会员</span>') +
+      '</div><div class="sp-memlist" data-spmlist="' + p + '">' + spMemberListHtml(p, spMemberMatched(p), f ? 30 : 10) + '</div></div>';
+  }
+  // 每人卡片右上角的「应收」跟着收款方式变（v3.18.0）：
+  //   刷卡 → 显示含手续费的实际要收的钱，并注明含多少手续费
+  //   人民币 → 大字人民币 ¥ + 灰色小字 ≈ 澳币（和整单结算 v3.14.6 的规则一致）
+  function spDueDisplay(p, total, method) {
+    total = round2(total);
+    if (method === "card") {
+      var act = (splitActual[p] != null && splitActual[p] !== "") ? round2(splitActual[p]) : round2(total + feeOf(total));
+      var fee = round2(Math.max(0, act - total));
+      return '应收 ' + fmtMoney(act) + (fee > 0.005 ? '<span class="sp-due-sub">（含手续费 ' + fmtMoney(fee) + '）</span>' : '');
+    }
+    if (method === "rmb") {
+      var fx = Number(state.fxRate) || 0;
+      var rmb = (splitRmb[p] != null && splitRmb[p] !== "") ? round2(splitRmb[p]) : (fx > 0 ? round2(total * fx) : 0);
+      if (rmb > 0) return '应收 ¥' + rmb.toFixed(2) + '<span class="sp-due-sub">（≈ ' + fmtMoney(total) + ' 澳币）</span>';
+    }
+    return '应收 ' + fmtMoney(total);
+  }
+  // 只改某个人卡片右上角的「应收」，不整块重画（避免实收输入框失去焦点）
+  function spUpdateDue(p) {
+    var people = document.querySelectorAll('#spPeople .sp-person');
+    var el = people[p - 1] ? people[p - 1].querySelector('.sp-due') : null;
+    if (!el) return;
+    var c = spCalcSplit();
+    var total = round2((c.feePay[p] || 0) + (c.snackOwn[p] || 0));
+    el.innerHTML = spDueDisplay(p, total, splitMethods[p] || "card");
   }
   function spBuildParts() {
     if (!settleData) return;
@@ -6143,7 +6275,7 @@
     for (p = 1; p <= c.n; p++) {
       var fee = c.feePay[p] || 0, snack = c.snackOwn[p] || 0;
       if (fee + snack <= 0.005) continue;
-      var method = splitMethods[p] || "cash";
+      var method = splitMethods[p] || "card";   // v3.18.0：分账默认刷卡
       var label = (c.n > 1 ? (p + " 号 ") : "");
       if (method === "member") {
         var memP = findMember(splitMembers[p]);
@@ -6327,7 +6459,7 @@
         var total = round2((c.feePay[p] || 0) + snack);
         var payOthers = [];
         for (var x = 1; x <= c.n; x++) if (x !== p && (splitFeePayer[x] || x) === p) payOthers.push(x);
-        h += '<div class="sp-person"><div class="sp-person-top"><b>' + p + ' 号</b><b class="sp-due">应收 ' + fmtMoney(total) + '</b></div>' +
+        h += '<div class="sp-person"><div class="sp-person-top"><b>' + p + ' 号</b><b class="sp-due">' + spDueDisplay(p, total, splitMethods[p] || "card") + '</b></div>' +
              '<div class="sp-line">台费 ' + fmtMoney(c.feePay[p] || 0) +
              (payOthers.length ? '（含代付 ' + payOthers.join('、') + ' 号台费）' : '') +
              '　·　零食 ' + fmtMoney(snack) + '</div>' +
@@ -6338,14 +6470,14 @@
           h += '<button type="button" class="sp-pay' + (paidBy === q2 ? ' on' : '') + '" data-sppay="' + p + '|' + q2 + '">' + q2 + ' 号付</button>';
         }
         h += '</div>' + (paidBy !== p ? '<div class="sp-note">本号台费由 ' + paidBy + ' 号 付</div>' : '');
-        var method = splitMethods[p] || "cash";
+        var method = splitMethods[p] || "card";   // v3.18.0：分账默认刷卡
         h += '<div class="sp-payline sp-methodline"><span>怎么付</span>';
         for (var mi = 0; mi < SP_METHODS.length; mi++) {
           h += '<button type="button" class="sp-pay' + (method === SP_METHODS[mi][0] ? ' on' : '') + '" data-spmethod="' + p + '|' + SP_METHODS[mi][0] + '">' + SP_METHODS[mi][1] + '</button>';
         }
         h += '</div>';
         if (method === "member") {
-          h += '<div class="sp-methodline" style="margin-top:5px;">会员：<select data-spmember="' + p + '">' + spMemberOptions(splitMembers[p]) + '</select></div>';
+          h += spMemberPicker(p);
           var feeDue = c.feePay[p] || 0;
           var memP2 = findMember(splitMembers[p]);
           if (memP2) {
@@ -6455,11 +6587,11 @@
       try { c = spCalcSplit(); } catch (x) { return; }
       var miss = 0;
       for (var p = 1; p <= c.n; p++) {
-        if ((c.feePay[p] || 0) > 0.005 && (splitMethods[p] || "cash") === "member" && !splitMembers[p]) { miss = p; break; }
+        if ((c.feePay[p] || 0) > 0.005 && (splitMethods[p] || "card") === "member" && !splitMembers[p]) { miss = p; break; }
       }
       if (!miss) return;
       e.preventDefault(); e.stopPropagation();
-      var sel = document.querySelector('#spPeople select[data-spmember="' + miss + '"]');
+      var sel = document.querySelector('#spPeople input[data-spmsearch="' + miss + '"]');
       if (sel) { try { sel.scrollIntoView({ block: "center" }); } catch (x2) {} sel.focus(); }
       var msg = document.getElementById("splitMsg");
       if (msg) msg.innerHTML = '<span style="color:#b45309;">' + miss + ' 号选了会员，但还没选是哪个会员，先在上面选一下。</span>';
@@ -6491,6 +6623,9 @@
     panel.addEventListener("input", function (e) {
       var el = e.target;
       if (!el || !el.getAttribute) return;
+      // 会员搜索框（v3.18.0）：只重画这个小列表，不整页重画，输入框才不丢焦点
+      var msearch = el.getAttribute("data-spmsearch");
+      if (msearch) { splitMemberSearch[Number(msearch)] = el.value; spRenderMemberList(Number(msearch)); return; }
       if (el.getAttribute("data-spsingleactual")) { spSingleActual = el.value; spBuildSingleParts(); return; }
       if (el.getAttribute("data-spsinglermb")) { spSingleRmb = el.value; spBuildSingleParts(); return; }
       if (el.getAttribute("data-spsingleshortactual")) { spSingleShortActual = el.value; spBuildSingleParts(); return; }
@@ -6506,9 +6641,9 @@
       var psn2 = el.getAttribute("data-spsnackrmb");
       if (psn2) { splitSnackRmb[Number(psn2)] = el.value; spBuildSplitParts(); return; }
       var pa = el.getAttribute("data-spsplitactual");
-      if (pa) { splitActual[Number(pa)] = el.value; spBuildSplitParts(); return; }
+      if (pa) { splitActual[Number(pa)] = el.value; spBuildSplitParts(); spUpdateDue(Number(pa)); return; }
       var pr = el.getAttribute("data-spsplitrmb");
-      if (pr) { splitRmb[Number(pr)] = el.value; spBuildSplitParts(); return; }
+      if (pr) { splitRmb[Number(pr)] = el.value; spBuildSplitParts(); spUpdateDue(Number(pr)); return; }
     });
   })();
   // 新界面点击：分零食 / 减 / 平分 / 清空 / 台费谁付
@@ -6525,8 +6660,17 @@
       var q5 = t.closest("[data-sppay]");
       var m1 = t.closest("[data-spmethod]");
       var m2 = t.closest("[data-spsnackm]");
+      var ms1 = t.closest("[data-spmset]");
       var sm1 = t.closest("[data-spsinglemethod]");
       var sm2 = t.closest("[data-spsinglesnackm]");
+      if (ms1) {   // 会员搜索里点中一个会员（v3.18.0）
+        var pms = ms1.getAttribute("data-spmset").split("|");
+        var pwhoM = Number(pms[0]);
+        splitMembers[pwhoM] = pms[1];
+        splitMemberSearch[pwhoM] = "";
+        renderSplitUI(); spBuildSplitParts();
+        return;
+      }
       if (sm1) {
         spSingleMethod = sm1.getAttribute("data-spsinglemethod");
         spSingleActual = null; spSingleRmb = null;
@@ -13909,6 +14053,179 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   attOverlay.addEventListener("click", function (e) { if (e.target === attOverlay) closeAttModal(); });
 
   // ============================================================
+  //  挂桌零食 / 饮料：编辑（改数量 / 删掉，库存跟着回补）
+  //  ★ v3.18.0：以前挂上去只能整块「清除」，数量点错了没法改 ✗
+  // ============================================================
+  function snackStockIndex(name) {
+    for (var i = 0; i < state.snackMenu.length; i++) {
+      if (state.snackMenu[i].name === name) return i;
+    }
+    return -1;
+  }
+  // delta > 0：退回库存；delta < 0：从库存扣掉
+  function adjustSnackStock(name, delta) {
+    if (!delta) return;
+    var i = snackStockIndex(name);
+    if (i < 0) return;
+    var s = Number(state.snackMenu[i].stock) || 0;
+    state.snackMenu[i].stock = Math.max(0, s + delta);
+  }
+  // 换桌时把两边的零食合起来（同品名同单价的数量相加，不互相覆盖）
+  // ★ v3.18.0 修：以前是 dst.extras = src.extras，会把目标桌原有的零食直接冲掉
+  function mergeExtras(a, b) {
+    var out = [], i, j;
+    for (i = 0; i < (a || []).length; i++) {
+      out.push({ name: a[i].name, price: Number(a[i].price) || 0, qty: Number(a[i].qty) || 0 });
+    }
+    for (i = 0; i < (b || []).length; i++) {
+      var x = { name: b[i].name, price: Number(b[i].price) || 0, qty: Number(b[i].qty) || 0 };
+      var hit = -1;
+      for (j = 0; j < out.length; j++) {
+        if (out[j].name === x.name && Math.abs((Number(out[j].price) || 0) - x.price) < 0.005) { hit = j; break; }
+      }
+      if (hit >= 0) out[hit].qty = (Number(out[hit].qty) || 0) + x.qty;
+      else out.push(x);
+    }
+    return out.filter(function (y) { return (Number(y.qty) || 0) > 0; });
+  }
+
+  var extrasOverlay = document.getElementById("extrasOverlay");
+  var extrasEditId = null;
+  var extrasEditItems = [];
+  var extrasEditSave = null;
+  // 通用入口：任何「一串 {name,price,qty}」都能编辑，保存时回调写回自己的数据源
+  function openExtrasEditorFor(title, items, saveFn) {
+    extrasEditItems = (items || []).map(function (x) {
+      return { name: x.name, price: Number(x.price) || 0, qty: Number(x.qty) || 0, origQty: Number(x.qty) || 0 };
+    });
+    extrasEditSave = saveFn || null;
+    document.getElementById("extrasTitle").textContent = title || "挂桌零食 / 饮料";
+    renderExtrasEditor();
+    extrasOverlay.classList.add("show");
+  }
+  function openExtrasEditor(id) {
+    var t = state.tables[id];
+    if (!t) return;
+    extrasEditId = id;
+    openExtrasEditorFor((t.name || (id + " 号桌")) + " · 挂桌零食/饮料", t.extras, function (out) {
+      t.extras = out;
+      save(); render();
+      logOp("改挂桌零食", (t.name || (id + " 号桌")) + "　" +
+        (out.length ? out.map(function (x) { return x.name + "×" + x.qty; }).join("、") : "（清空）"));
+    });
+  }
+  function closeExtrasEditor() {
+    extrasOverlay.classList.remove("show");
+    extrasEditId = null; extrasEditItems = []; extrasEditSave = null;
+  }
+  // 已经挂在桌上的数量已经扣过库存；再加只能加到当前库存为止
+  function extrasMaxQty(it) {
+    var i = snackStockIndex(it.name);
+    if (i < 0) return Infinity;      // 菜单里找不到（老商品/已删商品）→ 不按库存限制
+    var stock = Math.max(0, Number(state.snackMenu[i].stock) || 0);
+    return (Number(it.origQty) || 0) + stock;
+  }
+  function extrasEditSum() {
+    var s = 0;
+    for (var i = 0; i < extrasEditItems.length; i++) s += (Number(extrasEditItems[i].price) || 0) * (Number(extrasEditItems[i].qty) || 0);
+    return round2(s);
+  }
+  function renderExtrasEditor() {
+    var box = document.getElementById("extrasBody");
+    if (!box) return;
+    // 删掉的条目保留在 extrasEditItems 里（qty 记成 0），保存时才能把库存加回去；
+    // 但界面上不再显示它
+    var active = extrasEditItems.filter(function (x) { return !x._deleted; });
+    if (!active.length) {
+      box.innerHTML = '<div class="ex-empty">桌上没有挂东西了</div>';
+      return;
+    }
+    var h = '<div class="hint" style="margin:0 0 4px;text-align:left;">改数量会自动调整库存：加 → 扣库存；减 / 删掉 → 库存加回去。</div>';
+    for (var i = 0; i < extrasEditItems.length; i++) {
+      var it = extrasEditItems[i];
+      if (it._deleted) continue;
+      h += '<div class="ex-row" data-exi="' + i + '">' +
+           '<div class="ex-name"><b>' + esc(it.name) + '</b><span class="ex-price">单价 $' + (Number(it.price) || 0).toFixed(2) + '</span></div>' +
+           '<div class="ex-step"><button type="button" data-exminus="' + i + '" aria-label="减">−</button>' +
+           '<input type="number" min="0" step="1" data-exqty="' + i + '" value="' + (Number(it.qty) || 0) + '">' +
+           '<button type="button" data-explus="' + i + '" aria-label="加">＋</button></div>' +
+           '<button type="button" class="ex-del" data-exdel="' + i + '">删掉</button>' +
+           '</div>';
+    }
+    h += '<div class="hint" style="margin:10px 0 0;text-align:left;">合计 <b id="extrasEditSum">$' + extrasEditSum().toFixed(2) + '</b></div>';
+    box.innerHTML = h;
+  }
+  function saveExtrasEditor() {
+    var out = [], i;
+    for (i = 0; i < extrasEditItems.length; i++) {
+      var it = extrasEditItems[i];
+      var q = Math.max(0, Math.floor(Number(it.qty) || 0));
+      var delta = q - (Number(it.origQty) || 0);
+      if (delta > 0) {
+        var mi = snackStockIndex(it.name);
+        if (mi >= 0) {                    // 菜单里能找到才按库存限制；找不到（老商品）就不限制
+          var stock = Math.max(0, Number(state.snackMenu[mi].stock) || 0);
+          if (delta > stock) {            // 库存不够 → 只加到能加的数量，并提示
+            q = (Number(it.origQty) || 0) + stock;
+            delta = stock;
+            toast("「" + it.name + "」库存不够，最多只能加到 " + q + " 份", "#b45309");
+          }
+        }
+      }
+      if (delta !== 0) adjustSnackStock(it.name, -delta);
+      if (q > 0) out.push({ name: it.name, price: Number(it.price) || 0, qty: q });
+    }
+    var cb = extrasEditSave;
+    closeExtrasEditor();
+    if (cb) cb(out);
+  }
+  document.getElementById("extrasSave").addEventListener("click", saveExtrasEditor);
+  document.getElementById("extrasCancel").addEventListener("click", closeExtrasEditor);
+  extrasOverlay.addEventListener("click", function (e) { if (e.target === extrasOverlay) closeExtrasEditor(); });
+  document.getElementById("extrasBody").addEventListener("click", function (e) {
+    var el = e.target;
+    if (!el || !el.closest) return;
+    var mi = el.closest("[data-exminus]"), pl = el.closest("[data-explus]"), dl = el.closest("[data-exdel]");
+    if (mi) {
+      var i1 = parseInt(mi.getAttribute("data-exminus"), 10), it1 = extrasEditItems[i1];
+      if (!it1) return;
+      if (it1.qty > 0) it1.qty = Math.max(0, it1.qty - 1);
+      renderExtrasEditor();
+      return;
+    }
+    if (pl) {
+      var i2 = parseInt(pl.getAttribute("data-explus"), 10), it2 = extrasEditItems[i2];
+      if (!it2) return;
+      if (it2.qty >= extrasMaxQty(it2)) { toast("库存不够，加不了了", "#b45309"); return; }
+      it2.qty = (Number(it2.qty) || 0) + 1;
+      renderExtrasEditor();
+      return;
+    }
+    if (dl) {
+      var i3 = parseInt(dl.getAttribute("data-exdel"), 10);
+      if (!isNaN(i3) && extrasEditItems[i3]) {
+        // ★ 不真删数组：qty 记 0 并标记 _deleted，保存时按 0-origQty 把库存加回去
+        extrasEditItems[i3].qty = 0;
+        extrasEditItems[i3]._deleted = true;
+      }
+      renderExtrasEditor();
+      return;
+    }
+  });
+  document.getElementById("extrasBody").addEventListener("input", function (e) {
+    var el = e.target;
+    if (!el || !el.getAttribute || !el.getAttribute("data-exqty")) return;
+    var i = parseInt(el.getAttribute("data-exqty"), 10), it = extrasEditItems[i];
+    if (!it) return;
+    var v = Math.max(0, Math.floor(Number(el.value) || 0));
+    var max = extrasMaxQty(it);
+    if (v > max) { v = max; el.value = String(v); toast("库存不够，最多 " + v + " 份", "#b45309"); }
+    it.qty = v;
+    var sumEl = document.getElementById("extrasEditSum");
+    if (sumEl) sumEl.textContent = "$" + extrasEditSum().toFixed(2);
+  });
+
+  // ============================================================
   //  换桌
   // ============================================================
   var moveOverlay = document.getElementById("moveOverlay");
@@ -13944,10 +14261,14 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     dst.status = src.status;
     dst.sessionStart = src.sessionStart;
     dst.elapsedAtPause = src.elapsedAtPause;
-    dst.extras = src.extras || [];
-    dst.note = src.note || "";
-    dst.mahjongType = src.mahjongType || "";
-    dst.carry = Number(src.carry) || 0;          // 上次未付跟着人走
+    // ★ v3.18.0 修：以前是 dst.extras = src.extras → 目标桌原有的挂账零食被冲掉
+    //   （用户实测：1 号桌先挂了矿泉水没计时，2 号桌换了桌过来，矿泉水就没了）
+    //   现在两边合并：同品名同单价数量相加，不会互相覆盖
+    dst.extras = mergeExtras(dst.extras, src.extras);
+    dst.note = src.note || dst.note || "";
+    dst.mahjongType = src.mahjongType || dst.mahjongType || "";
+    // 上次未付也跟着这张桌走；目标桌本来也欠着钱的，两笔都留着
+    dst.carry = round2((Number(dst.carry) || 0) + (Number(src.carry) || 0));
     dst.endedAt = src.endedAt || null;           // ★「待结算」桌的结束时间也要搬过去，不然会丢
     dst.lastResult = null;
     src.status = "idle"; src.sessionStart = null; src.elapsedAtPause = 0;
@@ -15333,6 +15654,51 @@ function fbMergeCol(node, cloudRows, getLocal) {
   return out;
 }
 
+// ============================================================
+//  待结算（pending）专用合并 —— 比通用 fbMergeCol 更保守
+//  ★ v3.18.0 修（用户反馈：待结算有时候莫名其妙消失）
+//  根因有两种：
+//    ① 这台设备离线 / 走了 REST 兜底轮询时，收进待结算的那条还没推上云端；
+//       刷新页面后云端快照里没有它 → 被当成"别人删了" → 直接消失 ✗
+//    ② "结算弹窗关掉"时按【记录条数变多】判断这次有没有收款 →
+//       期间别的设备进来一条记录，就会把只是打开看看的待结算误删 ✗
+//  规则：
+//    云端有 → 用云端的（并标记 syncedAt = 已被云端确认过）
+//    本机有、云端没有：
+//      · 20 秒内刚写的 → 先留着（马上会推上去）
+//      · 从没被云端确认过、而且是最近的（24 小时内）→ 留着，下一步补推上去 ✓
+//      · 被云端确认过 / 很旧且从没确认 → 说明别的设备删了或收款了 → 跟着消失
+function fbMergePending(cloudRows) {
+  var now = Date.now(), out = [], seen = {}, i, r;
+  for (i = 0; i < (cloudRows || []).length; i++) {
+    r = cloudRows[i];
+    if (!r || !r.id) continue;
+    var dk = "pending/" + r.id;
+    if (fbRecentDel[dk] && now - fbRecentDel[dk] < FB_GUARD_MS) continue;
+    r.syncedAt = now;                       // 云端已经确认过这一条
+    seen[String(r.id)] = 1;
+    out.push(r);
+  }
+  var local = [];
+  try { local = state.pending || []; } catch (e) {}
+  for (i = 0; i < local.length; i++) {
+    r = local[i];
+    if (!r || !r.id) continue;
+    if (seen[String(r.id)]) continue;
+    var wk = "pending/" + r.id;
+    var guarded = (fbRecentWrite[wk] && now - fbRecentWrite[wk] < FB_GUARD_MS);
+    var mAt = Number(r.movedAt) || 0;
+    var freshEnough = mAt > 0 && (now - mAt) < 24 * 3600 * 1000;
+    if (guarded || (!r.syncedAt && freshEnough)) {
+      // 本机新建、还没被云端确认 → 留着（fbPushPending 会补推）
+      seen[String(r.id)] = 1;
+      out.push(r);
+    }
+    // 否则：云端确认过又没了 = 别的设备删了/收款了 → 跟着消失（不复活旧账单）
+  }
+  return out;
+}
+
 // ---------- 集合定义：节点名 = app 原来推送的目标名（必须一致！）----------
 var FB_COLS = [
   { node: "records", apply: function (rows) {
@@ -15655,7 +16021,13 @@ function fbRestPullAll(forceAll) {
   });
   var i = 0;
   (function step() {
-    if (i >= todo.length) { fbRestBusy = false; save(); fbRenderAll(); return; }
+    if (i >= todo.length) {
+      // ★ v3.18.0：REST 兜底模式也要拉【待结算】。
+      //   以前 pending 只在 WebSocket 监听里处理 → REST 模式下永远不拉，
+      //   于是"本机新建的推不上去、别的设备也看不到"，刷新后还会被空快照吞掉。
+      fbRestPullPending(function () { fbRestBusy = false; save(); fbRenderAll(); });
+      return;
+    }
     var col = todo[i++];
     fetch(fbRestUrl(col.node)).then(function (r) {
       if (!r.ok) { step(); return null; }
@@ -15669,6 +16041,26 @@ function fbRestPullAll(forceAll) {
       step();
     }).catch(function () { step(); });
   })();
+}
+// REST 模式下拉待结算（跟实时监听走同一套合并规则）
+function fbRestPullPending(done) {
+  var url = fbRestUrl("pending");
+  if (!url) { if (done) done(); return; }
+  fetch(url).then(function (r) {
+    if (!r.ok) return null;
+    return r.json();
+  }).then(function (v) {
+    if (v === null || v === undefined) { if (done) done(); return; }
+    var rows = [], k;
+    for (k in v) if (v.hasOwnProperty(k) && v[k]) { var o = v[k]; o.id = o.id || String(k); rows.push(o); }
+    try {
+      state.pending = fbMergePending(rows);
+      fbPendingReady = true;
+      fbPendingCloud = {};
+      for (var pi = 0; pi < state.pending.length; pi++) fbPendingCloud[state.pending[pi].id] = 1;
+    } catch (e) {}
+    if (done) done();
+  }).catch(function () { if (done) done(); });
 }
 function fbRestWrite(path, obj) {
   var url = fbRestUrl(path);
@@ -16080,6 +16472,19 @@ function fbPendDrop(id) {
   save(); render(); fbPushPending();
 }
 
+// 待结算【改零食】：直接编辑这条待结算里快照的 extras（库存同样扣/回补）
+// ★ v3.18.0：复用主版的 openExtrasEditorFor（用户要求：挂桌零食要能改）
+function fbPendEditExtras(id) {
+  var p = fbPendFind(id);
+  if (!p) return;
+  if (typeof openExtrasEditorFor !== "function") { try { toast("这个版本不支持编辑零食", "#b45309"); } catch (e) {} return; }
+  openExtrasEditorFor((p.tableName || (p.tableNo + " 号桌")) + " · 挂桌零食/饮料", p.extras || [], function (out) {
+    p.extras = out;
+    save(); fbPendChanged();
+    try { toast("待结算的零食已更新 ✓", "var(--green-dark)"); } catch (e) {}
+  });
+}
+
 // 待结算【看账单】：临时挂一张虚拟桌，复用主版的 openRmbBill
 function fbPendBill(id) {
   var p = fbPendFind(id);
@@ -16136,6 +16541,7 @@ function fbRenderPending() {
          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">' +
          '<button class="btn-start sm" data-fbpend="settle" data-id="' + esc(p.id) + '">💰 结算收款</button>' +
          '<button class="btn-ghost sm" data-fbpend="bill" data-id="' + esc(p.id) + '">📄 看账单</button>' +
+         ((p.extras || []).length ? '<button class="btn-ghost sm" data-fbpend="extras" data-id="' + esc(p.id) + '">✎ 改零食</button>' : '') +
          '<button class="btn-ghost sm" data-fbpend="back" data-id="' + esc(p.id) + '">↩ 搬回 ' + esc(p.tableName) + '</button>' +
          '<button class="btn-ghost sm" data-fbpend="drop" data-id="' + esc(p.id) + '">✕ 删掉</button>' +
          '</div></div>';
@@ -16195,6 +16601,7 @@ if (typeof document !== "undefined" && document.addEventListener) {
     }
     if (what === "take") { e.preventDefault(); fbPendTakeFromTable(Number(id)); }
     else if (what === "bill") { e.preventDefault(); fbPendBill(id); }
+    else if (what === "extras") { e.preventDefault(); fbPendEditExtras(id); }
     else if (what === "settle") { e.preventDefault(); fbPendSettle(id); }
     else if (what === "back") { e.preventDefault(); fbPendRestore(id); }
     else if (what === "drop") {
@@ -16233,13 +16640,24 @@ closeSettleModal = function () {
   var before = fbPendHistBefore;
   fbPendHistBefore = 0;
   var hist = state.history || [];
-  var made = hist.length > before;                    // 记录变多了 = 这次真的结算成功了
-  if (made) {
-    for (var z = before; z < hist.length; z++) {
-      var r = hist[z];
-      if (!r) continue;
+  if (before > hist.length) before = hist.length;      // 期间删过记录也要兜住
+  var key = "p_" + wasPending;
+  var ours = [], z, r;
+  // ★★ v3.18.0 修（用户反馈：待结算有时候莫名其妙消失）★★★
+  //   以前判断"这次真的结算成功了吗"用的是【记录条数变多】(hist.length > before)。
+  //   只要弹窗开着的时候别的设备/别的桌进来一条记录（实时同步很正常），
+  //   用户只是点【看账单/结算】看看又关掉，待结算就会被误删 ✗
+  //   现在只认【这次虚拟桌自己产生的记录】：桌号正好是 p_<id>（或带 _fromPending 标记）
+  for (z = before; z < hist.length; z++) {
+    r = hist[z];
+    if (!r) continue;
+    if (String(r.tableNo || "") === key || String(r._fromPending || "") === String(wasPending)) ours.push(r);
+  }
+  if (ours.length) {
+    for (z = 0; z < ours.length; z++) {
+      r = ours[z];
       // ★ 结算时用的是"虚拟桌"，这里把桌号还回真实的那张
-      if (String(r.tableNo || "").indexOf("p_") === 0) r.tableNo = realNo;
+      if (String(r.tableNo || "") === key) r.tableNo = realNo;
       if (realNo && (r.tableNo === "" || r.tableNo == null)) r.tableNo = realNo;
       if (realName && r.name && String(r.name).indexOf("· 待结算") >= 0) r.name = realName;
       delete r._fromPending;
@@ -16249,7 +16667,7 @@ closeSettleModal = function () {
     fbPushPending();
     try { toast("结算完成 ✓ 已计入营业额", "var(--green-dark)"); } catch (e) {}
   }
-  delete state.tables["p_" + wasPending];
+  delete state.tables[key];
   delete fbPendHolder["p_" + wasPending];
   render();
 };
@@ -16382,14 +16800,14 @@ function fbAttachPendingListener() {
       o.id = o.id || k;
       rows.push(o);
     }
-    // ★★ v3.4.1 修：首次加载【也】必须走 fbMergeCol ★★
+    // ★★ v3.4.1 修：首次加载【也】必须走合并 ★★
     //   原来首次是"本地 ∪ 云端"✗ 谁都不删谁 ✗✓✓
     //   → 某台设备本地留着已被别人删掉的旧待结算 ✗
     //     一打开就合并回来 ✗ 再推回云端 ✗ 别的设备又看到 ✗
     //     → 用户说的"有时候打开会有奇怪的以前的待结算"✓
-    //   fbMergeCol 的规则：云端没有 = 别人删了 → 丢掉 ✓
-    //     但"我刚写的"(fbMarkWrite 保护) 会留着 ✓ 不会误删刚建的 ✓
-    var merged = fbMergeCol("pending", rows, function () { return state.pending; });
+    // ★ v3.18.0：换成 fbMergePending —— 云端没有的条目还要看"是否被云端确认过"，
+    //   不能一律丢掉（否则离线时收进待结算的、还没推上去的条目刷新后就消失了）
+    var merged = fbMergePending(rows);
     state.pending = merged;
     fbPendingReady = true;
     fbPendingCloud = {};
@@ -16481,6 +16899,24 @@ function fbMemberRowsAll() {
 //    它会自己等着 Firebase 连上，然后把桌台的完整状态补推一次 ✓
 // ============================================================
 try { fbMaybeMigrateTableStates(); } catch (x) {}
+
+// ============================================================
+//  ★ v3.18.0：启动时清理"虚拟桌"残留
+//    待结算【看账单/结算】时会临时往 state.tables 里塞一张 p_xxx / pb_xxx，
+//    正常流程会删掉；但如果正好在弹窗开着时关掉页面/刷新，它就会一直留在
+//    本机数据里。虽然不会渲染出来，但会跟着备份/同步到处跑，越积越多。
+// ============================================================
+(function fbPendCleanupTempTables() {
+  try {
+    if (!state || !state.tables) return;
+    var hit = false;
+    for (var k in state.tables) {
+      if (!state.tables.hasOwnProperty(k)) continue;
+      if (/^(p_|pb_|pe_)/.test(k)) { delete state.tables[k]; hit = true; }
+    }
+    if (hit) save();
+  } catch (e) {}
+})();
 
   // 网页版：用部署网址自动填好同步地址
   var selfUrl = detectSelfUrl();
