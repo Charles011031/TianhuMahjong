@@ -227,6 +227,12 @@
      不然会把整张表撑宽 → 要左右拖动才能看到「编辑」 */
   .history td.pay-cell { white-space: normal; min-width: 190px; max-width: 420px; line-height: 2.1; }
   .history td.pay-cell .chip { margin-bottom: 3px; }
+  /* ★ v3.19.1：品项那一格太长时换行 ✗ 别把整张表撑到要左右滑 ✓
+     用户反馈：零食饮料结算记录里的「操作」列要右划才看得见（品项写了 8 样，表被撑宽） */
+  #snackHistoryWrap tbody tr:not(.txn-grp) td:nth-child(2),
+  #vapeHistoryWrap tbody tr:not(.txn-grp) td:nth-child(2) {
+    white-space: normal; word-break: break-word; overflow-wrap: anywhere;
+  }
   .history th {
     background: #f7f9f8; color: var(--muted); font-weight: 700; font-size: 12px; letter-spacing: .4px;
     border-bottom: 1px solid var(--line);
@@ -3388,6 +3394,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.19.1  2026-10-26
+  //    + 零食饮料 / 鸭嘴兽 结算记录：品项写很多样时「操作」列被挤到右边要横划（用户反馈）
+  //      · 品项那一格改成可以换行（太长就折行），整张表不再被撑宽 ✓
   //  v3.19.0  2026-10-26
   //    + 会员收款：整单也支持【搜索会员】了（和按人分账一样）★
   //      · 搜姓名 / 电话 → 点一下选中
@@ -3993,7 +4002,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.19.0";
+  var APP_VER = "v3.19.1";
   var APP_DATE = "2026-10-26";
   function applyVersion() {
     var el = document.getElementById("appVer");
