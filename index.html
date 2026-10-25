@@ -1675,6 +1675,10 @@
   #splitPanel .sp-mem { font-family:inherit;cursor:pointer;font-size:12.5px;font-weight:700;border-radius:999px;padding:7px 11px;border:1px solid #e3e8e5;background:#fff;color:#374151;display:inline-flex;align-items:center;gap:6px; }
   #splitPanel .sp-mem.on { border-color:#1d7a4f;background:#1d7a4f;color:#fff; }
   #splitPanel .sp-mem .sp-membal { font-weight:400;font-size:11.5px;opacity:.85; }
+  /* 选中后只显示这一个 + ✕ 取消（v3.19.0） */
+  #splitPanel .sp-mem-picked { cursor:default; }
+  #splitPanel .sp-mem-x { font-family:inherit;cursor:pointer;width:30px;height:30px;padding:0;border-radius:50%;border:1px solid #fca5a5;background:#fff;color:#b91c1c;font-size:14px;font-weight:900;line-height:1;display:inline-flex;align-items:center;justify-content:center; }
+  body.dark #splitPanel .sp-mem-x { background:#111827; }
   body.dark #splitPanel .sp-mem { background:#111827;color:#d1d5db;border-color:#374151; }
   body.dark #splitPanel .sp-mem.on { background:#1d7a4f;color:#fff; }
   body.dark #splitPanel .sp-memsearch { background:#111827;color:#e5e7eb;border-color:#374151; }
@@ -3384,6 +3388,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.19.0  2026-10-26
+  //    + 会员收款：整单也支持【搜索会员】了（和按人分账一样）★
+  //      · 搜姓名 / 电话 → 点一下选中
+  //      · 选中后列表里只显示这一个会员（别的都收起）+ 旁边 ✕ 取消选中
+  //      · 按人分账的会员选择也按同样规则（选中后只留选中项 + ✕）
   //  v3.18.0  2026-10-26
   //    + 按人分账：每人的「应收」跟着收款方式变（用户要求）★
   //      · 刷卡 → 显示含手续费的实际要收金额 + 注明含多少手续费
@@ -3984,7 +3993,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.18.0";
+  var APP_VER = "v3.19.0";
   var APP_DATE = "2026-10-26";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -6095,6 +6104,7 @@
   var SP_METHODS = [["cash", "现金"], ["card", "刷卡"], ["rmb", "人民币"], ["member", "会员"]];
   var spSingleMethod = "cash", spSingleMember = "", spSingleSnackMethod = "cash", spSingleShortMethod = "cash";
   var spSingleActual = null, spSingleRmb = null;
+  var spSingleMemberSearch = "";   // 整单收款的会员搜索框（v3.19.0）
   var spSingleShortActual = null, spSingleShortRmb = null, spSingleSnackActual = null, spSingleSnackRmb = null;
   var splitMethods = {}, splitMembers = {}, splitSnackMethods = {}, splitShortMethods = {}, splitActual = {}, splitRmb = {};
   var splitMemberSearch = {};   // 会员搜索框里打的字（按人分账用，v3.18.0）
@@ -6102,6 +6112,7 @@
 
   function spResetSingle() {
     spSingleMethod = "card"; spSingleMember = ""; spSingleSnackMethod = "cash"; spSingleShortMethod = "cash";
+    spSingleMemberSearch = "";
     spSingleActual = null; spSingleRmb = null;
     spSingleShortActual = null; spSingleShortRmb = null; spSingleSnackActual = null; spSingleSnackRmb = null;
   }
@@ -6139,10 +6150,11 @@
     }
     return h;
   }
-  // ============ 按人分账：会员可搜索（v3.18.0） ============
-  // 会员 60~70 个，原生下拉在手机上翻很久；改成「打字筛选 + 点一下选中」
-  function spMemberMatched(p) {
-    var f = (splitMemberSearch[p] || "").trim().toLowerCase();
+  // ============ 会员搜索选择（v3.19.0：整单 + 按人分账都能搜） ============
+  // 会员 60~70 个，原生下拉在手机上翻很久；改成「打字筛选 → 点一下选中」
+  // 选中后列表里【只显示选中的那个】+ 一个 ✕；点 ✕ 取消后才重新列出其他会员
+  function spMemberFilter(text) {
+    var f = String(text || "").trim().toLowerCase();
     var out = [], mems = state.members || [];
     for (var i = 0; i < mems.length; i++) {
       var m = mems[i];
@@ -6154,12 +6166,18 @@
     }
     return out;
   }
+  function spMemberChip(m) {
+    return '<span class="sp-mem on sp-mem-picked">' + esc(m.name) +
+      '<span class="sp-membal">$' + (Number(m.balance) || 0).toFixed(2) + '</span></span>';
+  }
+  // ---- 按人分账 ----
+  function spMemberMatched(p) { return spMemberFilter(splitMemberSearch[p]); }
   function spMemberListHtml(p, list, limit) {
     if (!list.length) return '<div class="hint" style="margin:0;font-size:12px;">没有匹配的会员</div>';
-    var sel = splitMembers[p] || "", h = "", n = 0;
+    var h = "", n = 0;
     for (var i = 0; i < list.length && n < limit; i++) {
       var m = list[i];
-      h += '<button type="button" class="sp-mem' + (m.id === sel ? ' on' : '') + '" data-spmset="' + p + '|' + esc(m.id) + '">' +
+      h += '<button type="button" class="sp-mem" data-spmset="' + p + '|' + esc(m.id) + '">' +
            esc(m.name) + '<span class="sp-membal">$' + (Number(m.balance) || 0).toFixed(2) + '</span></button>';
       n++;
     }
@@ -6175,14 +6193,54 @@
   function spMemberPicker(p) {
     var sel = splitMembers[p] || "";
     var picked = sel ? findMember(sel) : null;
-    var f = (splitMemberSearch[p] || "").trim();
-    return '<div class="sp-methodline sp-memwrap" style="margin-top:6px;display:block;">' +
+    var head = '<div class="sp-methodline sp-memwrap" style="margin-top:6px;display:block;">' +
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
-      '<span style="font-size:12.5px;">会员</span>' +
+      '<span style="font-size:12.5px;">会员</span>';
+    if (picked) {
+      return head + spMemberChip(picked) +
+        '<button type="button" class="sp-mem-x" data-spmclear="' + p + '" title="取消选中">✕</button>' +
+        '<span class="hint" style="margin:0;font-size:12px;">点 ✕ 取消，可重新搜索</span></div></div>';
+    }
+    var f = (splitMemberSearch[p] || "").trim();
+    return head +
       '<input type="search" class="sp-memsearch" data-spmsearch="' + p + '" placeholder="搜姓名 / 电话…" value="' + esc(splitMemberSearch[p] || "") + '" autocomplete="off">' +
-      (picked ? '<span style="font-size:12.5px;color:var(--green-dark);font-weight:700;">已选：' + esc(picked.name) + '</span>'
-              : '<span class="hint" style="margin:0;font-size:12px;">先搜索，再点会员</span>') +
+      '<span class="hint" style="margin:0;font-size:12px;">先搜索，再点会员</span>' +
       '</div><div class="sp-memlist" data-spmlist="' + p + '">' + spMemberListHtml(p, spMemberMatched(p), f ? 30 : 10) + '</div></div>';
+  }
+  // ---- 整单收款（v3.19.0：也能搜索） ----
+  function spSingleMemberListHtml(list, limit) {
+    if (!list.length) return '<div class="hint" style="margin:0;font-size:12px;">没有匹配的会员</div>';
+    var h = "", n = 0;
+    for (var i = 0; i < list.length && n < limit; i++) {
+      var m = list[i];
+      h += '<button type="button" class="sp-mem" data-spsinglemember="' + esc(m.id) + '">' +
+           esc(m.name) + '<span class="sp-membal">$' + (Number(m.balance) || 0).toFixed(2) + '</span></button>';
+      n++;
+    }
+    if (list.length > n) h += '<span class="hint" style="margin:0;font-size:12px;">还有 ' + (list.length - n) + ' 个，继续打字搜索</span>';
+    return h;
+  }
+  function spRenderSingleMemberList() {
+    var box = document.querySelector('#spSingle [data-spsinglemlist]');
+    if (!box) return;
+    var f = (spSingleMemberSearch || "").trim();
+    box.innerHTML = spSingleMemberListHtml(spMemberFilter(spSingleMemberSearch), f ? 30 : 10);
+  }
+  function spSingleMemberPicker() {
+    var picked = spSingleMember ? findMember(spSingleMember) : null;
+    var head = '<div class="sp-methodline sp-memwrap" style="margin-top:6px;display:block;">' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+      '<span style="font-size:12.5px;">会员</span>';
+    if (picked) {
+      return head + spMemberChip(picked) +
+        '<button type="button" class="sp-mem-x" data-spsingleclear="1" title="取消选中">✕</button>' +
+        '<span class="hint" style="margin:0;font-size:12px;">点 ✕ 取消，可重新搜索</span></div></div>';
+    }
+    var f = (spSingleMemberSearch || "").trim();
+    return head +
+      '<input type="search" class="sp-memsearch" data-spsinglesearch="1" placeholder="搜姓名 / 电话…" value="' + esc(spSingleMemberSearch) + '" autocomplete="off">' +
+      '<span class="hint" style="margin:0;font-size:12px;">先搜索，再点会员</span>' +
+      '</div><div class="sp-memlist" data-spsinglemlist="1">' + spSingleMemberListHtml(spMemberFilter(spSingleMemberSearch), f ? 30 : 10) + '</div></div>';
   }
   // 每人卡片右上角的「应收」跟着收款方式变（v3.18.0）：
   //   刷卡 → 显示含手续费的实际要收的钱，并注明含多少手续费
@@ -6379,7 +6437,7 @@
     }
     h += '</div>';
     if (m === "member") {
-      h += '<div class="sp-methodline" style="margin-top:5px;">会员：<select data-spsinglemember="1">' + spMemberOptions(spSingleMember) + '</select></div>';
+      h += spSingleMemberPicker();
       var fareS = round2(b.tableAll + b.carry), snackS = round2(b.other);
       var memS = findMember(spSingleMember);
       if (memS) {
@@ -6576,7 +6634,7 @@
         var fare = round2(b.tableAll + b.carry);
         if (spSingleMethod === "member" && !spSingleMember && fare > 0.005) {
           e.preventDefault(); e.stopPropagation();
-          var sel0 = document.querySelector("#spSingle select[data-spsinglemember]");
+          var sel0 = document.querySelector("#spSingle input[data-spsinglesearch]");
           if (sel0) { try { sel0.scrollIntoView({ block: "center" }); } catch (x0) {} sel0.focus(); }
           var msg0 = document.getElementById("splitMsg");
           if (msg0) msg0.innerHTML = '<span style="color:#b45309;">选了会员，但还没选是哪个会员，先在整单卡里选一下。</span>';
@@ -6623,9 +6681,10 @@
     panel.addEventListener("input", function (e) {
       var el = e.target;
       if (!el || !el.getAttribute) return;
-      // 会员搜索框（v3.18.0）：只重画这个小列表，不整页重画，输入框才不丢焦点
+      // 会员搜索框（v3.19.0：整单 + 按人分账）：只重画这个小列表，不整页重画，输入框才不丢焦点
       var msearch = el.getAttribute("data-spmsearch");
       if (msearch) { splitMemberSearch[Number(msearch)] = el.value; spRenderMemberList(Number(msearch)); return; }
+      if (el.getAttribute("data-spsinglesearch")) { spSingleMemberSearch = el.value; spRenderSingleMemberList(); return; }
       if (el.getAttribute("data-spsingleactual")) { spSingleActual = el.value; spBuildSingleParts(); return; }
       if (el.getAttribute("data-spsinglermb")) { spSingleRmb = el.value; spBuildSingleParts(); return; }
       if (el.getAttribute("data-spsingleshortactual")) { spSingleShortActual = el.value; spBuildSingleParts(); return; }
@@ -6661,14 +6720,34 @@
       var m1 = t.closest("[data-spmethod]");
       var m2 = t.closest("[data-spsnackm]");
       var ms1 = t.closest("[data-spmset]");
+      var mx1 = t.closest("[data-spmclear]");
       var sm1 = t.closest("[data-spsinglemethod]");
       var sm2 = t.closest("[data-spsinglesnackm]");
+      var ssm = t.closest("[data-spsinglemember]");
+      var ssx = t.closest("[data-spsingleclear]");
+      if (mx1) {   // 按人分账：取消选中会员（v3.19.0）
+        var pmx = Number(mx1.getAttribute("data-spmclear"));
+        splitMembers[pmx] = ""; splitMemberSearch[pmx] = "";
+        renderSplitUI(); spBuildSplitParts();
+        return;
+      }
       if (ms1) {   // 会员搜索里点中一个会员（v3.18.0）
         var pms = ms1.getAttribute("data-spmset").split("|");
         var pwhoM = Number(pms[0]);
         splitMembers[pwhoM] = pms[1];
         splitMemberSearch[pwhoM] = "";
         renderSplitUI(); spBuildSplitParts();
+        return;
+      }
+      if (ssm) {   // 整单收款：点中会员（v3.19.0）
+        spSingleMember = ssm.getAttribute("data-spsinglemember") || "";
+        spSingleMemberSearch = "";
+        renderSingleUI(); spBuildSingleParts();
+        return;
+      }
+      if (ssx) {   // 整单收款：取消选中会员（v3.19.0）
+        spSingleMember = ""; spSingleMemberSearch = "";
+        renderSingleUI(); spBuildSingleParts();
         return;
       }
       if (sm1) {
