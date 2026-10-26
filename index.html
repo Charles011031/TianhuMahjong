@@ -3399,6 +3399,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.20.1  2026-10-26
+  //    + 预估营业额：前一天还有没结的桌台 / 待结算时，前一天的统计面板也显示预估
+  //      （以前只在"当天"显示；历史营业日没有未结的不显示，避免和「总额」重复）
   //  v3.20.0  2026-10-26
   //    + 📈 统计页新增【预估营业额】卡片（用户提议）★★
   //      · = 已结算营业额 ＋ 进行中/暂停的桌（当前台费+挂桌零食）＋ 待结算（台费+挂桌零食）
@@ -4013,7 +4016,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.20.0";
+  var APP_VER = "v3.20.1";
   var APP_DATE = "2026-10-26";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -15320,17 +15323,23 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         (r.rechargeRmb > 0.005 ? "<br><b style='color:#1d4e89;'>人民币 ¥" + round2(r.rechargeRmb).toFixed(2) + "</b>" : "") +
         "<br><span style='font-size:12px;color:var(--muted);'>不计入营业额</span>");
 
-    // ★ v3.20.0：预估营业额卡片（只在看【当天】时显示；看历史日期/月汇总时没有意义 → 不显示）
+    // ★ v3.20.1：预估营业额卡片
+    //   当天 → 一直显示；
+    //   其它营业日 → 只有当【那一天还有没结的桌/待结算】时才显示
+    //     （用户要求：前一天还有没结算的桌台，前一天的统计面板也要显示预估）
     var settledBiz = round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand);
-    if (statsScope === "day" && stDay === bizDate(Date.now())) {
+    if (statsScope === "day") {
       var est = estimateBiz(stDay, settledBiz);
-      cardsHtml += statCard("预估营业额", fmtMoney(est.total),
-        "已结 " + fmtMoney(est.settled) + " ＋ 进行中 " + fmtMoney(est.running) +
-        " ＋ 待结算 " + fmtMoney(est.waiting) +
-        "<br><span style='font-size:12px;color:var(--muted);'>" +
-        (est.runCount ? est.runCount + " 桌还在打" : "现在没有桌在打") +
-        (est.waitCount ? "　·　" + est.waitCount + " 单待结算" : "") +
-        "　·　未结部分未含手续费</span>", "est");
+      var isToday = (stDay === bizDate(Date.now()));
+      if (isToday || (est.running + est.waiting) > 0.005) {
+        cardsHtml += statCard("预估营业额", fmtMoney(est.total),
+          "已结 " + fmtMoney(est.settled) + " ＋ 进行中 " + fmtMoney(est.running) +
+          " ＋ 待结算 " + fmtMoney(est.waiting) +
+          "<br><span style='font-size:12px;color:var(--muted);'>" +
+          (est.runCount ? est.runCount + " 桌还在打" : "没有桌在打") +
+          (est.waitCount ? "　·　" + est.waitCount + " 单待结算" : "") +
+          "　·　未结部分未含手续费</span>", "est");
+      }
     }
     document.getElementById("stCards").innerHTML = cardsHtml;
 
