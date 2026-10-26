@@ -3431,6 +3431,16 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.22.0  2026-10-27
+  //    + 修【待结算】三连问题（用户实测）★★★
+  //      ① 收进待结算后桌面有时不变空闲、再点一次会多出一条一模一样的待结算
+  //         → 收进/搬回时立刻把桌台状态推给云端，并保护这张桌 20 秒不被旧快照改回去
+  //      ② 待结算点「删掉」没用、删了又回来
+  //         → 删除改成在云端写【墓碑】（pending/<id> = {_deleted:1,ts}），
+  //            任何设备看到墓碑都不再显示/不再推回；7 天后自动清掉
+  //      ③ 一台设备结算完，另一台设备打开又出现；本机点结算收款也不消失
+  //         → 结算收尾改成扫描整份 history 找 p_<id> 的记录（不再只看"新增的那一段"，
+  //            弹窗开着时同步换过 history 会漏判）；移除时同样写墓碑
   //  v3.21.0  2026-10-26
   //    + 待结算桌卡的按钮重排（用户选的方案 C · 平铺分级）★★
   //      · 第一行：💰 结算收费（整行大按钮）
@@ -4059,8 +4069,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.21.0";
-  var APP_DATE = "2026-10-26";
+  var APP_VER = "v3.22.0";
+  var APP_DATE = "2026-10-27";
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
@@ -15901,11 +15911,29 @@ function fbMergeCol(node, cloudRows, getLocal) {
 //      · 20 秒内刚写的 → 先留着（马上会推上去）
 //      · 从没被云端确认过、而且是最近的（24 小时内）→ 留着，下一步补推上去 ✓
 //      · 被云端确认过 / 很旧且从没确认 → 说明别的设备删了或收款了 → 跟着消失
+// ★ v3.22.0：已删除的待结算用【墓碑】记住，别再复活
+//   以前删除/结算只是把云端那条删掉 ✗ 别的设备本地还留着（尤其是"从没被云端确认过"
+//   的条目会被当成新账单又推回云端）✗ 用户看到"删了又回来 / 结算完又出现"✗
+//   现在删除时会往 pending/<id> 写一条 {_deleted:1, ts} 墓碑：
+//   任何设备看到墓碑就永远不再显示、也不会再推回云端（7 天后自动清掉）
+var fbPendTombCloud = {};        // 云端已经知道的墓碑 id -> ts
+var fbPendTombNeedRepush = {};   // 云端那条又被别的设备复活成"活的"了 → 下次 push 重写墓碑
+
+function fbPendIsGone(id) {
+  try { return !!(id && state.pendingGone && state.pendingGone[id]); } catch (e) { return false; }
+}
+function fbPendMarkGone(id) {
+  if (!id) return;
+  fbPendEnsure();
+  state.pendingGone[id] = Date.now();
+}
+
 function fbMergePending(cloudRows) {
   var now = Date.now(), out = [], seen = {}, i, r;
   for (i = 0; i < (cloudRows || []).length; i++) {
     r = cloudRows[i];
     if (!r || !r.id) continue;
+    if (fbPendIsGone(r.id)) continue;                  // ★ 有墓碑 → 永不复活
     var dk = "pending/" + r.id;
     if (fbRecentDel[dk] && now - fbRecentDel[dk] < FB_GUARD_MS) continue;
     r.syncedAt = now;                       // 云端已经确认过这一条
@@ -15917,6 +15945,7 @@ function fbMergePending(cloudRows) {
   for (i = 0; i < local.length; i++) {
     r = local[i];
     if (!r || !r.id) continue;
+    if (fbPendIsGone(r.id)) continue;                  // ★ 本地已删除
     if (seen[String(r.id)]) continue;
     var wk = "pending/" + r.id;
     var guarded = (fbRecentWrite[wk] && now - fbRecentWrite[wk] < FB_GUARD_MS);
@@ -16284,14 +16313,7 @@ function fbRestPullPending(done) {
     return r.json();
   }).then(function (v) {
     if (v === null || v === undefined) { if (done) done(); return; }
-    var rows = [], k;
-    for (k in v) if (v.hasOwnProperty(k) && v[k]) { var o = v[k]; o.id = o.id || String(k); rows.push(o); }
-    try {
-      state.pending = fbMergePending(rows);
-      fbPendingReady = true;
-      fbPendingCloud = {};
-      for (var pi = 0; pi < state.pending.length; pi++) fbPendingCloud[state.pending[pi].id] = 1;
-    } catch (e) {}
+    try { fbApplyPendingSnapshot(v); } catch (e) {}
     if (done) done();
   }).catch(function () { if (done) done(); });
 }
@@ -16579,6 +16601,11 @@ if (typeof document !== "undefined" && document.addEventListener) {
           }
           break;
         }
+        if (el.getAttribute && el.getAttribute("data-fbpend")) {
+          var pid0 = el.getAttribute("data-id");
+          if (pid0 && /^\d+$/.test(String(pid0))) fbTblRecent[Number(pid0)] = Date.now();
+          break;
+        }
         if (el.getAttribute && el.getAttribute("data-act")) {
           var id = el.getAttribute("data-id");
           if (id) fbTblRecent[id] = Date.now();
@@ -16610,7 +16637,15 @@ var fbPendDropTimer = null;
 var fbPendSettling = null;    // 正在结算的待结算条目 id
 var fbPendHistBefore = 0;     // 结算前 state.history 的条数
 
-function fbPendEnsure() { if (!Array.isArray(state.pending)) state.pending = []; }
+function fbPendEnsure() {
+  if (!Array.isArray(state.pending)) state.pending = [];
+  if (!state.pendingGone || typeof state.pendingGone !== "object" || Array.isArray(state.pendingGone)) state.pendingGone = {};
+  var now = Date.now(), cut = now - 7 * 24 * 3600 * 1000, g;
+  for (g in state.pendingGone) {
+    if (state.pendingGone.hasOwnProperty(g) && !(Number(state.pendingGone[g]) > cut)) delete state.pendingGone[g];
+  }
+  state.pending = state.pending.filter(function (x) { return x && x.id && !fbPendIsGone(x.id); });
+}
 function fbPendFind(id) {
   fbPendEnsure();
   for (var i = 0; i < state.pending.length; i++) if (state.pending[i].id === id) return state.pending[i];
@@ -16639,8 +16674,13 @@ function fbPendTakeFromTable(no) {
   t.endedAt = null;
   t.extras = [];
   t.lastResult = null;
+  // ★ v3.22.0：刚动过这张桌 → 20 秒内不让云端旧快照把它改回"待结算"
+  //   （以前这里不标 fbTblRecent，云端旧状态一回来桌面又显示待结算，
+  //    用户再点一次就多出一条一模一样的待结算 —— 用户实测反馈）
+  try { fbTblRecent[no] = Date.now(); } catch (e) {}
   save();
   render();
+  try { pushTableStates(); } catch (e) {}   // 立刻把 idle 推上去，不等 debounce
   fbPushPending();
   try { toast("已收进待结算区 ✓ 桌子空出来了", "var(--green-dark)"); } catch (e) {}
   return true;
@@ -16661,6 +16701,7 @@ function fbPendTakeQuiet(no) {
   });
   t.status = "idle"; t.sessionStart = null; t.elapsedAtPause = 0;
   t.endedAt = null; t.extras = []; t.lastResult = null;
+  try { fbTblRecent[no] = Date.now(); } catch (e) {}
   try { toast("上一场已自动收进待结算区 ✓", "#b45309"); } catch (e) {}
   return true;
 }
@@ -16694,13 +16735,18 @@ function fbPendRestore(id) {
   t.endedAt = p.endTs;
   t.extras = (p.extras || []).slice();
   t.mahjongType = p.mahjongType || "108";
+  fbPendMarkGone(id);
   state.pending = state.pending.filter(function (x) { return x.id !== id; });
-  save(); render(); fbPushPending();
+  try { fbTblRecent[p.tableNo] = Date.now(); } catch (e) {}
+  save(); render();
+  try { pushTableStates(); } catch (e) {}
+  fbPushPending();
   try { toast("已搬回 " + p.tableName + " ✓", "var(--green-dark)"); } catch (e) {}
 }
 
 // 删掉一条（记错了）
 function fbPendDrop(id) {
+  fbPendMarkGone(id);                      // ★ v3.22.0：写墓碑，别的设备/残留快照都别再复活它
   state.pending = (state.pending || []).filter(function (x) { return x.id !== id; });
   save(); render(); fbPushPending();
 }
@@ -16870,18 +16916,16 @@ closeSettleModal = function () {
   var p = fbPendFind(wasPending);
   var realNo = p ? p.tableNo : (fbPendHolder["p_" + wasPending] || "");
   var realName = p ? p.tableName : "";
-  var before = fbPendHistBefore;
   fbPendHistBefore = 0;
   var hist = state.history || [];
-  if (before > hist.length) before = hist.length;      // 期间删过记录也要兜住
   var key = "p_" + wasPending;
   var ours = [], z, r;
-  // ★★ v3.18.0 修（用户反馈：待结算有时候莫名其妙消失）★★★
-  //   以前判断"这次真的结算成功了吗"用的是【记录条数变多】(hist.length > before)。
-  //   只要弹窗开着的时候别的设备/别的桌进来一条记录（实时同步很正常），
-  //   用户只是点【看账单/结算】看看又关掉，待结算就会被误删 ✗
-  //   现在只认【这次虚拟桌自己产生的记录】：桌号正好是 p_<id>（或带 _fromPending 标记）
-  for (z = before; z < hist.length; z++) {
+  // ★★ v3.22.0：扫描【整份 history】找桌号 == p_<id> 的记录，不再只看"打开弹窗之后新增的那一段"
+  //   原因：弹窗开着的时候，实时同步可能把 state.history 整份换掉（顺序变化 / 远端记录合并），
+  //   那这次结算新记的那条可能不在 before 之后 → 旧逻辑会判"没结算成功" → 待结算永远删不掉
+  //   （用户实测：记录在统计/结算记录里都有了，待结算这边就是不消失）
+  //   桌号 p_<id> 只有"待结算结算"这一条路会产生，所以整份扫也不会误伤别的记录。
+  for (z = 0; z < hist.length; z++) {
     r = hist[z];
     if (!r) continue;
     if (String(r.tableNo || "") === key || String(r._fromPending || "") === String(wasPending)) ours.push(r);
@@ -16895,6 +16939,7 @@ closeSettleModal = function () {
       if (realName && r.name && String(r.name).indexOf("· 待结算") >= 0) r.name = realName;
       delete r._fromPending;
     }
+    fbPendMarkGone(wasPending);          // ★ 写墓碑：别的设备/残留快照都别再把它显示回来
     state.pending = (state.pending || []).filter(function (x) { return x.id !== wasPending; });
     save();
     fbPushPending();
@@ -16918,24 +16963,46 @@ render = function () {
 var fbPendingReady = false;
 
 function fbPushPending() {
-  if (!fbReady || !fbPendingReady) return;
+  if (!fbReady) return;
   fbPendEnsure();
+  var now = Date.now(), cut = now - 7 * 24 * 3600 * 1000, id;
+  // ① 墓碑：把"这一条删了"同步给云端（写成 {_deleted:1,ts}，不是直接删节点）
+  //    别的设备看到墓碑就永远不会再显示/再推回来（修「删了又回来」「结算完又出现」）
+  for (id in state.pendingGone) {
+    if (!state.pendingGone.hasOwnProperty(id)) continue;
+    var ts = Number(state.pendingGone[id]) || now;
+    if (ts < cut) {                          // 墓碑过期 → 云端节点也真的删掉
+      fbMarkDel("pending", id);
+      postDelete("pending", id);
+      delete fbPendTombCloud[id];
+      delete state.pendingGone[id];
+      continue;
+    }
+    if (fbPendTombCloud[id] === ts && !fbPendTombNeedRepush[id]) continue;   // 云端已经是这个墓碑
+    fbMarkWrite("pending", id);
+    fbWriteNode("pending/" + id, { id: id, _deleted: 1, ts: ts });
+    fbPendTombCloud[id] = ts;
+    delete fbPendTombNeedRepush[id];
+  }
+  if (!fbPendingReady) return;               // 云端第一份快照还没到 → 绝不乱删
+  // ② 本机的待结算上推（墓碑里的不推）
   var keep = {}, i;
   for (i = 0; i < state.pending.length; i++) {
     var p = state.pending[i];
     if (!p || !p.id) continue;
+    if (fbPendIsGone(p.id)) continue;
     keep[p.id] = 1;
     fbMarkWrite("pending", p.id);
     fbWriteNode("pending/" + p.id, fbPlain(p));
   }
-  // 云端多出来的（别的设备已经收款/删掉了）→ 也跟着删
-  for (var id in fbPendingCloud) {
+  // ③ 云端有、本机没有的（别的设备已经收款/删掉了）→ 也写墓碑，别让它被谁复活
+  for (id in fbPendingCloud) {
     if (!fbPendingCloud.hasOwnProperty(id)) continue;
-    if (!keep[id]) {
-      fbMarkDel("pending", id);
-      postDelete("pending", id);
-      delete fbPendingCloud[id];
-    }
+    if (keep[id]) continue;
+    fbPendMarkGone(id);
+    fbWriteNode("pending/" + id, { id: id, _deleted: 1, ts: state.pendingGone[id] });
+    fbPendTombCloud[id] = state.pendingGone[id];
+    delete fbPendingCloud[id];
   }
   fbPendingCloud = keep;
 }
@@ -17025,29 +17092,48 @@ function fbAttachPendingListener() {
   var ref = fbRef("pending");
   if (!ref) return;
   ref.on("value", function (snap) {
-    var obj = snap && snap.val ? (snap.val() || {}) : {};
-    var rows = [], k;
-    for (k in obj) {
-      if (!obj.hasOwnProperty(k) || !obj[k]) continue;
-      var o = obj[k];
-      o.id = o.id || k;
-      rows.push(o);
-    }
-    // ★★ v3.4.1 修：首次加载【也】必须走合并 ★★
-    //   原来首次是"本地 ∪ 云端"✗ 谁都不删谁 ✗✓✓
-    //   → 某台设备本地留着已被别人删掉的旧待结算 ✗
-    //     一打开就合并回来 ✗ 再推回云端 ✗ 别的设备又看到 ✗
-    //     → 用户说的"有时候打开会有奇怪的以前的待结算"✓
-    // ★ v3.18.0：换成 fbMergePending —— 云端没有的条目还要看"是否被云端确认过"，
-    //   不能一律丢掉（否则离线时收进待结算的、还没推上去的条目刷新后就消失了）
-    var merged = fbMergePending(rows);
-    state.pending = merged;
-    fbPendingReady = true;
-    fbPendingCloud = {};
-    for (var i = 0; i < merged.length; i++) fbPendingCloud[merged[i].id] = 1;
-    save();
-    render();
+    fbApplyPendingSnapshot(snap && snap.val ? (snap.val() || {}) : {});
   });
+}
+
+// 套用一份 pending 云端快照（实时监听 / REST 轮询共用）
+// 快照里可能有两种条目：
+//   ① 正常的待结算 {id, tableNo, startTs, endTs, extras...}
+//   ② 墓碑 {id, _deleted:1, ts} —— 这一条已经被某台设备删掉/结算掉了
+function fbApplyPendingSnapshot(obj) {
+  fbPendEnsure();
+  var rows = [], tomb = {}, k, o, i;
+  for (k in obj) {
+    if (!obj.hasOwnProperty(k) || !obj[k]) continue;
+    o = obj[k];
+    o.id = o.id || k;
+    if (o._deleted) tomb[o.id] = Number(o.ts) || Date.now();
+    else rows.push(o);
+  }
+  var now = Date.now(), cut = now - 7 * 24 * 3600 * 1000, g;
+  // 云端墓碑 → 合并进本地（取更晚的时间）；过期的顺手从云端真删掉
+  for (g in tomb) {
+    if (!tomb.hasOwnProperty(g)) continue;
+    fbPendTombCloud[g] = tomb[g];
+    if (!fbPendIsGone(g) || Number(state.pendingGone[g]) < tomb[g]) state.pendingGone[g] = tomb[g];
+    if (tomb[g] < cut) {
+      fbMarkDel("pending", g);
+      postDelete("pending", g);
+      delete fbPendTombCloud[g];
+      delete state.pendingGone[g];
+    }
+  }
+  // ★ 云端那条还是"活的"、本地却有墓碑 = 被别的设备复活了 → 下次 push 重写墓碑
+  for (i = 0; i < rows.length; i++) {
+    if (fbPendIsGone(rows[i].id)) fbPendTombNeedRepush[rows[i].id] = 1;
+  }
+  var merged = fbMergePending(rows);
+  state.pending = merged;
+  fbPendingReady = true;
+  fbPendingCloud = {};
+  for (i = 0; i < merged.length; i++) fbPendingCloud[merged[i].id] = 1;
+  save();
+  render();
 }
 
 // ---------- 改动立刻推（防抖 3 秒），不用等 5 分钟那一轮 ----------
