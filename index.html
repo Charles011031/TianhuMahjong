@@ -2167,6 +2167,7 @@
       <button class="btn-ghost sm" id="stNext" title="后一天">后一天 ▶</button>
       <button class="btn-ghost sm" id="stToday">今天</button>
       <button class="btn-ghost sm" id="stMonthBtn">查看本月合计</button>
+      <button class="btn-ghost sm" id="stCopyBtn" title="按当前统计生成一段文字，方便发群里">📋 生成文案</button>
       <button class="btn-ghost sm" id="stPull" style="margin-left:auto;">🔄 从表格刷新</button>
       <span class="hint" id="stPullMsg" style="margin:0;"></span>
       <span class="hint" id="stRange" style="margin:0;"></span>
@@ -2181,6 +2182,19 @@
       <div id="stTxnSum" class="txn-sum"></div>
     </section>
   </div>
+
+    <!-- 一键生成文案（v3.23.0） -->
+    <div class="overlay" id="copyOverlay">
+      <div class="modal">
+        <h3 id="copyTitle">今日文案</h3>
+        <textarea id="copyText" readonly style="width:100%;min-height:96px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;line-height:1.7;font-family:inherit;resize:vertical;background:#f8fafc;color:var(--ink);"></textarea>
+        <div class="modal-btns">
+          <button id="copyDo" class="btn-start">📋 复制</button>
+          <button id="copyClose" class="btn-ghost">关闭</button>
+        </div>
+        <div class="hint" id="copyHint" style="margin:8px 0 0;"></div>
+      </div>
+    </div>
 
   <footer>
     计时基于设备本地时间 · 数据保存在本机浏览器中 · 按分钟向上取整计费（不足 1 分钟按 1 分钟）<br>
@@ -3431,6 +3445,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.23.0  2026-10-27
+  //    + 📋 统计页「一键生成文案」（用户需求）★★
+  //      · 格式：今日台费xxx，零食饮料xxx，鸭嘴兽xxx，罚款xxx，总xxx（人民币收xxx）
+  //      · 某一段为 0 就不写；人民币收为 0 就不写括号
+  //      · 点按钮 → 弹窗显示文案并自动复制（复制被拦时可手动选中/点复制）
+  //      · 看前一天/历史日期时前缀跟着变成「10月25日」；看本月合计时变成「本月」
   //  v3.22.0  2026-10-27
   //    + 修【待结算】三连问题（用户实测）★★★
   //      ① 收进待结算后桌面有时不变空闲、再点一次会多出一条一模一样的待结算
@@ -4069,7 +4089,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.22.0";
+  var APP_VER = "v3.23.0";
   var APP_DATE = "2026-10-27";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -15489,6 +15509,76 @@ rows += "<tr>" +
         (r.rechargeRmb > 0.005 ? " · 人民币 ¥" + round2(r.rechargeRmb).toFixed(2) : "") + "</span>" : "");
   }
 
+  // ============================================================
+  //  ★ v3.23.0：一键生成文案（发群里用）
+  //  格式：今日台费xxx，零食饮料xxx，鸭嘴兽xxx，罚款xxx，总xxx（人民币收xxx）
+  //  某一段是 0 就不写它；人民币收是 0 就不写括号
+  // ============================================================
+  function statsCopyText() {
+    var r = statsCalc();
+    var day = document.getElementById("stDate").value || bizDate(Date.now());
+    var head;
+    if (statsScope === "month") head = "本月";
+    else if (day === bizDate(Date.now())) head = "今日";
+    else head = (Number(day.slice(5, 7)) + "月" + Number(day.slice(8, 10)) + "日");
+
+    var fee = round2(r.tableGrand);
+    var snack = round2(r.snackGrand + r.snackFromTable);
+    var vape = round2(r.vapeGrand);
+    var fine = round2(r.fineGrand);
+    var total = round2(fee + snack + vape + fine);
+    function n2(v) { return round2(v).toFixed(2); }
+
+    if (total <= 0.005 && !(r.rmbActual > 0.005)) return head + "暂无营业额";
+    var segs = [];
+    if (fee > 0.005) segs.push("台费" + n2(fee));
+    if (snack > 0.005) segs.push("零食饮料" + n2(snack));
+    if (vape > 0.005) segs.push("鸭嘴兽" + n2(vape));
+    if (fine > 0.005) segs.push("罚款" + n2(fine));
+    var txt = head + segs.join("，");
+    if (segs.length) txt += "，";
+    txt += "总" + n2(total);
+    if (r.rmbActual > 0.005) txt += "（人民币收" + n2(r.rmbActual) + "）";
+    return txt;
+  }
+  function copyToClipboard(txt, onDone) {
+    function fallback() {
+      var ok = false;
+      try {
+        var ta = document.getElementById("copyText");
+        ta.focus(); ta.select();
+        ok = !!(document.execCommand && document.execCommand("copy"));
+      } catch (e) { ok = false; }
+      if (onDone) onDone(ok);
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(String(txt)).then(function () { if (onDone) onDone(true); }, fallback);
+        return;
+      }
+    } catch (e) {}
+    fallback();
+  }
+  function openStatsCopy() {
+    var txt = statsCopyText();
+    var ov = document.getElementById("copyOverlay");
+    var ta = document.getElementById("copyText");
+    var title = document.getElementById("copyTitle");
+    var hint = document.getElementById("copyHint");
+    var day = document.getElementById("stDate").value || "";
+    ta.value = txt;
+    if (title) title.textContent = (statsScope === "month" ? "本月文案" : (day === bizDate(Date.now()) ? "今日文案" : "当日文案"));
+    if (hint) hint.textContent = "正在复制…";
+    ov.classList.add("show");
+    setTimeout(function () { try { ta.focus(); ta.select(); } catch (e) {} }, 60);
+    copyToClipboard(txt, function (ok) {
+      if (hint) hint.textContent = ok
+        ? "已复制到剪贴板 ✓（下面也能手动选中再复制）"
+        : "浏览器拦住了自动复制，请点下面的「📋 复制」或手动选中文字复制";
+    });
+  }
+  function closeStatsCopy() { document.getElementById("copyOverlay").classList.remove("show"); }
+
   // 明细上方的筛选按钮
   function renderTxnFilter() {
     var wrap = document.getElementById("stTxnFilter");
@@ -15536,6 +15626,18 @@ rows += "<tr>" +
     });
   });
   document.getElementById("stMonthBtn").addEventListener("click", function () { statsScope = "month"; renderStats(); });
+  // 一键生成文案（v3.23.0）
+  document.getElementById("stCopyBtn").addEventListener("click", openStatsCopy);
+  document.getElementById("copyDo").addEventListener("click", function () {
+    var hint = document.getElementById("copyHint");
+    copyToClipboard(document.getElementById("copyText").value, function (ok) {
+      if (hint) hint.textContent = ok ? "已复制 ✓" : "复制失败，请手动选中上面的文字复制";
+    });
+  });
+  document.getElementById("copyClose").addEventListener("click", closeStatsCopy);
+  document.getElementById("copyOverlay").addEventListener("click", function (e) {
+    if (e.target === this) closeStatsCopy();
+  });
   // 在统计页按 ← / → 也能翻前后一天（输入框里打字时不拦截）
   document.addEventListener("keydown", function (e) {
     if (state.currentTab !== "stats") return;
