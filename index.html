@@ -951,6 +951,9 @@
   .stat-card .k { font-size: 13px; color: var(--muted); }
   .stat-card .v { font-size: 24px; font-weight: 800; color: var(--green-dark); margin-top: 4px; font-variant-numeric: tabular-nums; }
   .stat-card .s { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.75; }
+  /* 预估营业额（v3.20.0）：绿色描边，和正式营业额一眼区分 */
+  .stat-card.est { border-color: #9fd6b5; background: #f4fbf7; }
+  .stat-card.est .k::after { content: "（含未结）"; font-size: 11px; color: #1d7a4f; }
   .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
   .toolbar input[type=date], .toolbar input[type=month], .toolbar select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
 
@@ -1135,6 +1138,8 @@
   }
   body.dark .history td.grand, body.dark .rec-amt { color: #5ee2a0 !important; }
   body.dark .stat-card { background: #17222c !important; border-color: #2a3846 !important; }
+  body.dark .stat-card.est { border-color: #2f6b4c !important; background: #14231c !important; }
+  body.dark .stat-card.est .k::after { color: #5ee2a0; }
   body.dark .stat-card .k, body.dark .stat-card .s { color: #93a3b3 !important; }
   body.dark .stat-card .v { color: #5ee2a0 !important; }
   body.dark .cart-total { background: #12202a !important; color: var(--ink) !important; }
@@ -3394,6 +3399,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.20.0  2026-10-26
+  //    + 📈 统计页新增【预估营业额】卡片（用户提议）★★
+  //      · = 已结算营业额 ＋ 进行中/暂停的桌（当前台费+挂桌零食）＋ 待结算（台费+挂桌零食）
+  //      · 每分钟自动重算一次（只在统计页开着时跑）
+  //      · 正式「营业额」口径不变（工资忙日判定仍只看已结）→ 两个数分开显示
+  //      · 看历史日期 / 月汇总时不显示预估（没有意义）；未结部分未含手续费
   //  v3.19.1  2026-10-26
   //    + 零食饮料 / 鸭嘴兽 结算记录：品项写很多样时「操作」列被挤到右边要横划（用户反馈）
   //      · 品项那一格改成可以换行（太长就折行），整张表不再被撑宽 ✓
@@ -4002,7 +4013,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.19.1";
+  var APP_VER = "v3.20.0";
   var APP_DATE = "2026-10-26";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -15231,8 +15242,53 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     return r;
   }
 
-  function statCard(k, v, s) {
-    return '<div class="stat-card"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div></div>';
+  function statCard(k, v, s, cls) {
+    return '<div class="stat-card' + (cls ? " " + cls : "") + '"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div></div>';
+  }
+
+  // ============================================================
+  //  ★ v3.20.0：预估营业额（含还没结账的桌）
+  //  正式「营业额」仍然只算已结算记录（工资忙日判定也用它 ✗ 不能混）；
+  //  这里只是给柜台看的参考数：已结 ＋ 进行中/暂停的桌 ＋ 待结算
+  //  ★ 只统计【当前营业日】开台/结束的场次（按 sessionStart 归日，跟结算记录一致）
+  //  ★ 未结部分不知道最后用什么方式收款 → 不含手续费（卡片上会注明）
+  // ============================================================
+  function extrasMoney(extras) {
+    var sum = 0;
+    for (var i = 0; i < (extras || []).length; i++) {
+      sum += (Number(extras[i].price) || 0) * (Number(extras[i].qty) || 0);
+    }
+    return round2(sum);
+  }
+  function estimateBiz(day, settled) {
+    var running = 0, runCount = 0, waiting = 0, waitCount = 0, i, t;
+    function sameDay(ts) { return ts && bizDate(ts) === day; }
+    for (i = 1; i <= TABLE_COUNT; i++) {
+      t = state.tables[i];
+      if (!t) continue;
+      var ex = extrasMoney(t.extras);
+      if (t.status === "running" || t.status === "paused") {
+        if (!sameDay(t.sessionStart)) continue;         // 昨天开的场子，结算时会算到昨天
+        running = round2(running + tableFeeOf(elapsedMs(t)) + ex);
+        runCount++;
+      } else if (t.status === "ended") {
+        if (!sameDay(t.sessionStart)) continue;
+        waiting = round2(waiting + tableFeeOf(elapsedMs(t)) + ex);
+        waitCount++;
+      }
+    }
+    // 待结算条目（Firebase 版才有；基础版没有 pending 就是空数组）
+    for (i = 0; i < (state.pending || []).length; i++) {
+      var p = state.pending[i];
+      if (!p || !sameDay(p.startTs)) continue;
+      var ms = Math.max(0, (Number(p.endTs) || 0) - (Number(p.startTs) || 0));
+      waiting = round2(waiting + tableFeeOf(ms) + extrasMoney(p.extras));
+      waitCount++;
+    }
+    return {
+      settled: round2(settled), running: running, waiting: waiting,
+      total: round2(settled + running + waiting), runCount: runCount, waitCount: waitCount
+    };
   }
 
   function renderStats() {
@@ -15246,7 +15302,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("stRange").textContent = scopeTxt;
     document.getElementById("stTxnTitle").textContent = scopeTxt + " · 明细";
 
-    document.getElementById("stCards").innerHTML =
+    var cardsHtml =
       statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场") +
       // ★ 罚款单独一张卡 ✗ 和台费并列 ✓ 两个都算进下面的总额 ✓
       statCard("⚖️ 罚款", fmtMoney(round2(r.fineGrand)), r.fineCount + " 笔") +
@@ -15263,6 +15319,20 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         (r.rechargeFee > 0.005 ? " ＋ 刷卡手续费 $" + round2(r.rechargeFee).toFixed(2) : "") +
         (r.rechargeRmb > 0.005 ? "<br><b style='color:#1d4e89;'>人民币 ¥" + round2(r.rechargeRmb).toFixed(2) + "</b>" : "") +
         "<br><span style='font-size:12px;color:var(--muted);'>不计入营业额</span>");
+
+    // ★ v3.20.0：预估营业额卡片（只在看【当天】时显示；看历史日期/月汇总时没有意义 → 不显示）
+    var settledBiz = round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand);
+    if (statsScope === "day" && stDay === bizDate(Date.now())) {
+      var est = estimateBiz(stDay, settledBiz);
+      cardsHtml += statCard("预估营业额", fmtMoney(est.total),
+        "已结 " + fmtMoney(est.settled) + " ＋ 进行中 " + fmtMoney(est.running) +
+        " ＋ 待结算 " + fmtMoney(est.waiting) +
+        "<br><span style='font-size:12px;color:var(--muted);'>" +
+        (est.runCount ? est.runCount + " 桌还在打" : "现在没有桌在打") +
+        (est.waitCount ? "　·　" + est.waitCount + " 单待结算" : "") +
+        "　·　未结部分未含手续费</span>", "est");
+    }
+    document.getElementById("stCards").innerHTML = cardsHtml;
 
     // ---- 明细：按类型分组，每组带小计 ----
     renderTxnFilter();
@@ -15666,6 +15736,11 @@ document.addEventListener("mousedown", function (e) {
   if (fxNeedsRefresh()) fetchFxRate(); else updateFxInput();
   setInterval(fxAutoTick, 10 * 60 * 1000);
   setInterval(updateSyncStatus, 60 * 1000);
+  // ★ v3.20.0：统计页每分钟自动重算一次（预估营业额里「进行中」会随时间涨）
+  //   只在统计页开着时算，别的页签完全不跑 ✗ 不耗性能 ✓
+  setInterval(function () {
+    try { if (state.currentTab === "stats") renderStats(); } catch (e) {}
+  }, 60 * 1000);
   armRegisterAll();
   applyVersion();
   applyWageVisibility();
