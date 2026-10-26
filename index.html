@@ -954,6 +954,24 @@
   /* 预估营业额（v3.20.0）：绿色描边，和正式营业额一眼区分 */
   .stat-card.est { border-color: #9fd6b5; background: #f4fbf7; }
   .stat-card.est .k::after { content: "（含未结）"; font-size: 11px; color: #1d7a4f; }
+  /* 预估营业额通栏条（v3.20.2）：左边大字，右边拆分明细；不再占卡片格 */
+  .est-band {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    background: #f4fbf7; border: 1px solid #9fd6b5; border-radius: 14px;
+    padding: 11px 16px; margin: -2px 0 14px;
+  }
+  .est-band .est-k { font-size: 13px; color: #1d7a4f; font-weight: 700; }
+  .est-band .est-k small { font-weight: 400; color: var(--muted); margin-left: 4px; }
+  .est-band .est-v { font-size: 28px; font-weight: 900; color: var(--green-dark); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .est-band .est-parts { font-size: 13px; color: var(--ink); line-height: 1.7; }
+  .est-band .est-parts b { font-weight: 800; }
+  .est-band .est-parts .sep { color: #b9c6bf; margin: 0 6px; }
+  .est-band .est-note { font-size: 12px; color: var(--muted); }
+  .est-band .est-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  @media (max-width: 720px) {
+    .est-band { gap: 8px 14px; padding: 10px 12px; }
+    .est-band .est-v { font-size: 24px; }
+  }
   .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
   .toolbar input[type=date], .toolbar input[type=month], .toolbar select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
 
@@ -1140,6 +1158,11 @@
   body.dark .stat-card { background: #17222c !important; border-color: #2a3846 !important; }
   body.dark .stat-card.est { border-color: #2f6b4c !important; background: #14231c !important; }
   body.dark .stat-card.est .k::after { color: #5ee2a0; }
+  body.dark .est-band { background: #14231c; border-color: #2f6b4c; }
+  body.dark .est-band .est-k { color: #5ee2a0; }
+  body.dark .est-band .est-v { color: #5ee2a0; }
+  body.dark .est-band .est-parts { color: #d1d5db; }
+  body.dark .est-band .est-parts .sep { color: #4b5b52; }
   body.dark .stat-card .k, body.dark .stat-card .s { color: #93a3b3 !important; }
   body.dark .stat-card .v { color: #5ee2a0 !important; }
   body.dark .cart-total { background: #12202a !important; color: var(--ink) !important; }
@@ -2142,6 +2165,8 @@
       <span class="hint" id="stRange" style="margin:0;"></span>
     </div>
     <div class="stat-cards" id="stCards"></div>
+    <!-- 预估营业额（通栏条，v3.20.2）：不再挤进卡片网格，避免单独占一格、右边空一大片 -->
+    <div id="stEstimate"></div>
     <section class="history" style="margin-top:20px;">
       <div class="history-head"><h2 id="stTxnTitle">当日明细</h2></div>
       <div id="stTxnFilter" class="txnf-bar"></div>
@@ -3399,6 +3424,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.20.2  2026-10-26
+  //    + 统计页排版：预估营业额改成【卡片下面的一条通栏】（左边大字、右边拆分）
+  //      以前它是卡片网格里的第 8 张 ✗ 宽屏刚好 7 列 → 它单独占一行左边一格 ✗
+  //      右边空一大片，用户反馈"排版不好看" ✓
   //  v3.20.1  2026-10-26
   //    + 预估营业额：前一天还有没结的桌台 / 待结算时，前一天的统计面板也显示预估
   //      （以前只在"当天"显示；历史营业日没有未结的不显示，避免和「总额」重复）
@@ -4016,7 +4045,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.20.1";
+  var APP_VER = "v3.20.2";
   var APP_DATE = "2026-10-26";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -15323,25 +15352,31 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         (r.rechargeRmb > 0.005 ? "<br><b style='color:#1d4e89;'>人民币 ¥" + round2(r.rechargeRmb).toFixed(2) + "</b>" : "") +
         "<br><span style='font-size:12px;color:var(--muted);'>不计入营业额</span>");
 
-    // ★ v3.20.1：预估营业额卡片
-    //   当天 → 一直显示；
-    //   其它营业日 → 只有当【那一天还有没结的桌/待结算】时才显示
-    //     （用户要求：前一天还有没结算的桌台，前一天的统计面板也要显示预估）
+    // ★ v3.20.2：预估营业额改成【卡片下面的一条通栏】，不再挤在卡片网格里
+    //   （以前 7 张正式卡 + 1 张预估卡，宽屏刚好 7 列 → 预估单独占一行左边一格，
+    //     右边空一大片；用户反馈"排版不好看"）
+    //   当天 → 一直显示；其它营业日 → 只有那天还有没结的桌/待结算时才显示
     var settledBiz = round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand);
+    var estHtml = "";
     if (statsScope === "day") {
       var est = estimateBiz(stDay, settledBiz);
       var isToday = (stDay === bizDate(Date.now()));
       if (isToday || (est.running + est.waiting) > 0.005) {
-        cardsHtml += statCard("预估营业额", fmtMoney(est.total),
-          "已结 " + fmtMoney(est.settled) + " ＋ 进行中 " + fmtMoney(est.running) +
-          " ＋ 待结算 " + fmtMoney(est.waiting) +
-          "<br><span style='font-size:12px;color:var(--muted);'>" +
+        estHtml = '<div class="est-band">' +
+          '<div class="est-main"><span class="est-k">预估营业额<small>（含未结）</small></span>' +
+          '<span class="est-v">' + fmtMoney(est.total) + '</span></div>' +
+          '<div class="est-parts">已结 <b>' + fmtMoney(est.settled) + '</b>' +
+          '<span class="sep">＋</span>进行中 <b>' + fmtMoney(est.running) + '</b>' +
+          '<span class="sep">＋</span>待结算 <b>' + fmtMoney(est.waiting) + '</b>' +
+          '<div class="est-note">' +
           (est.runCount ? est.runCount + " 桌还在打" : "没有桌在打") +
           (est.waitCount ? "　·　" + est.waitCount + " 单待结算" : "") +
-          "　·　未结部分未含手续费</span>", "est");
+          "　·　未结部分未含手续费</div></div></div>";
       }
     }
     document.getElementById("stCards").innerHTML = cardsHtml;
+    var estBox = document.getElementById("stEstimate");
+    if (estBox) estBox.innerHTML = estHtml;
 
     // ---- 明细：按类型分组，每组带小计 ----
     renderTxnFilter();
