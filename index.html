@@ -178,6 +178,13 @@
   .btn-settle { background: var(--red); color: #fff; border-color: var(--red); }
   .btn-ghost { background: #f3f4f6; color: var(--ink); }
   .btn-manual { background: #eef4f9; color: #1d4e89; border: 1px dashed #b9cde3; }
+  /* 待结算卡：方案 C 平铺分级（v3.21.0） */
+  .btns .btn-settle.wide { grid-column: 1 / -1; }
+  .btns .btns-mini { grid-column: 1 / -1; display: flex; gap: 6px; }
+  .btns .btns-mini button { flex: 1 1 0; padding: 6px 4px; font-size: 12px; background: #f8fafc; color: #5b6b62; }
+  .btns .btns-mini button[data-act="cancel"] { color: #b91c1c; border-color: #fca5a5; background: #fff7f7; }
+  body.dark .btns .btns-mini button { background: #111827; color: #cbd5e1; }
+  body.dark .btns .btns-mini button[data-act="cancel"] { background: #2a1616; }
   .btn-export { background: var(--green); color: #fff; border-color: var(--green); }
   .result {
     background: #fff7e6;
@@ -3424,6 +3431,13 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.21.0  2026-10-26
+  //    + 待结算桌卡的按钮重排（用户选的方案 C · 平铺分级）★★
+  //      · 第一行：💰 结算收费（整行大按钮）
+  //      · 第二行：📄 看账单 ｜ 🧾 收进待结算（原来的「收进待结算（空出桌子）」）
+  //      · 第三行小号：⏱ 改时间 ｜ ↩ 撤销结束 ｜ ✖ 取消计时（危险操作仍两下确认）
+  //      · 去掉了重复的「改结束时间」（和底部"自定义时间/补录"是同一个弹窗）
+  //      · 基础版没有待结算区 → 不显示「收进待结算」；只有 Firebase 版显示
   //  v3.20.2  2026-10-26
   //    + 统计页排版：预估营业额改成【卡片下面的一条通栏】（左边大字、右边拆分）
   //      以前它是卡片网格里的第 8 张 ✗ 宽屏刚好 7 列 → 它单独占一行左边一格 ✗
@@ -4045,7 +4059,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.20.2";
+  var APP_VER = "v3.21.0";
   var APP_DATE = "2026-10-26";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4359,10 +4373,21 @@
         html += '<button class="btn-ghost" data-act="move" data-id="' + i + '">🔄 换桌</button>';
         html += cancelBtn;
       } else if (t.status === "ended") {
-        html += '<button class="btn-settle" data-act="settle2" data-id="' + i + '">💰 结算收费</button>';
-        html += '<button class="btn-ghost" data-act="unend" data-id="' + i + '">撤销结束</button>';
-        html += '<button class="btn-ghost" data-act="manual" data-id="' + i + '">改结束时间</button>';
-        html += cancelBtn;
+        // ★ v3.21.0：待结算卡改成「方案 C：平铺分级」
+        //   ① 结算收费（整行大按钮） ② 看账单 | 收进待结算
+        //   ③ 一行小号：改时间 | 撤销结束 | 取消计时（危险操作保持两下确认）
+        //   收进待结算只在 Firebase 版有（基础版没有待结算区 → 不显示，避免空按钮）
+        var canPend = (typeof fbPendTakeFromTable === "function");
+        html += '<button class="btn-settle wide" data-act="settle2" data-id="' + i + '">💰 结算收费</button>';
+        html += '<button class="btn-ghost" data-act="bill" data-id="' + i + '"' + (canPend ? "" : ' style="grid-column:1/-1;"') + '>📄 看账单</button>';
+        if (canPend) html += '<button class="btn-ghost" data-fbpend="take" data-id="' + i + '">🧾 收进待结算</button>';
+        html += '<div class="btns-mini">' +
+                '<button type="button" class="btn-ghost" data-act="manual" data-id="' + i + '">⏱ 改时间</button>' +
+                '<button type="button" class="btn-ghost" data-act="unend" data-id="' + i + '">↩ 撤销结束</button>' +
+                '<button type="button" class="btn-ghost" data-act="cancel" data-armkey="table-cancel" data-id="' + i + '"' +
+                (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+                (armed ? "再点一次" : "✖ 取消计时") + '</button>' +
+                '</div>';
       } else {
         html += '<button class="btn-start" data-act="start" data-id="' + i + '">开始计时</button>';
         // ★ 这张桌还欠着钱（上次结算没收齐）→ 给个【补收】按钮，可以分几次收完
@@ -4372,11 +4397,12 @@
         }
         html += '<button class="btn-ghost" data-act="reset" data-id="' + i + '">清零</button>';
       }
-      if (t.status !== "idle") {
+      if (t.status === "running" || t.status === "paused") {
         html += '<button class="btn-ghost" data-act="bill" data-id="' + i + '">📄 看账单</button>';
       }
       html += '  </div>';
-      html += '  <button class="btn-manual" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
+      // 待结算卡上「改时间」已经放到小按钮行里了 → 不再重复出现底部那行
+      if (t.status !== "ended") html += '  <button class="btn-manual" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
       // ★ v3.5.5：桌台卡片上的「上次结果」整块删掉了 ★（用户要求）
       //   原来空闲的桌子下面会挂一个"$131.87 · 台费 $130.67 · 其它 …"的黄色块 ✗
       //   用户觉得多余 ✗ 删掉 ✓（记录在「统计」和「结算记录」里都能查 ✓）
@@ -16785,7 +16811,7 @@ function fbAddTakeButtons() {
     btn.className = "btn-ghost sm";
     btn.setAttribute("data-fbpend", "take");
     btn.setAttribute("data-id", String(no));
-    btn.textContent = "🧾 收进待结算（空出桌子）";
+    btn.textContent = "🧾 收进待结算";
     btn.style.marginTop = "8px";
     card.appendChild(btn);
   }
