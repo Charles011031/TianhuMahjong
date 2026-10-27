@@ -179,6 +179,7 @@
   .btn-ghost { background: #f3f4f6; color: var(--ink); }
   .btn-manual { background: #eef4f9; color: #1d4e89; border: 1px dashed #b9cde3; }
   /* 待结算卡：方案 C 平铺分级（v3.21.0） */
+  .btns > button.wide { grid-column: 1 / -1; }
   .btns .btn-settle.wide { grid-column: 1 / -1; }
   .btns .btns-mini { grid-column: 1 / -1; display: flex; gap: 6px; }
   .btns .btns-mini button { flex: 1 1 0; padding: 6px 4px; font-size: 12px; background: #f8fafc; color: #5b6b62; }
@@ -3445,6 +3446,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.24.0  2026-10-27
+  //    + 桌台卡：计时中 / 暂停 也套用待结算卡那套「方案 C」按钮结构（用户要求统一）
+  //      · 计时中：⏹ 结束计时（整行大按钮）→ ⏸ 暂停 | 🔄 换桌 → 小号 看账单 | 改时间 | 取消计时
+  //      · 暂停中：▶ 继续（整行大按钮）→ ⏹ 结束计时 | 🔄 换桌 → 小号 看账单 | 改时间 | 取消计时
+  //      · 底部「自定义时间/补录」只在空闲桌显示（其它状态已经收进小号「改时间」）
   //  v3.23.0  2026-10-27
   //    + 📋 统计页「一键生成文案」（用户需求）★★
   //      · 格式：今日台费xxx，零食饮料xxx，鸭嘴兽xxx，罚款xxx，总xxx（人民币收xxx）
@@ -4089,7 +4095,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.23.0";
+  var APP_VER = "v3.24.0";
   var APP_DATE = "2026-10-27";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4393,15 +4399,30 @@
         (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : '') + '>' +
         (armed ? "再点一次确认" : "✖ 取消计时") + "</button>";
       if (t.status === "running") {
-        html += '<button class="btn-pause" data-act="pause" data-id="' + i + '">暂停</button>';
-        html += '<button class="btn-stop" data-act="stop" data-id="' + i + '">⏹ 结束计时</button>';
+        // ★ v3.24.0：计时中也套用待结算卡那套「方案 C」按钮结构
+        //   ① 结束计时（整行大按钮） ② 暂停 | 换桌 ③ 小号：看账单 | 改时间 | 取消计时
+        html += '<button class="btn-stop wide" data-act="stop" data-id="' + i + '">⏹ 结束计时</button>';
+        html += '<button class="btn-pause" data-act="pause" data-id="' + i + '">⏸ 暂停</button>';
         html += '<button class="btn-ghost" data-act="move" data-id="' + i + '">🔄 换桌</button>';
-        html += cancelBtn;
+        html += '<div class="btns-mini">' +
+                '<button type="button" class="btn-ghost" data-act="bill" data-id="' + i + '">📄 看账单</button>' +
+                '<button type="button" class="btn-ghost" data-act="manual" data-id="' + i + '">⏱ 改时间</button>' +
+                '<button type="button" class="btn-ghost" data-act="cancel" data-armkey="table-cancel" data-id="' + i + '"' +
+                (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+                (armed ? "再点一次" : "✖ 取消计时") + '</button>' +
+                '</div>';
       } else if (t.status === "paused") {
-        html += '<button class="btn-start" data-act="resume" data-id="' + i + '">继续</button>';
+        // 暂停中：主按钮改成「继续」，结束计时放第二行
+        html += '<button class="btn-start wide" data-act="resume" data-id="' + i + '">▶ 继续</button>';
         html += '<button class="btn-stop" data-act="stop" data-id="' + i + '">⏹ 结束计时</button>';
         html += '<button class="btn-ghost" data-act="move" data-id="' + i + '">🔄 换桌</button>';
-        html += cancelBtn;
+        html += '<div class="btns-mini">' +
+                '<button type="button" class="btn-ghost" data-act="bill" data-id="' + i + '">📄 看账单</button>' +
+                '<button type="button" class="btn-ghost" data-act="manual" data-id="' + i + '">⏱ 改时间</button>' +
+                '<button type="button" class="btn-ghost" data-act="cancel" data-armkey="table-cancel" data-id="' + i + '"' +
+                (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+                (armed ? "再点一次" : "✖ 取消计时") + '</button>' +
+                '</div>';
       } else if (t.status === "ended") {
         // ★ v3.21.0：待结算卡改成「方案 C：平铺分级」
         //   ① 结算收费（整行大按钮） ② 看账单 | 收进待结算
@@ -4427,12 +4448,9 @@
         }
         html += '<button class="btn-ghost" data-act="reset" data-id="' + i + '">清零</button>';
       }
-      if (t.status === "running" || t.status === "paused") {
-        html += '<button class="btn-ghost" data-act="bill" data-id="' + i + '">📄 看账单</button>';
-      }
       html += '  </div>';
-      // 待结算卡上「改时间」已经放到小按钮行里了 → 不再重复出现底部那行
-      if (t.status !== "ended") html += '  <button class="btn-manual" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
+      // 待结算 / 计时中 / 暂停 的「改时间」都已经放进小按钮行了 → 底部那行只在空闲桌显示
+      if (t.status === "idle") html += '  <button class="btn-manual" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
       // ★ v3.5.5：桌台卡片上的「上次结果」整块删掉了 ★（用户要求）
       //   原来空闲的桌子下面会挂一个"$131.87 · 台费 $130.67 · 其它 …"的黄色块 ✗
       //   用户觉得多余 ✗ 删掉 ✓（记录在「统计」和「结算记录」里都能查 ✓）
