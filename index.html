@@ -635,6 +635,57 @@
   .attach-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
   .attach-row select { flex: 1; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
 
+  /* ===== 零食 → 挂到桌台（v3.25.0）=====
+     先选「单独结算 / 挂到桌台」，挂账用桌台卡片选桌 + 确认弹窗，
+     金额写清「不含手续费」，未开台的桌也能挂（客人先到、还没开始计时）。 */
+  .snack-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 2px; }
+  .snack-mode-btn {
+    padding: 11px 10px; font-size: 15px; font-weight: 800; border-radius: 11px;
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .snack-mode-btn.on { background: var(--green); border-color: var(--green); color: #fff; box-shadow: 0 4px 12px rgba(29,122,79,.18); }
+  .attach-panel { margin-top: 10px; border: 1px solid #cfe8da; background: #f7fbf9; border-radius: 14px; padding: 13px; }
+  .attach-title { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .attach-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #e2f4ea; color: var(--green-dark); }
+  .attach-amount { margin: 8px 0 10px; font-size: 13.5px; }
+  .attach-amount b { font-size: 19px; color: var(--green-dark); }
+  .attach-amount .attach-sub { color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+  .attach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  .attach-tb {
+    position: relative; text-align: left; background: #fff; border: 1.5px solid var(--line);
+    border-radius: 12px; padding: 9px 10px; cursor: pointer; transition: .12s;
+  }
+  .attach-tb:hover { border-color: #9fc7b4; }
+  .attach-tb.on { border-color: var(--green); background: #f0f7f3; box-shadow: 0 0 0 3px rgba(29,122,79,.14); }
+  .attach-tb.on::after {
+    content: "✓"; position: absolute; top: 6px; right: 8px; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--green); color: #fff; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .attach-tb .tb-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .attach-tb .tb-name { font-size: 14px; font-weight: 800; }
+  .attach-tb .tb-badge { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+  .tb-badge.running { background: #e2f4ea; color: var(--green-dark); }
+  .tb-badge.ended { background: #fdf1dc; color: #92400e; }
+  .tb-badge.idle { background: #eef1f0; color: var(--muted); }
+  .attach-tb .tb-meta { display: block; font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .attach-tb .tb-meta b { color: var(--ink); font-size: 12px; }
+  .attach-note { margin: 8px 0 0; }
+  .attach-summary { margin-top: 10px; padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: 11px; font-size: 13px; line-height: 1.6; }
+  .attach-summary .idle-note { margin-top: 6px; padding: 6px 9px; background: #fff8e1; border: 1px solid #f0d9a8; border-radius: 8px; color: #8a5a00; font-size: 12px; }
+  .attach-go { width: 100%; margin-top: 10px; padding: 12px; font-size: 15px; border-radius: 11px; }
+  .attach-go:disabled { opacity: .45; cursor: not-allowed; }
+  /* 挂账确认弹窗 */
+  .sa-items { border-top: 1px dashed var(--line); }
+  .sa-item { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .sa-item .qty { color: var(--muted); font-size: 12px; }
+  .sa-total { margin-top: 10px; padding: 11px 12px; background: #f0f7f3; border-radius: 10px; font-size: 14px; }
+  .sa-total b { font-size: 20px; color: var(--green-dark); }
+  .sa-total span { font-size: 12.5px; color: var(--muted); }
+  .sa-target { margin-top: 10px; font-size: 14px; line-height: 1.7; }
+  .sa-target .k { color: var(--muted); font-size: 12.5px; }
+  .sa-note { margin-top: 10px; padding: 9px 11px; background: #fff8e1; border: 1px solid #f0d9a8; border-radius: 9px; color: #8a5a00; font-size: 12.5px; line-height: 1.6; }
+
 
   /* ===== 零食饮料 · 卡片式菜单（v3.6.0 改版）=====
      预览版「预览/零食卡片预览.html」用户已验收：
@@ -845,6 +896,13 @@
     .cart-row .qty-btn { width: 40px; height: 38px; font-size: 19px; }
     .cart-row .qty { order: 4; min-width: 26px; font-size: 16px; }
     .cart-row .csum { order: 6; margin-left: auto; font-size: 15px; min-width: 0; }
+    /* v3.25.0：零食挂账到桌台（手机） */
+    .attach-grid { grid-template-columns: 1fr 1fr; gap: 7px; }
+    .attach-tb { padding: 8px 9px; }
+    .attach-tb .tb-name { font-size: 13px; }
+    .attach-panel { padding: 11px; }
+    .attach-go { font-size: 14px; padding: 11px; }
+    .sa-total b { font-size: 18px; }
     /* 电子烟「价格设置」在手机上别被挤出屏幕：标签 + 输入框竖着排，自动换行 */
     .vp-grid { grid-template-columns: 44px repeat(3, minmax(0, 1fr)); gap: 7px 7px; }
     .vp-grid2 { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 7px 7px; }
@@ -1176,7 +1234,7 @@
   body.dark .cart-total { background: #12202a !important; color: var(--ink) !important; }
   body.dark .cart-total b { color: #5ee2a0 !important; }
   body.dark .list-scroll { background: #17222c !important; border-color: #2a3846 !important; }
-  body.dark .mem-acts button, body.dark .mini-del,
+  body.dark .mem-acts button, body.dark .mini-del, body.dark .qty-btn,
   body.dark .emp-editbtn, body.dark .emp-dragbtn {
     background: #1d2b37 !important; color: #cfe0ee !important; border-color: #2f4050 !important;
   }
@@ -1231,6 +1289,17 @@
   body.dark .attach-row {
     background: #17222c !important; border-color: #2a3846 !important; color: var(--ink) !important;
   }
+  /* v3.25.0：零食挂账到桌台 */
+  body.dark .snack-mode-btn { background: #1d2b37 !important; color: #cbd5e1 !important; border-color: #2f4050 !important; }
+  body.dark .snack-mode-btn.on { background: #2f9e6a !important; border-color: #2f9e6a !important; color: #fff !important; }
+  body.dark .attach-panel { background: #12202a !important; border-color: #2a3846 !important; }
+  body.dark .attach-tb, body.dark .attach-summary { background: #17222c !important; border-color: #2a3846 !important; color: var(--ink) !important; }
+  body.dark .attach-tb.on { background: #123524 !important; border-color: #2f9e6a !important; }
+  body.dark .tb-badge.running { background: #123524 !important; color: #6ee7a8 !important; }
+  body.dark .tb-badge.ended { background: #3a2a12 !important; color: #f0b95a !important; }
+  body.dark .tb-badge.idle { background: #1d2b37 !important; color: #b9c6d3 !important; }
+  body.dark .sa-total { background: #12202a !important; }
+  body.dark .sa-note { background: #2a2013 !important; border-color: #5a4320 !important; color: #f0b95a !important; }
   body.dark .badge, body.dark .badge.running, body.dark .badge.paused, body.dark .badge-res,
   body.dark .snack-count, body.dark .snack-card .snack-tag,
   body.dark .snack-card .snack-step button,
@@ -1902,29 +1971,42 @@
         </div>
         <div id="snackCart" class="list-scroll" style="max-height:min(30vh,320px);"></div>
         <div class="cart-total" id="snackTotal"></div>
-        <div class="pay-row">
-          <label><input type="radio" name="snackPay" value="card" checked> 刷卡（+<span id="snackFeePct">1.2</span>%）</label>
-          <label><input type="radio" name="snackPay" value="cash"> 现金</label>
-          <label><input type="radio" name="snackPay" value="rmb"> 人民币</label>
+        <!-- ★ v3.25.0：先选「怎么结账」，再看对应内容（挂账选项更清楚） -->
+        <div class="snack-mode" id="snackMode">
+          <button type="button" class="snack-mode-btn on" data-snackmode="single">单独结算</button>
+          <button type="button" class="snack-mode-btn" data-snackmode="attach">挂到桌台</button>
         </div>
-        <div class="field" id="snackCustomWrap" style="display:none;margin-bottom:8px;">
-          <label>现金实际收取（可抹零，留空 = 按应收）</label>
-          <input type="number" id="snackCustom" min="0" step="0.5" placeholder="留空 = 按应收">
+        <div id="snackSinglePane">
+          <div class="pay-row">
+            <label><input type="radio" name="snackPay" value="card" checked> 刷卡（+<span id="snackFeePct">1.2</span>%）</label>
+            <label><input type="radio" name="snackPay" value="cash"> 现金</label>
+            <label><input type="radio" name="snackPay" value="rmb"> 人民币</label>
+          </div>
+          <div class="field" id="snackCustomWrap" style="display:none;margin-bottom:8px;">
+            <label>现金实际收取（可抹零，留空 = 按应收）</label>
+            <input type="number" id="snackCustom" min="0" step="0.5" placeholder="留空 = 按应收">
+          </div>
+          <div class="field" id="snackRmbWrap" style="display:none;margin-bottom:8px;">
+            <label>实收人民币 ¥（澳币应收不变，留空 = 按汇率自动）</label>
+            <input type="number" id="snackRmb" min="0" step="1" placeholder="按汇率自动">
+          </div>
+          <div class="field" style="margin-bottom:8px;">
+            <label>结账日期（默认今天；凌晨打的可以改成实际消费那天）</label>
+            <input type="date" id="snackDate">
+          </div>
+          <div class="modal-btns">
+            <button id="snackSettle" class="btn-export">单独结算</button>
+          </div>
         </div>
-        <div class="field" id="snackRmbWrap" style="display:none;margin-bottom:8px;">
-          <label>实收人民币 ¥（澳币应收不变，留空 = 按汇率自动）</label>
-          <input type="number" id="snackRmb" min="0" step="1" placeholder="按汇率自动">
-        </div>
-        <div class="field" style="margin-bottom:8px;">
-          <label>结账日期（默认今天；凌晨打的可以改成实际消费那天）</label>
-          <input type="date" id="snackDate">
-        </div>
-        <div class="modal-btns">
-          <button id="snackSettle" class="btn-export">单独结算</button>
-        </div>
-        <div class="attach-row">
-          <select id="snackAttachTable"></select>
-          <button id="snackAttach" class="btn-start" style="white-space:nowrap;">挂到桌台</button>
+        <div id="snackAttachPane" style="display:none;">
+          <div class="attach-panel">
+            <div class="attach-title">🍜 挂到桌台（随该桌一起结）<span class="attach-tag">不计手续费</span></div>
+            <div class="attach-amount">本次 <b id="snackAttachQty">0</b> 件 · <b id="snackAttachSum">$0.00</b><span class="attach-sub">结算该桌时再按付款方式算手续费</span></div>
+            <div class="attach-grid" id="snackAttachGrid"></div>
+            <div class="hint attach-note">没开台的桌也能挂：客人先到、人还没齐没开始计时，先挂上，开台后一起结。</div>
+            <div class="attach-summary" id="snackAttachSummary"></div>
+            <button type="button" id="snackAttach" class="btn-start attach-go" disabled>✓ 确认挂账 $0.00</button>
+          </div>
         </div>
         <div class="hint" id="snackStatus"></div>
       </section>
@@ -1934,7 +2016,7 @@
       <div class="history-wrap-scroll" id="snackHistoryWrap"></div>
     </section>
     <button type="button" class="snack-pill" id="snackPill" title="点一下跳到结算按钮">
-      🛒 已选 <b id="snackPillN">0</b> 件 · 应收 <span id="snackPillSum">$0.00</span>
+      🛒 已选 <b id="snackPillN">0</b> 件 · <span id="snackPillLabel">应收</span> <span id="snackPillSum">$0.00</span>
     </button>
   </div>
 
@@ -2348,6 +2430,7 @@
           <div style="font-size:14px;color:#8a5a00;">还差 <b id="sShortAmt">$0.00</b> 没收齐，怎么处理？</div>
           <label style="display:block;font-size:14px;margin-top:6px;color:#8a5a00;"><input type="radio" name="sShort" value="carry"> 记在这张桌上，下次一起结</label>
           <label style="display:block;font-size:14px;margin-top:4px;color:#8a5a00;"><input type="radio" name="sShort" value="waive"> 直接免除（抹掉，不算欠）</label>
+          <div class="hint" id="sShortHint" style="display:none;margin:6px 0 0;color:#8a5a00;"></div>
         </div>
       </div>
       <button type="button" class="btn-ghost sm" id="sDetailToggle" style="margin-top:4px;">▸ 账单明细 / 汇率</button>
@@ -2363,6 +2446,24 @@
       <div class="modal-btns">
         <button id="sConfirm" class="btn-settle">确认结算</button>
         <button id="sCancel" class="btn-ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 零食 → 挂到桌台：确认弹窗（v3.25.0） -->
+  <div class="overlay" id="snackAttachOverlay">
+    <div class="modal">
+      <h3>确认挂到桌台</h3>
+      <div id="snackAttachItems" class="sa-items"></div>
+      <div class="sa-total">本次挂账 <b id="snackAttachModalSum">$0.00</b>　<span>挂账不收手续费</span></div>
+      <div class="sa-target">
+        <div><span class="k">目标桌台</span>　<b id="snackAttachModalTable">—</b><span id="snackAttachModalState"></span></div>
+        <div><span class="k">该桌已挂</span>　<span id="snackAttachModalPrev">$0.00</span> → 挂后 <b id="snackAttachModalAfter">$0.00</b></div>
+      </div>
+      <div class="sa-note" id="snackAttachModalNote"></div>
+      <div class="modal-btns">
+        <button id="snackAttachCancel" class="btn-ghost">取消</button>
+        <button id="snackAttachOk" class="btn-start">确认挂账</button>
       </div>
     </div>
   </div>
@@ -3446,6 +3547,17 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.0  2026-10-28
+  //    + 结算弹窗：整单收款的「应收」也跟着付款方式变（用户需求）★★
+  //      · 刷卡 → 应收 = 账单 + 手续费（小字注明含多少手续费）
+  //      · 人民币 → 应收显示 ¥（小字 ≈ 澳币）；现金 → 显示抹零
+  //      · 底部「应收/实收」、快捷收款提示、明细合计同步同一口径，不再出现「实收 > 应收」
+  //    + 现金抹零：实收低于账单时默认按「抹零（免除）」处理，不再默认记欠款
+  //    + 零食饮料 → 挂到桌台：下拉改成「桌台卡片 + 确认弹窗」（用户需求）★★
+  //      · 先选「单独结算 / 挂到桌台」，挂账区显示每张桌的状态 / 台费 / 已挂金额
+  //      · 未开台也能挂（客人先到、人没齐没开始计时），提示「先记在桌上，开台后一起结」
+  //      · 点「确认挂账」先弹汇总确认（清单 + 目标桌 + 挂后合计），选错可取消
+  //      · 挂完提示带「去看 X 号桌」，可直接跳到桌台页核对
   //  v3.24.0  2026-10-27
   //    + 桌台卡：计时中 / 暂停 也套用待结算卡那套「方案 C」按钮结构（用户要求统一）
   //      · 计时中：⏹ 结束计时（整行大按钮）→ ⏸ 暂停 | 🔄 换桌 → 小号 看账单 | 改时间 | 取消计时
@@ -4095,8 +4207,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.24.0";
-  var APP_DATE = "2026-10-27";
+  var APP_VER = "v3.25.0";
+  var APP_DATE = "2026-10-28";
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
@@ -5671,17 +5783,34 @@
       "　<span style='color:var(--green-dark);'>（会员余额可抵）</span>" +
       (b.other > 0.005 ? "　｜　零食饮料 <b>" + fmtMoney(b.other) + "</b>　<span style='color:#b45309;'>（只能用 现金/刷卡/人民币，会员余额不能抵）</span>" : "");
 
-    document.getElementById("sPartsInfo").innerHTML =
-      "明细合计 <b>$" + t.amountSum.toFixed(2) + "</b> ／ 应收 <b>$" + b.due.toFixed(2) + "</b>" +
-      (Math.abs(shortBy) < 0.005
-        ? '　<span style="color:var(--green-dark);">✔ 一致</span>'
-        : (shortBy > 0
-            ? '　<span class="warn-note">还差 $' + shortBy.toFixed(2) + "（见下方选择）</span>"
-            : '　<span class="warn-note">超出 $' + overBy.toFixed(2) + "</span>")) +
+    // ★ v3.25.0：整单只有一笔时，「应收」跟着付款方式走
+    //   刷卡 → 账单 + 手续费；人民币 → 折成 ¥；现金实收低 → 显示抹零
+    var singlePart = (settleParts.length === 1) ? settleParts[0] : null;
+    var partsInfoHtml;
+    if (singlePart && singlePart.payType === "card") {
+      partsInfoHtml = "账单 <b>$" + t.amountSum.toFixed(2) + "</b> ＋ 刷卡手续费 <b>$" + t.feeSum.toFixed(2) +
+        "</b> ＝ 应收 <b>$" + t.collected.toFixed(2) + "</b>";
+    } else if (singlePart && singlePart.payType === "rmb" && t.rmbActual > 0) {
+      partsInfoHtml = "账单 <b>$" + t.amountSum.toFixed(2) + "</b> ／ 应收 <b>¥" + t.rmbActual.toFixed(2) +
+        "</b>（≈ $" + t.amountSum.toFixed(2) + " 澳币）";
+    } else if (singlePart && singlePart.payType === "cash" && shortBy > 0.005) {
+      partsInfoHtml = "账单 <b>$" + t.amountSum.toFixed(2) + "</b> ／ 现金少收 <b>−$" + shortBy.toFixed(2) +
+        "</b> ＝ 应收 <b>$" + t.collected.toFixed(2) + "</b>";
+    } else {
+      partsInfoHtml = "明细合计 <b>$" + t.amountSum.toFixed(2) + "</b> ／ 应收 <b>$" + b.due.toFixed(2) + "</b>" +
+        (Math.abs(shortBy) < 0.005
+          ? '　<span style="color:var(--green-dark);">✔ 一致</span>'
+          : (shortBy > 0
+              ? '　<span class="warn-note">还差 $' + shortBy.toFixed(2) + "（见下方选择）</span>"
+              : '　<span class="warn-note">超出 $' + overBy.toFixed(2) + "</span>"));
+    }
+    document.getElementById("sPartsInfo").innerHTML = partsInfoHtml +
       "<br>共收 <b>" + fmtMoney(t.collected) + "</b>（刷卡 $" + t.card.toFixed(2) + " · 现金 $" + t.cash.toFixed(2) + " · 人民币 $" + t.rmb.toFixed(2) + (t.member > 0 ? " · 会员扣款 $" + t.member.toFixed(2) : "") + "）";
 
     // 还差钱 → 让员工选「记在桌上」还是「免除」，小额默认免除
+    // ★ v3.25.0：纯现金少收时多给一句说明（是抹零就选免除，不是就记在桌上）
     var sw = document.getElementById("sShortWrap");
+    var cashOnly = t.cash > 0.005 && t.card < 0.005 && t.member < 0.005 && t.rmb < 0.005;
     if (shortBy > 0.005) {
       document.getElementById("sShortAmt").textContent = "$" + shortBy.toFixed(2);
       sw.style.display = "block";
@@ -5692,6 +5821,16 @@
       for (var ri = 0; ri < rads.length; ri++) rads[ri].checked = (rads[ri].value === settleData.shortChoice);
     } else {
       sw.style.display = "none";
+    }
+    var shHint = document.getElementById("sShortHint");
+    if (shHint) {
+      if (shortBy > 0.005 && cashOnly) {
+        shHint.style.display = "block";
+        shHint.innerHTML = "现金实收比账单少 <b>$" + shortBy.toFixed(2) + "</b>：如果是<b>抹零</b>，选「直接免除」；如果要下次一起收，选「记在这张桌上」。";
+      } else {
+        shHint.style.display = "none";
+        shHint.innerHTML = "";
+      }
     }
 
     document.getElementById("sRmb").innerHTML = fx > 0
@@ -5705,7 +5844,9 @@
       if (settleParts.length === 1) {
         var p0 = settleParts[0], nm0 = { cash: "现金", card: "刷卡", rmb: "人民币", member: "会员余额" }[p0.payType] || "现金";
         var amtTxt0 = "$" + (Number(p0.amount) || 0).toFixed(2);
-        if (p0.payType === "rmb") {
+        if (p0.payType === "card") {
+          amtTxt0 = "$" + partDue(p0).toFixed(2) + "（含手续费 $" + partFee(p0).toFixed(2) + "）";
+        } else if (p0.payType === "rmb") {
           var rv0 = partRmb(p0);
           if (rv0 != null && rv0 > 0) amtTxt0 = "¥" + rv0.toFixed(2) + "（≈ $" + (Number(p0.amount) || 0).toFixed(2) + "）";
         }
@@ -5731,10 +5872,21 @@
         ? ("其中人民币 ¥" + t.rmbActual.toFixed(2))
         : (fx > 0 ? "≈ ¥" + (t.collected * fx).toFixed(2) + " 人民币" : "");
     }
-    var remainHtml = (allRmb && rmbShow > 0)
-      ? ("应收 <b>$" + b.due.toFixed(2) + "</b> 澳币　实收 <b>¥" + rmbShow.toFixed(2) + "</b>")
-      : ("应收 <b>$" + b.due.toFixed(2) + "</b>　实收 <b>$" + t.collected.toFixed(2) + "</b>");
-    remainHtml += (shortBy > 0.005 ? '　<span class="warn-note">未收 $' + shortBy.toFixed(2) + "</span>" : "") +
+    // ★ v3.25.0：整单只有一笔时，「应收」跟着付款方式走（和上面卡片一致）
+    var remainHtml, cashMop = false;
+    if (singlePart && singlePart.payType === "card") {
+      remainHtml = "应收 <b>$" + t.collected.toFixed(2) + "</b>（含手续费 $" + t.feeSum.toFixed(2) + "）　实收 <b>$" + t.collected.toFixed(2) + "</b>";
+    } else if (singlePart && singlePart.payType === "rmb" && t.rmbActual > 0) {
+      remainHtml = "应收 <b>¥" + t.rmbActual.toFixed(2) + "</b>（≈ $" + t.amountSum.toFixed(2) + " 澳币）　实收 <b>¥" + t.rmbActual.toFixed(2) + "</b>";
+    } else if (singlePart && singlePart.payType === "cash" && shortBy > 0.005) {
+      cashMop = true;
+      remainHtml = "应收 <b>$" + t.amountSum.toFixed(2) + "</b>　实收 <b>$" + t.collected.toFixed(2) + "</b>　<span class='warn-note'>抹零 −$" + shortBy.toFixed(2) + "</span>";
+    } else if (allRmb && rmbShow > 0) {
+      remainHtml = "应收 <b>$" + b.due.toFixed(2) + "</b> 澳币　实收 <b>¥" + rmbShow.toFixed(2) + "</b>";
+    } else {
+      remainHtml = "应收 <b>$" + b.due.toFixed(2) + "</b>　实收 <b>$" + t.collected.toFixed(2) + "</b>";
+    }
+    remainHtml += ((!cashMop && shortBy > 0.005) ? '　<span class="warn-note">未收 $' + shortBy.toFixed(2) + "</span>" : "") +
       (memberOver > 0.005 ? '<br><span class="warn-note">⚠️ 会员扣款 $' + memberSum.toFixed(2) + " 超过台费 $" + tableCap.toFixed(2) +
         "，多出的 $" + memberOver.toFixed(2) + " 是零食饮料，请改用现金/刷卡/人民币</span>" : "");
     document.getElementById("sRemain").innerHTML = remainHtml;
@@ -6368,22 +6520,32 @@
       '<span class="hint" style="margin:0;font-size:12px;">先搜索，再点会员</span>' +
       '</div><div class="sp-memlist" data-spsinglemlist="1">' + spSingleMemberListHtml(spMemberFilter(spSingleMemberSearch), f ? 30 : 10) + '</div></div>';
   }
-  // 每人卡片右上角的「应收」跟着收款方式变（v3.18.0）：
+  // 每人 / 整单卡片右上角的「应收」跟着收款方式变（v3.18.0 分账 / v3.25.0 整单）：
   //   刷卡 → 显示含手续费的实际要收的钱，并注明含多少手续费
   //   人民币 → 大字人民币 ¥ + 灰色小字 ≈ 澳币（和整单结算 v3.14.6 的规则一致）
-  function spDueDisplay(p, total, method) {
+  //   现金 → 应收还是账单金额，但实收低时注明抹零
+  function spDueText(total, method, actual, rmb) {
     total = round2(total);
     if (method === "card") {
-      var act = (splitActual[p] != null && splitActual[p] !== "") ? round2(splitActual[p]) : round2(total + feeOf(total));
+      var act = (actual != null && actual !== "") ? round2(actual) : round2(total + feeOf(total));
       var fee = round2(Math.max(0, act - total));
       return '应收 ' + fmtMoney(act) + (fee > 0.005 ? '<span class="sp-due-sub">（含手续费 ' + fmtMoney(fee) + '）</span>' : '');
     }
     if (method === "rmb") {
       var fx = Number(state.fxRate) || 0;
-      var rmb = (splitRmb[p] != null && splitRmb[p] !== "") ? round2(splitRmb[p]) : (fx > 0 ? round2(total * fx) : 0);
-      if (rmb > 0) return '应收 ¥' + rmb.toFixed(2) + '<span class="sp-due-sub">（≈ ' + fmtMoney(total) + ' 澳币）</span>';
+      var rmbShow = (rmb != null && rmb !== "") ? round2(rmb) : (fx > 0 ? round2(total * fx) : 0);
+      if (rmbShow > 0) return '应收 ¥' + rmbShow.toFixed(2) + '<span class="sp-due-sub">（≈ ' + fmtMoney(total) + ' 澳币）</span>';
+    }
+    if (method === "cash" && actual != null && actual !== "") {
+      var ca = round2(actual), off = round2(total - ca);
+      if (off > 0.005) return '应收 ' + fmtMoney(total) + '<span class="sp-due-sub">（抹零 −' + fmtMoney(off) + '，实收 ' + fmtMoney(ca) + '）</span>';
     }
     return '应收 ' + fmtMoney(total);
+  }
+  function spDueDisplay(p, total, method) {
+    return spDueText(total, method,
+      (method === "card" || method === "cash") ? splitActual[p] : null,
+      method === "rmb" ? splitRmb[p] : null);
   }
   // 只改某个人卡片右上角的「应收」，不整块重画（避免实收输入框失去焦点）
   function spUpdateDue(p) {
@@ -6393,6 +6555,15 @@
     var c = spCalcSplit();
     var total = round2((c.feePay[p] || 0) + (c.snackOwn[p] || 0));
     el.innerHTML = spDueDisplay(p, total, splitMethods[p] || "card");
+  }
+  // 整单收款卡片右上角的「应收」：跟着付款方式变（v3.25.0）
+  function spUpdateSingleDue() {
+    var el = document.getElementById("spSingleDue");
+    if (!el) return;
+    var b = settleBill(), m = spSingleMethod || "cash";
+    el.innerHTML = spDueText(b.due, m,
+      (m === "card" || m === "cash") ? spSingleActual : null,
+      m === "rmb" ? spSingleRmb : null);
   }
   function spBuildParts() {
     if (!settleData) return;
@@ -6553,7 +6724,8 @@
     var box = document.getElementById("spSingle");
     if (!box) return;
     var b = settleBill(), due = b.due, m = spSingleMethod || "cash";
-    var h = '<div class="sp-person"><div class="sp-person-top"><b>整单收款</b><b class="sp-due">应收 ' + fmtMoney(due) + '</b></div>' +
+    var h = '<div class="sp-person"><div class="sp-person-top"><b>整单收款</b><b class="sp-due" id="spSingleDue">' +
+      spDueText(due, m, (m === "card" || m === "cash") ? spSingleActual : null, m === "rmb" ? spSingleRmb : null) + '</b></div>' +
       '<div class="sp-line">台费 ' + fmtMoney(b.tableAll) +
       (b.other > 0.005 ? '　·　零食 ' + fmtMoney(b.other) : '') +
       (b.carry > 0.005 ? '　·　上次未付 ' + fmtMoney(b.carry) : '') + '</div>' +
@@ -6811,8 +6983,8 @@
       var msearch = el.getAttribute("data-spmsearch");
       if (msearch) { splitMemberSearch[Number(msearch)] = el.value; spRenderMemberList(Number(msearch)); return; }
       if (el.getAttribute("data-spsinglesearch")) { spSingleMemberSearch = el.value; spRenderSingleMemberList(); return; }
-      if (el.getAttribute("data-spsingleactual")) { spSingleActual = el.value; spBuildSingleParts(); return; }
-      if (el.getAttribute("data-spsinglermb")) { spSingleRmb = el.value; spBuildSingleParts(); return; }
+      if (el.getAttribute("data-spsingleactual")) { spSingleActual = el.value; spBuildSingleParts(); spUpdateSingleDue(); return; }
+      if (el.getAttribute("data-spsinglermb")) { spSingleRmb = el.value; spBuildSingleParts(); spUpdateSingleDue(); return; }
       if (el.getAttribute("data-spsingleshortactual")) { spSingleShortActual = el.value; spBuildSingleParts(); return; }
       if (el.getAttribute("data-spsingleshortrmb")) { spSingleShortRmb = el.value; spBuildSingleParts(); return; }
       if (el.getAttribute("data-spsinglesnackactual")) { spSingleSnackActual = el.value; spBuildSingleParts(); return; }
@@ -10491,23 +10663,84 @@ jsonpGet(t, onRes);
   }
   function snackPayLabel(p) { return p === "rmb" ? "人民币" : (p === "card" ? "刷卡" : "现金"); }
 
+  // ★ v3.25.0：挂账桌台从「下拉」改成「桌台卡片」——
+  //   直接看到 状态（计时中/待结算/未开台）+ 台费 + 已挂金额，未开台也能挂。
+  //   （函数名沿用旧的，调用点不用改）
+  var snackMode = "single";          // single = 单独结算 / attach = 挂到桌台
+  var snackAttachPick = 0;           // 当前选中的桌号（0 = 还没选）
+  function snackTableExtrasSum(t) {
+    var sum = 0;
+    if (t && t.extras) for (var j = 0; j < t.extras.length; j++) sum += snackItemTotal(t.extras[j]);
+    return round2(sum);
+  }
+  function snackTableStatusTxt(t) {
+    if (t.status === "running") return "计时中";
+    if (t.status === "paused") return "已暂停";
+    if (t.status === "ended") return "待结算";
+    return "未开台";
+  }
   function renderSnackAttachTable() {
-    var sel = document.getElementById("snackAttachTable");
-    var cur = sel.value;
-    var html = "";
-    for (var i = 1; i <= TABLE_COUNT; i++) {
-      var t = state.tables[i];
-      var extra = "";
-      if (t.extras && t.extras.length) {
-        var sum = 0;
-        for (var j = 0; j < t.extras.length; j++) sum += snackItemTotal(t.extras[j]);
-        extra = "（已有零食 $" + sum.toFixed(2) + "）";
-      }
-      if (t.status === "ended") extra += "［待结算］";
-      html += '<option value="' + i + '">' + esc(t.name) + extra + '</option>';
+    var grid = document.getElementById("snackAttachGrid");
+    if (!grid) return;
+    var i, t;
+    // 默认选：计时中 → 待结算 → 1 号桌；选过就一直记着
+    if (!snackAttachPick || !state.tables[snackAttachPick]) {
+      snackAttachPick = 0;
+      for (i = 1; i <= TABLE_COUNT; i++) { if (state.tables[i].status === "running") { snackAttachPick = i; break; } }
+      if (!snackAttachPick) for (i = 1; i <= TABLE_COUNT; i++) { if (state.tables[i].status === "ended") { snackAttachPick = i; break; } }
+      if (!snackAttachPick) snackAttachPick = 1;
     }
-    sel.innerHTML = html;
-    if (cur) sel.value = cur;
+    var h = "";
+    for (i = 1; i <= TABLE_COUNT; i++) {
+      t = state.tables[i];
+      var ex = snackTableExtrasSum(t);
+      var stt = snackTableStatusTxt(t);
+      var badgeCls = (t.status === "running" || t.status === "paused") ? "running" : (t.status === "ended" ? "ended" : "idle");
+      var meta;
+      if (t.status === "ended") {
+        meta = "台费 " + fmtMoney(tableFeeOf(elapsedMs(t)));
+      } else if (t.status === "running" || t.status === "paused") {
+        meta = "已打 " + fmtHours(elapsedMs(t)) + "h · 预估 " + fmtMoney(tableFeeOf(elapsedMs(t)));
+      } else {
+        meta = "空桌 · 可先挂";
+      }
+      if (ex > 0.005) meta += " · 已挂 " + fmtMoney(ex);
+      h += '<button type="button" class="attach-tb' + (i === snackAttachPick ? " on" : "") + '" data-attach-table="' + i + '">' +
+           '<span class="tb-top"><span class="tb-name">' + esc(t.name) + '</span><span class="tb-badge ' + badgeCls + '">' + stt + '</span></span>' +
+           '<span class="tb-meta">' + meta + '</span></button>';
+    }
+    grid.innerHTML = h;
+
+    var n = snackCartCount(), sub = snackCartSubtotal();
+    var qtyEl = document.getElementById("snackAttachQty"), sumEl = document.getElementById("snackAttachSum");
+    if (qtyEl) qtyEl.textContent = n;
+    if (sumEl) sumEl.textContent = fmtMoney(sub);
+    var sumBox = document.getElementById("snackAttachSummary");
+    var btn = document.getElementById("snackAttach");
+    var tgt = state.tables[snackAttachPick];
+    if (!n || !tgt) {
+      if (sumBox) sumBox.innerHTML = "点单是空的，先去上面选商品。";
+      if (btn) { btn.disabled = true; btn.textContent = "✓ 确认挂账 $0.00"; }
+      return;
+    }
+    var prev = snackTableExtrasSum(tgt), stt2 = snackTableStatusTxt(tgt);
+    var note = tgt.status === "idle"
+      ? '<div class="idle-note">' + esc(tgt.name) + ' 还没开台：挂账先记在桌上，开台 / 结算时一起收，不会丢。</div>'
+      : '<div class="idle-note" style="background:#f0f7f3;border-color:#cfe8da;color:var(--green-dark);">' + esc(tgt.name) + '（' + stt2 + '）：挂账并进该桌「其它费用」，结算时一起收。</div>';
+    if (sumBox) sumBox.innerHTML = "已选 <b>" + esc(tgt.name) + '</b>（' + stt2 + '）→ 该桌已挂 ' + fmtMoney(prev) + ' → 挂后 <b>' + fmtMoney(prev + sub) + '</b>' + note;
+    if (btn) { btn.disabled = false; btn.textContent = "✓ 确认挂账 " + fmtMoney(sub); }
+  }
+  function setSnackMode(m) {
+    snackMode = (m === "attach") ? "attach" : "single";
+    var btns = document.querySelectorAll("#snackMode [data-snackmode]");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].className = "snack-mode-btn" + (btns[i].getAttribute("data-snackmode") === snackMode ? " on" : "");
+    }
+    var sp = document.getElementById("snackSinglePane"), ap = document.getElementById("snackAttachPane");
+    if (sp) sp.style.display = snackMode === "single" ? "block" : "none";
+    if (ap) ap.style.display = snackMode === "attach" ? "block" : "none";
+    // 重画「小计」那块：挂账模式下不显示刷卡应收，免得和挂账金额混
+    renderSnacks();
   }
 
   var priceEditAll = false;   // 「改价」模式：一次性编辑所有单价
@@ -11043,6 +11276,7 @@ jsonpGet(t, onRes);
     if (btn) flashSettle(btn);
   }
   // 右下角悬浮购物车（已选 N 件 · 应收 $X —— 用应收，和实际收款一致）
+  // ★ v3.25.0：挂到桌台模式下显示小计（挂账不含手续费），避免和「刷卡应收」混
   function updateSnackPill() {
     var el = document.getElementById("snackPill");
     if (!el) return;
@@ -11051,8 +11285,10 @@ jsonpGet(t, onRes);
     el.className = "snack-pill show";
     var nEl = document.getElementById("snackPillN");
     var sEl = document.getElementById("snackPillSum");
+    var lEl = document.getElementById("snackPillLabel");
     if (nEl) nEl.textContent = n;
-    if (sEl) sEl.textContent = "$" + snackCharges().grand.toFixed(2);
+    if (lEl) lEl.textContent = snackMode === "attach" ? "金额" : "应收";
+    if (sEl) sEl.textContent = "$" + (snackMode === "attach" ? snackCartSubtotal() : snackCharges().grand).toFixed(2);
   }
   // 当前点单面板：看得到选了啥 / 改数量 / 删除（商品缩略图 + 单价 + 库存）
   function renderSnackCart() {
@@ -11157,14 +11393,17 @@ jsonpGet(t, onRes);
     var rmbWrap = document.getElementById("snackRmbWrap");
     if (rmbWrap) rmbWrap.style.display = (ch.payType === "rmb" ? "block" : "none");
     var payLine;
-    if (ch.payType === "card") {
+    if (snackMode === "attach") {
+      // 挂账金额 = 小计（不含手续费）；手续费在结算该桌时按付款方式算
+      payLine = "挂账金额 = 小计（不含手续费）；结算该桌时再按付款方式算";
+    } else if (ch.payType === "card") {
       payLine = "刷卡手续费（" + state.feeRate + "%）：$" + ch.fee.toFixed(2) + "　应收 <b>$" + ch.grand.toFixed(2) + "</b>";
     } else if (ch.payType === "rmb") {
       payLine = "澳币应收 <b>$" + ch.grand.toFixed(2) + "</b>　人民币实收 <b>¥" + (ch.rmb != null ? ch.rmb.toFixed(2) : "—") + "</b>（无手续费）";
     } else {
       payLine = "现金实收：<b>$" + ch.grand.toFixed(2) + "</b>（无手续费）";
     }
-    if (ch.payType === "cash" && ch.discount > 0.005) payLine += "　抹零 <b>-$" + ch.discount.toFixed(2) + "</b>";
+    if (snackMode !== "attach" && ch.payType === "cash" && ch.discount > 0.005) payLine += "　抹零 <b>-$" + ch.discount.toFixed(2) + "</b>";
     document.getElementById("snackTotal").innerHTML =
       "小计 <b>$" + ch.subtotal.toFixed(2) + "</b> ≈ " + fmtRmb(ch.subtotal) +
       '<br><span style="font-size:13px;color:var(--muted);">' + payLine + "</span>";
@@ -11332,6 +11571,22 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
       renderSnacks();
     });
   });
+  // ★ v3.25.0：单独结算 / 挂到桌台 切换
+  (function () {
+    var modeBox = document.getElementById("snackMode");
+    if (modeBox) modeBox.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-snackmode]");
+      if (!b) return;
+      setSnackMode(b.getAttribute("data-snackmode"));
+    });
+    var grid = document.getElementById("snackAttachGrid");
+    if (grid) grid.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-attach-table]");
+      if (!b) return;
+      snackAttachPick = parseInt(b.getAttribute("data-attach-table"), 10) || 0;
+      renderSnackAttachTable();
+    });
+  })();
   document.getElementById("vapeAud").addEventListener("input", function () { vapeAudDirty = true; });
   document.getElementById("snackCustom").addEventListener("input", renderSnacks);
   document.getElementById("snackRmb").addEventListener("input", renderSnacks);
@@ -11790,8 +12045,9 @@ function snackReorderByBefore(fromId, cat, beforeId) {
     snackQuery = this.value.trim();
     renderSnacks();
   });
-  // 右下角悬浮购物车 → 滚到「单独结算」并闪一下
+  // 右下角悬浮购物车 → 滚到「单独结算」并闪一下（挂账模式下先切回单独结算）
   document.getElementById("snackPill").addEventListener("click", function () {
+    setSnackMode("single");
     var fallback = document.getElementById("snackCart");
     if (fallback) fallback = fallback.closest(".card-box") || fallback;
     jumpToSettle(document.getElementById("snackSettle"), fallback);
@@ -12051,11 +12307,33 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     }
     save(); renderSnacks(); renderStats(); closeSnackEdit();
   });
-  document.getElementById("snackAttach").addEventListener("click", function () {
-    var st = document.getElementById("snackStatus");
-    if (!state.snackCart.length) { st.textContent = "点单是空的"; st.style.color = "var(--red)"; return; }
-    var no = parseInt(document.getElementById("snackAttachTable").value, 10);
+  // ===== 挂到桌台：点「确认挂账」→ 先弹汇总确认（v3.25.0）=====
+  function openSnackAttachModal(no) {
     var t = state.tables[no];
+    if (!t) return;
+    var sub = snackCartSubtotal(), prev = snackTableExtrasSum(t), stt = snackTableStatusTxt(t);
+    var h = "";
+    for (var i = 0; i < state.snackCart.length; i++) {
+      var c = state.snackCart[i];
+      h += '<div class="sa-item"><span>' + esc(c.name) + ' <span class="qty">× ' + c.qty + '</span></span><b>' + fmtMoney(snackItemTotal(c)) + '</b></div>';
+    }
+    document.getElementById("snackAttachItems").innerHTML = h || '<div class="hint" style="margin:0;">点单是空的</div>';
+    document.getElementById("snackAttachModalSum").textContent = fmtMoney(sub);
+    document.getElementById("snackAttachModalTable").textContent = t.name;
+    document.getElementById("snackAttachModalState").textContent = "（" + stt + "）";
+    document.getElementById("snackAttachModalPrev").textContent = fmtMoney(prev);
+    document.getElementById("snackAttachModalAfter").textContent = fmtMoney(prev + sub);
+    document.getElementById("snackAttachModalNote").innerHTML = (t.status === "idle")
+      ? (esc(t.name) + " 还没开台：挂账会先记在桌上，等开台后随该桌费用一起结。")
+      : (esc(t.name) + "（" + stt + "）：挂账会并进该桌「其它费用」，结算时和其他费用一起收。");
+    document.getElementById("snackAttachOk").textContent = "确认挂账 " + fmtMoney(sub);
+    document.getElementById("snackAttachOverlay").classList.add("show");
+  }
+  function doSnackAttach(no) {
+    var st = document.getElementById("snackStatus");
+    var t = state.tables[no];
+    if (!t || !state.snackCart.length) return;
+    var sub = snackCartSubtotal();
     for (var i = 0; i < state.snackCart.length; i++) {
       var c = state.snackCart[i], found = null;
       for (var sj = 0; sj < state.snackMenu.length; sj++) {      // 挂到桌台也扣库存
@@ -12070,8 +12348,33 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     }
     state.snackCart = [];
     save(); renderSnacks(); render();
-    st.textContent = "已挂到 " + t.name + "，结算该桌时会自动算进「其它费用」";
-    st.style.color = "var(--green-dark)";
+    if (st) {
+      st.innerHTML = "已挂到 " + esc(t.name) + "（" + fmtMoney(sub) + "，不含手续费） " +
+        '<button type="button" class="btn-ghost sm" data-go-table="1" style="padding:3px 10px;font-size:12px;">去看 ' + esc(t.name) + '</button>';
+      st.style.color = "var(--green-dark)";
+    }
+  }
+  document.getElementById("snackAttach").addEventListener("click", function () {
+    var st = document.getElementById("snackStatus");
+    if (!state.snackCart.length) { st.textContent = "点单是空的"; st.style.color = "var(--red)"; return; }
+    if (!snackAttachPick) { st.textContent = "先选一张桌台"; st.style.color = "var(--red)"; return; }
+    openSnackAttachModal(snackAttachPick);
+  });
+  document.getElementById("snackAttachCancel").addEventListener("click", function () {
+    document.getElementById("snackAttachOverlay").classList.remove("show");
+  });
+  document.getElementById("snackAttachOverlay").addEventListener("click", function (e) {
+    if (e.target === this) this.classList.remove("show");
+  });
+  document.getElementById("snackAttachOk").addEventListener("click", function () {
+    var no = snackAttachPick;
+    document.getElementById("snackAttachOverlay").classList.remove("show");
+    doSnackAttach(no);
+  });
+  document.getElementById("snackStatus").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-go-table]");
+    if (!b) return;
+    switchTab("tables");
   });
   document.getElementById("snackSettle").addEventListener("click", function () {
     var st = document.getElementById("snackStatus");
