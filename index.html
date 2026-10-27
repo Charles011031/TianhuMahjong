@@ -186,6 +186,40 @@
   .btns .btns-mini button[data-act="cancel"] { color: #b91c1c; border-color: #fca5a5; background: #fff7f7; }
   body.dark .btns .btns-mini button { background: #111827; color: #cbd5e1; }
   body.dark .btns .btns-mini button[data-act="cancel"] { background: #2a1616; }
+  /* ===== 桌台卡片统一骨架（v3.25.3）=====
+     为什么：卡片原来是「内容多高就多高」的流式布局 →
+       有挂单的桌多一行、空闲桌少两行，同一排 6 张卡的「结束计时」差 45~60px，看起来乱。
+     做法：① 每块内容占固定高度，没内容也占位（没挂单留空槽、空闲桌显示 —）
+           ② 操作区贴卡片底部，三档固定行高：主按钮 44 / 次级 40 / 小按钮 32
+           ③ 挂单行恒为一行：≤2 项显示明细，≥3 项只显示「N 项」，金额永远右对齐可见
+     → 6 张卡等高，同一排的「备注 / 结束计时 / 小按钮」永远在同一条线上 */
+  .table { padding: 16px; gap: 10px; }
+  .table .top { min-height: 28px; flex-wrap: wrap; align-content: flex-start; }
+  /* ★ 徽章不换行（否则会被挤成「待结/算」两行）；有预约/欠款徽章的那一屏，
+     徽章 + 麻将种类 整体放到第二行（.grid.has-extra-badges）→ 6 张卡高度一致 */
+  .table .badge, .table .badge-res { flex: 0 0 auto; white-space: nowrap; }
+  .table .top .top-badges { flex: 1 0 100%; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .table .top .top-badges .mahjong-type { margin-left: auto; }
+  .grid.has-extra-badges .table .top { min-height: 60px; }
+  .table .top .name { white-space: nowrap; }
+  .table .top .mahjong-type { margin-left: auto; flex: 0 0 auto; }
+  .table .top .mahjong-type select { width: 80px; }
+  .table .timer { line-height: 1; min-height: 46px; display: flex; align-items: center; justify-content: center; }
+  .table .start-time, .table .est { min-height: 18px; line-height: 18px; }
+  .table .start-time.is-empty, .table .est.is-empty { color: #b0b7bd; font-weight: 400; }
+  .table .table-extras { min-height: 34px; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 9px; overflow: hidden; white-space: nowrap; }
+  .table .table-extras .ex-txt { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .table .table-extras .ex-sum { flex: 0 0 auto; font-weight: 800; }
+  .table .table-extras button { flex: 0 0 auto; margin-left: 0 !important; white-space: nowrap; padding: 4px 9px; font-size: 12px; }
+  .table .table-extras.is-empty { background: transparent; }
+  .table .note { min-height: 30px; }
+  .table .btns { margin-top: auto; grid-template-rows: 44px 40px 32px; }
+  .table .btns > button.wide { height: 44px; }
+  .table .btns > button:not(.wide) { height: 40px; }
+  .table .btns .btns-mini { height: 32px; }
+  .table .btns .btns-mini button { min-width: 0; white-space: nowrap; height: 32px; }
+  .table .btns .btns-gap { grid-column: 1 / -1; height: 40px; }
+  .table .btns .manual-mini { width: 100%; }
   .btn-export { background: var(--green); color: #fff; border-color: var(--green); }
   .result {
     background: #fff7e6;
@@ -3516,6 +3550,14 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.3  2026-10-28
+  //    + 桌台页 UI 规整（用户需求：6 张卡看着乱、按钮不在一条线上）★★
+  //      · 卡片改成「固定槽位」：顶栏 / 计时 / 开始时间 / 台费 / 挂单 / 备注 各占固定高度
+  //        → 没挂单留空槽、空闲桌显示「—」占位，6 张卡等高
+  //      · 操作区贴卡片底部，三档固定行高（主按钮 44 / 次级 40 / 小按钮 32）
+  //      · 挂单行恒为一行：≤2 项显示明细，≥3 项只显示「N 项」+ 金额（明细看「编辑/看账单」）
+  //      · 空闲桌的「⏱ 自定义时间 / 补录」从卡片底部挪进第三档小按钮行
+  //      · 旧问题：同一排的「结束计时」高低差 45~60px；挂单行会被撑成两行、编辑/清除竖排
   //  v3.25.2  2026-10-28
   //    + 空闲桌：去掉没用的「清零」按钮（清的全是死字段/自动已清的东西，用户反馈没意义）
   //      · 「开始计时」「补收」改成整行主按钮，和计时中/待结算的「方案 C」按钮结构一致
@@ -4182,7 +4224,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.2";
+  var APP_VER = "v3.25.3";
   var APP_DATE = "2026-10-28";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4441,21 +4483,34 @@
 
   function render() {
     var html = "";
+    // ★ v3.25.3：这一屏只要有一张卡带「预约 / 上次未付」徽章 → 6 张卡统一留出徽章那一行
+    //   （否则那张卡顶栏挤成两行、高度跟旁边不一样，按钮又错位）
+    var hasExtraBadges = false;
+    for (var b0 = 1; b0 <= TABLE_COUNT; b0++) {
+      if (resForTable(b0) || (Number(state.tables[b0].carry) || 0) > 0.005) { hasExtraBadges = true; break; }
+    }
     for (var i = 1; i <= TABLE_COUNT; i++) {
       var t = state.tables[i];
       var ms = elapsedMs(t);
       var cls = "table " + (t.status === "running" ? "running" : t.status === "paused" ? "paused" : t.status === "ended" ? "ended" : "");
       html += '<div class="' + cls + '" data-id="' + i + '">';
       var resv = resForTable(i);
+      var badgesHtml =
+        (resv ? '<span class="badge-res">📅 ' + esc(resv.time) + ' ' + esc(resv.name) + '</span>' : '') +
+        ((Number(t.carry) || 0) > 0.005 ? '<span class="badge-res" style="background:#fee2e2;color:#b91c1c;">上次未付 $' + (Number(t.carry) || 0).toFixed(2) + '</span>' : '');
+      var mjHtml = '<span class="mahjong-type"><label>麻将种类</label>' + mahjongSelect(t, i) + '</span>';
       html += '  <div class="top"><span class="name">🀄 ' + esc(t.name) + '</span>' + badgeHtml(t.status) +
-              (resv ? '<span class="badge-res">📅 ' + esc(resv.time) + ' ' + esc(resv.name) + '</span>' : '') +
-              ((Number(t.carry) || 0) > 0.005 ? '<span class="badge-res" style="background:#fee2e2;color:#b91c1c;">上次未付 $' + (Number(t.carry) || 0).toFixed(2) + '</span>' : '') +
-              '<span class="mahjong-type"><label>麻将种类</label>' + mahjongSelect(t, i) + '</span></div>';
+              // ★ v3.25.3：有徽章的那一屏 → 徽章 + 麻将种类 放第二行（顶栏统一两行，6 张卡等高）
+              (hasExtraBadges ? '<div class="top-badges">' + badgesHtml + mjHtml + '</div>' : badgesHtml + mjHtml) +
+              '</div>';
       html += '  <div class="timer">' + fmtClock(ms) + '</div>';
       if (t.status !== "idle" && t.sessionStart) {
         var stTs = t.sessionStart;
         var stSameDay = fmtDate(stTs) === fmtDate(Date.now());
         html += '  <div class="start-time">开始时间：' + (stSameDay ? fmtHM(stTs) : (fmtDate(stTs).slice(5) + " " + fmtHM(stTs))) + '</div>';
+      } else {
+        // ★ v3.25.3：空闲桌也占这一行（淡灰 —），否则卡片比别的桌矮一截、按钮对不齐
+        html += '  <div class="start-time is-empty">开始时间：—</div>';
       }
       if (t.status === "ended" && t.endedAt) {
         var enTs = t.endedAt;
@@ -4466,18 +4521,28 @@
       if (t.status !== "idle") {
         html += '  <div class="est">' + (t.status === "ended" ? "台费 " : "预估台费 ") +
           fmtMoney(tableFeeOf(ms)) + ' ≈ ' + fmtRmb(tableFeeOf(ms)) + '</div>';
+      } else {
+        html += '  <div class="est is-empty">预估台费：—</div>';
       }
+      // ★ v3.25.3：挂单行固定单行（没挂单也占位），免得一张卡多一行、整排按钮错位
+      //   ≤2 项直接显示明细；≥3 项只显示「N 项」，明细在「✎ 编辑」弹窗 /「📄 看账单」里看全
       if (t.extras && t.extras.length) {
         var exSum = 0, exTxt = [];
         for (var e2 = 0; e2 < t.extras.length; e2++) {
           exSum += (Number(t.extras[e2].price) || 0) * (Number(t.extras[e2].qty) || 0);
-          exTxt.push(esc(t.extras[e2].name) + "×" + t.extras[e2].qty);
+          // ★ 数量 1 不写「×1」（省出宽度，2 个品名常见的挂单能整行显示完）；2 份以上才写「×2」
+          var exQty = Number(t.extras[e2].qty) || 0;
+          exTxt.push(esc(t.extras[e2].name) + (exQty > 1 ? "×" + exQty : ""));
         }
-        html += '  <div class="table-extras">🍜 ' + exTxt.join("、") + ' = $' + exSum.toFixed(2) +
-                '<button class="btn-ghost" data-act="editextras" data-id="' + i + '" style="margin-left:auto;">✎ 编辑</button>' +
+        var exLabel = exTxt.length <= 2 ? exTxt.join("、") : (exTxt.length + " 项");
+        html += '  <div class="table-extras"><span class="ex-txt" title="' + esc(exTxt.join("、")) + '">🍜 ' + exLabel + '</span>' +
+                '<span class="ex-sum">$' + exSum.toFixed(2) + '</span>' +
+                '<button class="btn-ghost" data-act="editextras" data-id="' + i + '">✎ 编辑</button>' +
                 '<button class="btn-ghost" data-act="clearextras" data-id="' + i + '" data-armkey="extras-clear"' +
-                (armGet("extras-clear") === String(i) ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;margin-left:0;"' : ' style="margin-left:0;"') + ">" +
+                (armGet("extras-clear") === String(i) ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : '') + ">" +
                 (armGet("extras-clear") === String(i) ? "再点一次" : "清除") + "</button></div>";
+      } else {
+        html += '  <div class="table-extras is-empty"></div>';
       }
       html += '  <div class="note"><label>备注</label><input type="text" placeholder="备注…" data-field="note" data-id="' + i + '" value="' + esc(t.note) + '"></div>';
       html += '  <div class="btns">';
@@ -4533,17 +4598,24 @@
         if ((Number(state.tables[i].carry) || 0) > 0.005) {
           html += '<button class="btn-settle wide" data-act="carrypay" data-id="' + i + '" ' +
                   'style="background:#b45309;">🧾 补收 $' + (Number(state.tables[i].carry) || 0).toFixed(2) + '</button>';
+        } else {
+          // ★ v3.25.3：占住第二档（40px），空闲桌的「自定义时间」才能和别的桌小按钮对齐
+          html += '<div class="btns-gap"></div>';
         }
+        // ★ v3.25.3：自定义时间/补录 收进第三档小按钮行，和计时中卡的「看账单 | 改时间 | 取消」同一行
+        html += '<div class="btns-mini"><button type="button" class="btn-ghost manual-mini" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button></div>';
       }
       html += '  </div>';
-      // 待结算 / 计时中 / 暂停 的「改时间」都已经放进小按钮行了 → 底部那行只在空闲桌显示
-      if (t.status === "idle") html += '  <button class="btn-manual" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
+      // 待结算 / 计时中 / 暂停 的「改时间」都已经放进小按钮行了 → 空闲桌的自定义时间也放进去了（v3.25.3）
       // ★ v3.5.5：桌台卡片上的「上次结果」整块删掉了 ★（用户要求）
       //   原来空闲的桌子下面会挂一个"$131.87 · 台费 $130.67 · 其它 …"的黄色块 ✗
       //   用户觉得多余 ✗ 删掉 ✓（记录在「统计」和「结算记录」里都能查 ✓）
       html += '</div>';
     }
     grid.innerHTML = html;
+    // ★ v3.25.3：有徽章的那一屏 → 顶栏统一留两行（见 .grid.has-extra-badges 样式）
+    if (hasExtraBadges) grid.classList.add("has-extra-badges");
+    else grid.classList.remove("has-extra-badges");
     renderHistory();
   }
 
