@@ -224,9 +224,11 @@
            ③ 「自定义时间 / 补录」挪到第二档，紧贴「开始计时」，不再中间空一档 */
   .table.idle .timer { color: #c6ced4; }
   body.dark .table.idle .timer { color: #56636f; }
-  .table .idle-info { height: 90px; display: flex; align-items: center; justify-content: center; position: relative; }
-  .table .idle-info b { font-size: 14.5px; font-weight: 800; color: #8d979e; letter-spacing: 2px; }
-  body.dark .table .idle-info b { color: #6b7a87; }
+  /* ★ v3.25.6：空闲卡的「空闲」占「开始时间 + 台费」这两块（46px），
+     挂零食入口跟别的卡用同一行（.table-extras），位置才能一模一样 */
+  .table .idle-top { height: 46px; display: flex; align-items: center; justify-content: center; }
+  .table .idle-top b { font-size: 14.5px; font-weight: 800; color: #8d979e; letter-spacing: 2px; }
+  body.dark .table .idle-top b { color: #6b7a87; }
   /* ===== 没挂零食时：那一行不是空的，而是「＋ 挂零食」入口（v3.25.5）=====
      为什么：空着也占 34px，看着像少了一块内容；改成入口 → 空行有用，
      而且不用再「零食页 → 选商品 → 选桌」绕一圈，卡上一点就到。
@@ -239,7 +241,6 @@
   .table .ex-add:active { transform: none; color: var(--green-dark); background: #e6f1ec; }
   body.dark .table .ex-add { color: #8b9aa5; background: rgba(255,255,255,.055); }
   body.dark .table .ex-add:active { color: #cfe6d9; background: rgba(255,255,255,.10); }
-  .table .idle-info .idle-add { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
   .btn-export { background: var(--green); color: #fff; border-color: var(--green); }
   .result {
     background: #fff7e6;
@@ -3570,6 +3571,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.6  2026-10-28
+  //    + 空闲卡的「＋ 挂零食」和计时卡对不齐（用户发现：一个在「空闲」块里居中、一个在挂单行，差 29px）★
+  //      · 空闲卡改成「空闲」占「开始时间 + 台费」两块（46px），挂零食入口走统一的挂单行
+  //      · 现在 6 张卡的「＋ 挂零食 / 挂单」都在同一行、同一右边界
   //  v3.25.5  2026-10-28
   //    + 没挂零食时，那一行不再是空行，而是「＋ 挂零食」入口（用户反馈：没挂账时这块空着难看）★
   //      · 计时中/暂停/待结算：行右侧一个淡字「＋ 挂零食」
@@ -4254,7 +4259,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.5";
+  var APP_VER = "v3.25.6";
   var APP_DATE = "2026-10-28";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4539,10 +4544,9 @@
         var stSameDay = fmtDate(stTs) === fmtDate(Date.now());
         html += '  <div class="start-time">开始时间：' + (stSameDay ? fmtHM(stTs) : (fmtDate(stTs).slice(5) + " " + fmtHM(stTs))) + '</div>';
       } else {
-        // ★ v3.25.4：空闲卡把「开始时间 / 台费 / 挂单」三块（90px）合成一块，只写「空闲」
-        // ★ v3.25.5：这块右下角给一个「＋ 挂零食」入口（客人先到、还没开台也能先挂上）
-        html += '  <div class="idle-info"><b>空闲</b>' +
-                '<button type="button" class="ex-add idle-add" data-act="attachsnack" data-id="' + i + '">＋ 挂零食</button></div>';
+        // ★ v3.25.4：空闲卡把「开始时间 / 台费」两块合成一块（46px），只写「空闲」
+        // ★ v3.25.6：「＋ 挂零食」不再放在这个块里，而是走下面统一的那一行（位置才能和计时卡一致）
+        html += '  <div class="idle-top"><b>空闲</b></div>';
       }
       if (t.status === "ended" && t.endedAt) {
         var enTs = t.endedAt;
@@ -4556,10 +4560,8 @@
       }
       // ★ v3.25.3：挂单行固定单行（没挂单也占位），免得一张卡多一行、整排按钮错位
       //   ≤2 项直接显示明细；≥3 项只显示「N 项」，明细在「✎ 编辑」弹窗 /「📄 看账单」里看全
-      //   ★ v3.25.4：空闲卡没有挂单，这块高度已经并进上面那块 idle-info 了
-      if (t.status === "idle") {
-        /* 空格：不渲染挂单行 */
-      } else if (t.extras && t.extras.length) {
+      //   ★ v3.25.6：空闲卡也走这一行（没挂单 → 显示「＋ 挂零食」入口），6 张卡这一行位置一致
+      if (t.extras && t.extras.length) {
         var exSum = 0, exTxt = [];
         for (var e2 = 0; e2 < t.extras.length; e2++) {
           exSum += (Number(t.extras[e2].price) || 0) * (Number(t.extras[e2].qty) || 0);
