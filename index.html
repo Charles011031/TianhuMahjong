@@ -675,16 +675,6 @@
   .attach-summary .idle-note { margin-top: 6px; padding: 6px 9px; background: #fff8e1; border: 1px solid #f0d9a8; border-radius: 8px; color: #8a5a00; font-size: 12px; }
   .attach-go { width: 100%; margin-top: 10px; padding: 12px; font-size: 15px; border-radius: 11px; }
   .attach-go:disabled { opacity: .45; cursor: not-allowed; }
-  /* 挂账确认弹窗 */
-  .sa-items { border-top: 1px dashed var(--line); }
-  .sa-item { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
-  .sa-item .qty { color: var(--muted); font-size: 12px; }
-  .sa-total { margin-top: 10px; padding: 11px 12px; background: #f0f7f3; border-radius: 10px; font-size: 14px; }
-  .sa-total b { font-size: 20px; color: var(--green-dark); }
-  .sa-total span { font-size: 12.5px; color: var(--muted); }
-  .sa-target { margin-top: 10px; font-size: 14px; line-height: 1.7; }
-  .sa-target .k { color: var(--muted); font-size: 12.5px; }
-  .sa-note { margin-top: 10px; padding: 9px 11px; background: #fff8e1; border: 1px solid #f0d9a8; border-radius: 9px; color: #8a5a00; font-size: 12.5px; line-height: 1.6; }
 
 
   /* ===== 零食饮料 · 卡片式菜单（v3.6.0 改版）=====
@@ -902,7 +892,6 @@
     .attach-tb .tb-name { font-size: 13px; }
     .attach-panel { padding: 11px; }
     .attach-go { font-size: 14px; padding: 11px; }
-    .sa-total b { font-size: 18px; }
     /* 电子烟「价格设置」在手机上别被挤出屏幕：标签 + 输入框竖着排，自动换行 */
     .vp-grid { grid-template-columns: 44px repeat(3, minmax(0, 1fr)); gap: 7px 7px; }
     .vp-grid2 { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 7px 7px; }
@@ -1298,8 +1287,6 @@
   body.dark .tb-badge.running { background: #123524 !important; color: #6ee7a8 !important; }
   body.dark .tb-badge.ended { background: #3a2a12 !important; color: #f0b95a !important; }
   body.dark .tb-badge.idle { background: #1d2b37 !important; color: #b9c6d3 !important; }
-  body.dark .sa-total { background: #12202a !important; }
-  body.dark .sa-note { background: #2a2013 !important; border-color: #5a4320 !important; color: #f0b95a !important; }
   body.dark .badge, body.dark .badge.running, body.dark .badge.paused, body.dark .badge-res,
   body.dark .snack-count, body.dark .snack-card .snack-tag,
   body.dark .snack-card .snack-step button,
@@ -2450,24 +2437,6 @@
     </div>
   </div>
 
-  <!-- 零食 → 挂到桌台：确认弹窗（v3.25.0） -->
-  <div class="overlay" id="snackAttachOverlay">
-    <div class="modal">
-      <h3>确认挂到桌台</h3>
-      <div id="snackAttachItems" class="sa-items"></div>
-      <div class="sa-total">本次挂账 <b id="snackAttachModalSum">$0.00</b>　<span>挂账不收手续费</span></div>
-      <div class="sa-target">
-        <div><span class="k">目标桌台</span>　<b id="snackAttachModalTable">—</b><span id="snackAttachModalState"></span></div>
-        <div><span class="k">该桌已挂</span>　<span id="snackAttachModalPrev">$0.00</span> → 挂后 <b id="snackAttachModalAfter">$0.00</b></div>
-      </div>
-      <div class="sa-note" id="snackAttachModalNote"></div>
-      <div class="modal-btns">
-        <button id="snackAttachCancel" class="btn-ghost">取消</button>
-        <button id="snackAttachOk" class="btn-start">确认挂账</button>
-      </div>
-    </div>
-  </div>
-
   <!-- 修改结算记录弹窗 -->
   <div class="overlay" id="editOverlay">
     <div class="modal">
@@ -3547,17 +3516,19 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.1  2026-10-28
+  //    + 挂到桌台：去掉二次确认弹窗（用户反馈：多点一次太麻烦）
+  //      · 点「✓ 确认挂账」直接挂上；选桌时下面已经显示 目标桌 / 该桌已挂 / 挂后合计
   //  v3.25.0  2026-10-28
   //    + 结算弹窗：整单收款的「应收」也跟着付款方式变（用户需求）★★
   //      · 刷卡 → 应收 = 账单 + 手续费（小字注明含多少手续费）
   //      · 人民币 → 应收显示 ¥（小字 ≈ 澳币）；现金 → 显示抹零
   //      · 底部「应收/实收」、快捷收款提示、明细合计同步同一口径，不再出现「实收 > 应收」
-  //    + 现金抹零：实收低于账单时默认按「抹零（免除）」处理，不再默认记欠款
-  //    + 零食饮料 → 挂到桌台：下拉改成「桌台卡片 + 确认弹窗」（用户需求）★★
+  //    + 现金抹零：少收时黄框里直接说明「抹零选免除 / 下次收选记账」（默认逻辑没变）
+  //    + 零食饮料 → 挂到桌台：下拉改成「桌台卡片」（用户需求）★★
   //      · 先选「单独结算 / 挂到桌台」，挂账区显示每张桌的状态 / 台费 / 已挂金额
   //      · 未开台也能挂（客人先到、人没齐没开始计时），提示「先记在桌上，开台后一起结」
-  //      · 点「确认挂账」先弹汇总确认（清单 + 目标桌 + 挂后合计），选错可取消
-  //      · 挂完提示带「去看 X 号桌」，可直接跳到桌台页核对
+  //      · 点「确认挂账」直接生效，挂完提示带「去看 X 号桌」，可直接跳到桌台页核对
   //  v3.24.0  2026-10-27
   //    + 桌台卡：计时中 / 暂停 也套用待结算卡那套「方案 C」按钮结构（用户要求统一）
   //      · 计时中：⏹ 结束计时（整行大按钮）→ ⏸ 暂停 | 🔄 换桌 → 小号 看账单 | 改时间 | 取消计时
@@ -4207,7 +4178,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.0";
+  var APP_VER = "v3.25.1";
   var APP_DATE = "2026-10-28";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -12307,28 +12278,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     }
     save(); renderSnacks(); renderStats(); closeSnackEdit();
   });
-  // ===== 挂到桌台：点「确认挂账」→ 先弹汇总确认（v3.25.0）=====
-  function openSnackAttachModal(no) {
-    var t = state.tables[no];
-    if (!t) return;
-    var sub = snackCartSubtotal(), prev = snackTableExtrasSum(t), stt = snackTableStatusTxt(t);
-    var h = "";
-    for (var i = 0; i < state.snackCart.length; i++) {
-      var c = state.snackCart[i];
-      h += '<div class="sa-item"><span>' + esc(c.name) + ' <span class="qty">× ' + c.qty + '</span></span><b>' + fmtMoney(snackItemTotal(c)) + '</b></div>';
-    }
-    document.getElementById("snackAttachItems").innerHTML = h || '<div class="hint" style="margin:0;">点单是空的</div>';
-    document.getElementById("snackAttachModalSum").textContent = fmtMoney(sub);
-    document.getElementById("snackAttachModalTable").textContent = t.name;
-    document.getElementById("snackAttachModalState").textContent = "（" + stt + "）";
-    document.getElementById("snackAttachModalPrev").textContent = fmtMoney(prev);
-    document.getElementById("snackAttachModalAfter").textContent = fmtMoney(prev + sub);
-    document.getElementById("snackAttachModalNote").innerHTML = (t.status === "idle")
-      ? (esc(t.name) + " 还没开台：挂账会先记在桌上，等开台后随该桌费用一起结。")
-      : (esc(t.name) + "（" + stt + "）：挂账会并进该桌「其它费用」，结算时和其他费用一起收。");
-    document.getElementById("snackAttachOk").textContent = "确认挂账 " + fmtMoney(sub);
-    document.getElementById("snackAttachOverlay").classList.add("show");
-  }
+  // ===== 挂到桌台：点「确认挂账」直接挂上（v3.25.1：去掉二次确认弹窗）=====
   function doSnackAttach(no) {
     var st = document.getElementById("snackStatus");
     var t = state.tables[no];
@@ -12358,18 +12308,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     var st = document.getElementById("snackStatus");
     if (!state.snackCart.length) { st.textContent = "点单是空的"; st.style.color = "var(--red)"; return; }
     if (!snackAttachPick) { st.textContent = "先选一张桌台"; st.style.color = "var(--red)"; return; }
-    openSnackAttachModal(snackAttachPick);
-  });
-  document.getElementById("snackAttachCancel").addEventListener("click", function () {
-    document.getElementById("snackAttachOverlay").classList.remove("show");
-  });
-  document.getElementById("snackAttachOverlay").addEventListener("click", function (e) {
-    if (e.target === this) this.classList.remove("show");
-  });
-  document.getElementById("snackAttachOk").addEventListener("click", function () {
-    var no = snackAttachPick;
-    document.getElementById("snackAttachOverlay").classList.remove("show");
-    doSnackAttach(no);
+    doSnackAttach(snackAttachPick);
   });
   document.getElementById("snackStatus").addEventListener("click", function (e) {
     var b = e.target.closest("[data-go-table]");
