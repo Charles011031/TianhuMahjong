@@ -206,7 +206,6 @@
   .table .top .mahjong-type select { width: 80px; }
   .table .timer { line-height: 1; min-height: 46px; display: flex; align-items: center; justify-content: center; }
   .table .start-time, .table .est { min-height: 18px; line-height: 18px; }
-  .table .start-time.is-empty, .table .est.is-empty { color: #b0b7bd; font-weight: 400; }
   .table .table-extras { min-height: 34px; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 9px; overflow: hidden; white-space: nowrap; }
   .table .table-extras .ex-txt { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .table .table-extras .ex-sum { flex: 0 0 auto; font-weight: 800; }
@@ -214,12 +213,20 @@
   .table .table-extras.is-empty { background: transparent; }
   .table .note { min-height: 30px; }
   .table .btns { margin-top: auto; grid-template-rows: 44px 40px 32px; }
-  .table .btns > button.wide { height: 44px; }
-  .table .btns > button:not(.wide) { height: 40px; }
   .table .btns .btns-mini { height: 32px; }
-  .table .btns .btns-mini button { min-width: 0; white-space: nowrap; height: 32px; }
-  .table .btns .btns-gap { grid-column: 1 / -1; height: 40px; }
-  .table .btns .manual-mini { width: 100%; }
+  .table .btns .btns-mini button { min-width: 0; white-space: nowrap; }
+  .table .btns > button.manual-row { grid-column: 1 / -1; font-size: 13.5px; }
+  /* ===== 空闲卡（不计时）单独一套（v3.25.4）=====
+     为什么：空闲卡原来套的是计时卡的骨架 —— 00:00:00 白字最抢眼、下面两行「—」纯占位、
+     中间还空着一档按钮行，看起来又空又断。
+     做法：① 00:00:00 变灰（「没在计时」不该是全场最亮的东西）
+           ② 开始时间/台费/挂单 三块（90px）合成一块，只写「空闲」
+           ③ 「自定义时间 / 补录」挪到第二档，紧贴「开始计时」，不再中间空一档 */
+  .table.idle .timer { color: #c6ced4; }
+  body.dark .table.idle .timer { color: #56636f; }
+  .table .idle-info { height: 90px; display: flex; align-items: center; justify-content: center; }
+  .table .idle-info b { font-size: 14.5px; font-weight: 800; color: #8d979e; letter-spacing: 2px; }
+  body.dark .table .idle-info b { color: #6b7a87; }
   .btn-export { background: var(--green); color: #fff; border-color: var(--green); }
   .result {
     background: #fff7e6;
@@ -3550,6 +3557,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.4  2026-10-28
+  //    + 空闲桌卡片单独一套（用户反馈：不计时的卡片空、白字太抢眼）★
+  //      · 00:00:00 变灰（「没在计时」不该是全场最亮的东西，暗色下尤其）
+  //      · 「开始时间：—」「预估台费：—」「空挂单槽」三块（90px）合成一块，只写「空闲」
+  //      · 「⏱ 自定义时间 / 补录」挪到第二档，紧贴「开始计时」，中间不再空一档
   //  v3.25.3  2026-10-28
   //    + 桌台页 UI 规整（用户需求：6 张卡看着乱、按钮不在一条线上）★★
   //      · 卡片改成「固定槽位」：顶栏 / 计时 / 开始时间 / 台费 / 挂单 / 备注 各占固定高度
@@ -4224,7 +4236,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.3";
+  var APP_VER = "v3.25.4";
   var APP_DATE = "2026-10-28";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4492,7 +4504,7 @@
     for (var i = 1; i <= TABLE_COUNT; i++) {
       var t = state.tables[i];
       var ms = elapsedMs(t);
-      var cls = "table " + (t.status === "running" ? "running" : t.status === "paused" ? "paused" : t.status === "ended" ? "ended" : "");
+      var cls = "table " + (t.status === "running" ? "running" : t.status === "paused" ? "paused" : t.status === "ended" ? "ended" : "idle");
       html += '<div class="' + cls + '" data-id="' + i + '">';
       var resv = resForTable(i);
       var badgesHtml =
@@ -4509,8 +4521,8 @@
         var stSameDay = fmtDate(stTs) === fmtDate(Date.now());
         html += '  <div class="start-time">开始时间：' + (stSameDay ? fmtHM(stTs) : (fmtDate(stTs).slice(5) + " " + fmtHM(stTs))) + '</div>';
       } else {
-        // ★ v3.25.3：空闲桌也占这一行（淡灰 —），否则卡片比别的桌矮一截、按钮对不齐
-        html += '  <div class="start-time is-empty">开始时间：—</div>';
+        // ★ v3.25.4：空闲卡把「开始时间 / 台费 / 挂单」三块（90px）合成一块，只写「空闲」
+        html += '  <div class="idle-info"><b>空闲</b></div>';
       }
       if (t.status === "ended" && t.endedAt) {
         var enTs = t.endedAt;
@@ -4521,12 +4533,13 @@
       if (t.status !== "idle") {
         html += '  <div class="est">' + (t.status === "ended" ? "台费 " : "预估台费 ") +
           fmtMoney(tableFeeOf(ms)) + ' ≈ ' + fmtRmb(tableFeeOf(ms)) + '</div>';
-      } else {
-        html += '  <div class="est is-empty">预估台费：—</div>';
       }
       // ★ v3.25.3：挂单行固定单行（没挂单也占位），免得一张卡多一行、整排按钮错位
       //   ≤2 项直接显示明细；≥3 项只显示「N 项」，明细在「✎ 编辑」弹窗 /「📄 看账单」里看全
-      if (t.extras && t.extras.length) {
+      //   ★ v3.25.4：空闲卡没有挂单，这块高度已经并进上面那块 idle-info 了
+      if (t.status === "idle") {
+        /* 空格：不渲染挂单行 */
+      } else if (t.extras && t.extras.length) {
         var exSum = 0, exTxt = [];
         for (var e2 = 0; e2 < t.extras.length; e2++) {
           exSum += (Number(t.extras[e2].price) || 0) * (Number(t.extras[e2].qty) || 0);
@@ -4598,12 +4611,9 @@
         if ((Number(state.tables[i].carry) || 0) > 0.005) {
           html += '<button class="btn-settle wide" data-act="carrypay" data-id="' + i + '" ' +
                   'style="background:#b45309;">🧾 补收 $' + (Number(state.tables[i].carry) || 0).toFixed(2) + '</button>';
-        } else {
-          // ★ v3.25.3：占住第二档（40px），空闲桌的「自定义时间」才能和别的桌小按钮对齐
-          html += '<div class="btns-gap"></div>';
         }
-        // ★ v3.25.3：自定义时间/补录 收进第三档小按钮行，和计时中卡的「看账单 | 改时间 | 取消」同一行
-        html += '<div class="btns-mini"><button type="button" class="btn-ghost manual-mini" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button></div>';
+        // ★ v3.25.4：自定义时间/补录 挪到第二档，紧贴「开始计时」（不再中间空一档）
+        html += '<button class="btn-ghost manual-row" data-act="manual" data-id="' + i + '">⏱ 自定义时间 / 补录</button>';
       }
       html += '  </div>';
       // 待结算 / 计时中 / 暂停 的「改时间」都已经放进小按钮行了 → 空闲桌的自定义时间也放进去了（v3.25.3）
