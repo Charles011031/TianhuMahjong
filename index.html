@@ -224,9 +224,22 @@
            ③ 「自定义时间 / 补录」挪到第二档，紧贴「开始计时」，不再中间空一档 */
   .table.idle .timer { color: #c6ced4; }
   body.dark .table.idle .timer { color: #56636f; }
-  .table .idle-info { height: 90px; display: flex; align-items: center; justify-content: center; }
+  .table .idle-info { height: 90px; display: flex; align-items: center; justify-content: center; position: relative; }
   .table .idle-info b { font-size: 14.5px; font-weight: 800; color: #8d979e; letter-spacing: 2px; }
   body.dark .table .idle-info b { color: #6b7a87; }
+  /* ===== 没挂零食时：那一行不是空的，而是「＋ 挂零食」入口（v3.25.5）=====
+     为什么：空着也占 34px，看着像少了一块内容；改成入口 → 空行有用，
+     而且不用再「零食页 → 选商品 → 选桌」绕一圈，卡上一点就到。
+     点了就会切到零食页的「挂到桌台」模式，并且预选这张桌。 */
+  .table .table-extras.ex-empty { background: transparent; justify-content: flex-end; }
+  /* 入口做成一个小小的淡色药丸（手指好点，又不抢台费和挂单的视觉） */
+  .table .ex-add,
+  .table .table-extras .ex-add { flex: 0 0 auto; white-space: nowrap; background: #f1f6f4; border: 0;
+    color: #63767d; font-size: 12.5px; font-weight: 600; padding: 5px 11px; border-radius: 8px; cursor: pointer; }
+  .table .ex-add:active { transform: none; color: var(--green-dark); background: #e6f1ec; }
+  body.dark .table .ex-add { color: #8b9aa5; background: rgba(255,255,255,.055); }
+  body.dark .table .ex-add:active { color: #cfe6d9; background: rgba(255,255,255,.10); }
+  .table .idle-info .idle-add { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
   .btn-export { background: var(--green); color: #fff; border-color: var(--green); }
   .result {
     background: #fff7e6;
@@ -3557,6 +3570,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.5  2026-10-28
+  //    + 没挂零食时，那一行不再是空行，而是「＋ 挂零食」入口（用户反馈：没挂账时这块空着难看）★
+  //      · 计时中/暂停/待结算：行右侧一个淡字「＋ 挂零食」
+  //      · 空闲桌：放在「空闲」那块右下角（客人先到、还没开台也能先挂上）
+  //      · 点了直接切到零食页的「挂到桌台」模式，并预选这张桌 → 选商品 → 确认挂账，少绕一圈
   //  v3.25.4  2026-10-28
   //    + 空闲桌卡片单独一套（用户反馈：不计时的卡片空、白字太抢眼）★
   //      · 00:00:00 变灰（「没在计时」不该是全场最亮的东西，暗色下尤其）
@@ -4236,7 +4254,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.4";
+  var APP_VER = "v3.25.5";
   var APP_DATE = "2026-10-28";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4522,7 +4540,9 @@
         html += '  <div class="start-time">开始时间：' + (stSameDay ? fmtHM(stTs) : (fmtDate(stTs).slice(5) + " " + fmtHM(stTs))) + '</div>';
       } else {
         // ★ v3.25.4：空闲卡把「开始时间 / 台费 / 挂单」三块（90px）合成一块，只写「空闲」
-        html += '  <div class="idle-info"><b>空闲</b></div>';
+        // ★ v3.25.5：这块右下角给一个「＋ 挂零食」入口（客人先到、还没开台也能先挂上）
+        html += '  <div class="idle-info"><b>空闲</b>' +
+                '<button type="button" class="ex-add idle-add" data-act="attachsnack" data-id="' + i + '">＋ 挂零食</button></div>';
       }
       if (t.status === "ended" && t.endedAt) {
         var enTs = t.endedAt;
@@ -4555,7 +4575,9 @@
                 (armGet("extras-clear") === String(i) ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : '') + ">" +
                 (armGet("extras-clear") === String(i) ? "再点一次" : "清除") + "</button></div>";
       } else {
-        html += '  <div class="table-extras is-empty"></div>';
+        // ★ v3.25.5：没挂零食时这一行不是空的，而是「＋ 挂零食」入口（点了直接去挂账并预选这张桌）
+        html += '  <div class="table-extras ex-empty">' +
+                '<button type="button" class="ex-add" data-act="attachsnack" data-id="' + i + '">＋ 挂零食</button></div>';
       }
       html += '  <div class="note"><label>备注</label><input type="text" placeholder="备注…" data-field="note" data-id="' + i + '" value="' + esc(t.note) + '"></div>';
       html += '  <div class="btns">';
@@ -4921,6 +4943,22 @@
       save(); render();
     } else if (act === "editextras") {
       openExtrasEditor(id);
+    } else if (act === "attachsnack") {
+      // ★ v3.25.5：桌卡上的「＋ 挂零食」→ 切到零食页的「挂到桌台」模式，并预选这张桌
+      //   选好商品点「✓ 确认挂账」就直接挂上（挂账不含手续费，随台费一起结）
+      snackAttachPick = parseInt(id, 10) || 0;
+      setSnackMode("attach");
+      switchTab("snacks");
+      renderSnackAttachTable();
+      var stAttach = document.getElementById("snackStatus");
+      if (stAttach) {
+        stAttach.innerHTML = "选好商品后点「✓ 确认挂账」→ 挂到 <b>" + esc(t.name) + "</b>（随台费一起结，不计手续费）";
+        stAttach.style.color = "var(--green-dark)";
+      }
+      var anchorA = document.getElementById("snackAttach");
+      if (anchorA && anchorA.scrollIntoView) {
+        try { anchorA.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) {}
+      }
     } else if (act === "move") {
       openMoveModal(id);
     } else if (act === "cancel") {
