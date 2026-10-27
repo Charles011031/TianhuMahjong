@@ -940,6 +940,8 @@ Agent 里也可以用封装好的 `mahjong_release` 工具（`mode=check` / `mod
 
 - 有**发布锁**（`备份/.发布锁`），同一时间只能一个发布；检测到别人在改源文件会中止
 - 推送目标是 `charles011031/TianhuMahjong@main`，走 GitHub Contents API（本地没有 .git）
+- **`README.md` 和 `版本记录.md` 会跟着一起推**：仓库首页 README 由根目录 README 自动生成，
+  版本记录原样推上去，不用另外手动发
 - **线上轮询最多 300 秒**，超时算失败（退出码 3）；此时不要手动刷新，先看日志
 
 退出码：`0` 成功 / `1` 预检失败（版本、构建、测试、token、锁、并发）/ `2` 推送失败 / `3` 线上超时未生效。
@@ -953,9 +955,9 @@ Agent 里也可以用封装好的 `mahjong_release` 工具（`mode=check` / `mod
 
 1. 改 `mahjong-timer.html`（**只改源文件**）
 2. 改顶部 `APP_VER` / `APP_DATE`（页面顶部、底部都读这两个变量）
-3. README 顶部「当前版本」改成同一个版本号，版本记录补一条（`| **vX**`）
+3. README 顶部「当前版本」改成同一个版本号，`版本记录.md` 补一条（`| **vX**`）
 4. 相关测试跟着补/改
-5. `python3 工具/发布.py`，等它报「线上已生效」
+5. `python3 工具/发布.py`，等它报「线上已生效」（README + 版本记录会一起推上 GitHub）
 6. 再刷新页面，看顶部 / 底部版本号
 
 ### 版本号规则
@@ -978,8 +980,8 @@ Agent 里也可以用封装好的 `mahjong_release` 工具（`mode=check` / `mod
 
 > 平时你**只需要网址**（和偶尔的备份文件）。下面这些是维护用的，不用每天碰。
 >
-> 注意：GitHub 仓库里只有 `部署/` 下要上线的文件（index.html、sw.js、manifest.json、assets/）；
-> 其余目录（工具/、备份/、测试/ 等）只在维护这台电脑上，不在仓库里。
+> **本页同时是 GitHub 仓库首页**：仓库里只有 `部署/` 下要上线的文件，外加 `README.md` 和 `版本记录.md`；
+> 其余目录（`工具/`、`备份/`、`测试/` 等）只存在于维护这台电脑的工作区里。
 
 ### 根目录
 
@@ -987,15 +989,15 @@ Agent 里也可以用封装好的 `mahjong_release` 工具（`mode=check` / `mod
 默认工作区/
 ├── mahjong-timer.html            ★ 唯一源文件：所有功能都在这里改
 ├── mahjong-timer-firebase.html    生成物：源文件 → Firebase 版（别手改）
-├── README.md                      本文件
-├── 版本记录.md                    完整版本历史（约 224 条，从 README 拆出来的）
+├── README.md                      本文件（发布/推送时会生成仓库版）
+├── 版本记录.md                    完整版本历史（约 224 条，发布时一起推到 GitHub）
 ├── README-Firebase.md             Firebase 版早期说明（历史文档，部分已过时）
 ├── AGENTS.md                      给 AI 助手的工作规则
 │
 ├── 部署/                          ★ 线上站点（推送目标，别手改生成物）
 │   ├── index.html                  线上网页（由 Firebase 版生成）
 │   ├── sw.js / manifest.json / assets/   PWA 离线 + 图标
-│   ├── README.md                   仓库说明页（GitHub 上显示的那份）
+│   ├── README.md                   仓库首页说明（由根 README 自动生成，别手改）
 │   └── GitHub部署说明.md           第一次建仓库/开 Pages 的步骤（已过时，仅参考）
 │
 ├── 工具/                          维护脚本（发布、生成、测试、截图）
@@ -1039,7 +1041,8 @@ Agent 里也可以用封装好的 `mahjong_release` 工具（`mode=check` / `mod
 
 ## 📋 版本记录
 
-> 完整历史（约 224 条，v1.0.0 → v3.25.6）在维护工作区的 **`版本记录.md`**，一条没删。
+> 完整历史（约 224 条，v1.0.0 → v3.25.6）在 **[`版本记录.md`](版本记录.md)**，一条没删。
+> 这个文件在发布时会**一起推到 GitHub**，仓库里也能直接看。
 
 ### 最近 15 个版本
 
