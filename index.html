@@ -3516,6 +3516,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.2  2026-10-28
+  //    + 空闲桌：去掉没用的「清零」按钮（清的全是死字段/自动已清的东西，用户反馈没意义）
+  //      · 「开始计时」「补收」改成整行主按钮，和计时中/待结算的「方案 C」按钮结构一致
+  //      · 「⏱ 自定义时间 / 补录」保留在下面一行
   //  v3.25.1  2026-10-28
   //    + 挂到桌台：去掉二次确认弹窗（用户反馈：多点一次太麻烦）
   //      · 点「✓ 确认挂账」直接挂上；选桌时下面已经显示 目标桌 / 该桌已挂 / 挂后合计
@@ -4178,7 +4182,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.1";
+  var APP_VER = "v3.25.2";
   var APP_DATE = "2026-10-28";
   function applyVersion() {
     var el = document.getElementById("appVer");
@@ -4523,13 +4527,13 @@
                 (armed ? "再点一次" : "✖ 取消计时") + '</button>' +
                 '</div>';
       } else {
-        html += '<button class="btn-start" data-act="start" data-id="' + i + '">开始计时</button>';
+        // ★ v3.25.2：去掉没用的「清零」，空闲桌按钮改成整行主按钮（和计时中/待结算同一套视觉）
+        html += '<button class="btn-start wide" data-act="start" data-id="' + i + '">▶ 开始计时</button>';
         // ★ 这张桌还欠着钱（上次结算没收齐）→ 给个【补收】按钮，可以分几次收完
         if ((Number(state.tables[i].carry) || 0) > 0.005) {
-          html += '<button class="btn-settle" data-act="carrypay" data-id="' + i + '" ' +
+          html += '<button class="btn-settle wide" data-act="carrypay" data-id="' + i + '" ' +
                   'style="background:#b45309;">🧾 补收 $' + (Number(state.tables[i].carry) || 0).toFixed(2) + '</button>';
         }
-        html += '<button class="btn-ghost" data-act="reset" data-id="' + i + '">清零</button>';
       }
       html += '  </div>';
       // 待结算 / 计时中 / 暂停 的「改时间」都已经放进小按钮行了 → 底部那行只在空闲桌显示
@@ -4816,13 +4820,6 @@
       t.status = "running";
       t.endedAt = null;
       save(); render();
-    } else if (act === "reset") {
-      if (t.status === "idle") {
-        t.sessionStart = null;
-        t.elapsedAtPause = 0;
-        t.lastResult = null;
-        save(); render();
-      }
     } else if (act === "clearextras") {
       if (armGet("extras-clear") !== String(id)) {               // 第一下：亮红提示
         armSet("extras-clear", String(id));
