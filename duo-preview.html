@@ -16447,6 +16447,19 @@ document.addEventListener("mousedown", function (e) {
   #duoRail.rail-a .dr-btns { flex: 1 1 auto; margin-top: 6px; justify-content: space-evenly; gap: 10px; }
   #duoRail.rail-a .dr-btns button { min-height: 58px; font-size: 22px; }
   #duoRail.rail-a .dr-btns button span { font-size: 10.5px; margin-top: 2px; }
+  /* C 模式：六个标签竖着排 */
+  #duoTabs { display: none; flex-direction: column; gap: 6px; flex: 1 1 auto; }
+  #duoRail.rail-c #duoTabs { display: flex; }
+  #duoRail.rail-c .dr-btns { display: none; }
+  #duoTabs button {
+    flex: 1 1 0; min-height: 46px; border: 1px solid var(--line); background: #fff;
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 2px;
+    font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 2px; flex-direction: column;
+  }
+  #duoTabs button em { font-style: normal; font-size: 10px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+  #duoTabs button.on { background: var(--green); border-color: var(--green); color: #fff; }
+  #duoTabs button.on em { color: rgba(255,255,255,.9); }
+  body.dark #duoTabs button { background: #1b2836; border-color: #2a3846; color: #cfe6d9; }
   #duoRail .dr-btns button {
     min-height: 46px; border: 1px solid var(--line); background: #f7f9f8; border-radius: 12px;
     font-size: 15px; font-weight: 800; color: var(--green-dark); display: flex;
@@ -16473,6 +16486,7 @@ document.addEventListener("mousedown", function (e) {
     '<div class="dr-stat"><b id="drToday">$0</b><span>已结</span></div>' +
     '<div class="dr-stat"><b id="drPend">0</b><span>待结算</span></div>' +
     '<div class="dr-stat"><b id="drRun">0</b><span>进行中</span></div>' +
+    '<div id="duoTabs"></div>' +
     '<div class="dr-btns">' +
       '<button id="drTop">↑<span>回顶</span></button>' +
       '<button id="drRefresh">↻<span>刷新</span></button>' +
@@ -16518,21 +16532,50 @@ document.addEventListener("mousedown", function (e) {
     if (b) b.click();
   };
 
+  function buildTabs() {
+    var box = document.getElementById('duoTabs');
+    if (!box || box.children.length) return;
+    var src = document.querySelectorAll('.tabs .tab');
+    for (var i = 0; i < src.length; i++) {
+      (function (t) {
+        var b = document.createElement('button');
+        var txt = t.textContent.replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu, '').trim();
+        b.innerHTML = '<span style="font-size:19px">' + t.textContent.trim().split(' ')[0] + '</span><em>' + txt + '</em>';
+        b.onclick = function () { t.click(); syncTabs(); };
+        box.appendChild(b);
+      })(src[i]);
+    }
+    syncTabs();
+    setInterval(syncTabs, 600);
+  }
+  function syncTabs() {
+    var box = document.getElementById('duoTabs');
+    var src = document.querySelectorAll('.tabs .tab');
+    if (!box || !box.children.length) return;
+    for (var i = 0; i < src.length; i++) {
+      var on = src[i].classList.contains('active');
+      if (box.children[i]) box.children[i].classList.toggle('on', on);
+    }
+  }
   var bar = document.createElement('div');
   bar.id = 'duoBar';
   bar.innerHTML = '<button data-m="off">现状</button>' +
                   '<button data-m="A">A 竖排按钮</button>' +
                   '<button data-m="B">B 数据窄栏</button>' +
+                  '<button data-m="C">C 竖向标签</button>' +
                   '<button data-m="z">取消 0.85 缩放</button>';
   document.body.appendChild(bar);
 
   var zoomOff = false, mode = 'off';
   window.__duoZoomWasOff = false;
   function applyMode() {
-    var on = (mode === 'A' || mode === 'B');
+    var on = (mode === 'A' || mode === 'B' || mode === 'C');
     document.body.classList.toggle('dock-on', on);
     rail.hidden = !on;
-    rail.className = (mode === 'A') ? 'rail-a' : ((mode === 'B') ? 'rail-b' : '');
+    rail.className = (mode === 'A') ? 'rail-a' : ((mode === 'B') ? 'rail-b' : ((mode === 'C') ? 'rail-c' : ''));
+    var tabsNav = document.querySelector('.tabs');
+    if (tabsNav) tabsNav.style.display = (mode === 'C') ? 'none' : '';
+    if (mode === 'C') buildTabs();
     rail.querySelectorAll('.dr-stat').forEach(function (el) {
       el.style.display = (mode === 'B') ? '' : 'none';
     });
@@ -16555,8 +16598,8 @@ document.addEventListener("mousedown", function (e) {
     mode = m; applyMode();
   });
 
-  var q = (location.search.match(/[?&]mode=([ABz]+)/) || [])[1];
-  if (q) { if (q.indexOf('A') >= 0) mode = 'A'; else if (q.indexOf('B') >= 0) mode = 'B'; }
+  var q = (location.search.match(/[?&]mode=([ABCz]+)/) || [])[1];
+  if (q) { if (q.indexOf('C') >= 0) mode = 'C'; else if (q.indexOf('A') >= 0) mode = 'A'; else if (q.indexOf('B') >= 0) mode = 'B'; }
   if (/[?&]zoom=1/.test(location.search)) { zoomOff = true; window.__duoZoomWasOff = true; }
   applyMode();
 })();
