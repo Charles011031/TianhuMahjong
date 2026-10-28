@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>🀄 天胡麻将馆</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1d7a4f">
@@ -39,9 +39,26 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     background: var(--bg);
     color: var(--ink);
-    padding: 16px;
+    /* 安全区内边距（v3.25.8）：配合 viewport-fit=cover，
+       灵动岛 / 圆角 / 手势条 / 展开横屏右侧 Dock 都用 env() 让开；
+       没刘海、或在 Safari 里直接浏览时 env() 是 0，等于原来的 16px */
+    padding: calc(16px + env(safe-area-inset-top, 0px))
+             calc(16px + env(safe-area-inset-right, 0px))
+             calc(16px + env(safe-area-inset-bottom, 0px))
+             calc(16px + env(safe-area-inset-left, 0px));
     max-width: 1280px;
     margin: 0 auto;
+  }
+  /* ============================================================
+     iOS（iPhone / iPad / Duo）专用：点输入框时整页被自动放大
+     ------------------------------------------------------------
+     根因：iOS Safari 聚焦表单控件时，字号 < 16px 会把整页放大，
+     而且不会自己缩回来，得手动捏小（v3.25.8 真机反馈）。
+     把控件字号统一按 16px 排 → 不再触发自动放大。
+     只在 iOS 生效（-webkit-touch-callout 只有 iOS Safari 认）。
+     ============================================================ */
+  @supports (-webkit-touch-callout: none) {
+    input, select, textarea { font-size: 16px !important; }
   }
   /* 页面最底下的工具栏（不浮动，跟着内容走），版本号在它下面 */
   .bottom-bar {
@@ -1383,10 +1400,13 @@
   /* 手机横屏（宽 641~1000、高 ≤500）也走手机版布局：
      横屏时宽度够，用「手机版 + 2 列记录卡」比桌面表格更好看。
      平板竖屏（宽 641~900、高 ≥700，v3.12.0）也走手机版：
-     原来平板竖屏是桌面表格，「收款」列要横向滑，改成 2 列记录卡更好读。 */
+     原来平板竖屏是桌面表格，「收款」列要横向滑，改成 2 列记录卡更好读。
+     iPhone Duo 展开横屏 890×626（v3.25.8）：宽 861~1000、高 ≤700 也走手机版，
+     否则宽度正好卡在 860 断点外面，会掉进桌面表格版式、记录要横向滑。 */
   @media (max-width: 640px),
          (min-width: 641px) and (max-width: 1000px) and (max-height: 500px),
-         (min-width: 641px) and (max-width: 900px) and (min-height: 700px) {
+         (min-width: 641px) and (max-width: 900px) and (min-height: 700px),
+         (min-width: 861px) and (max-width: 1000px) and (max-height: 700px) {
     .head-actions .icon-btn { width: 32px; height: 32px; font-size: 14px; border-radius: 8px; }
 
     .to-top {
@@ -1655,8 +1675,14 @@
      ============================================================ */
   @media (min-width: 561px) and (max-width: 640px),
          (min-width: 641px) and (max-width: 1000px) and (max-height: 500px),
-         (min-width: 641px) and (max-width: 900px) and (min-height: 700px) {
-    body { padding: 14px 18px; }
+         (min-width: 641px) and (max-width: 900px) and (min-height: 700px),
+         (min-width: 861px) and (max-width: 1000px) and (max-height: 700px) {
+    body {
+      padding: calc(14px + env(safe-area-inset-top, 0px))
+               calc(18px + env(safe-area-inset-right, 0px))
+               calc(14px + env(safe-area-inset-bottom, 0px))
+               calc(18px + env(safe-area-inset-left, 0px));
+    }
     .tabs { gap: 8px; }
     .tab {
       flex: 1 1 0; min-width: 0; padding: 10px 2px; font-size: 13px;
@@ -1707,12 +1733,27 @@
     .snack-cards { max-height: 60vh; }
   }
 
+  /* --- iPhone Duo 展开横屏（890×626，v3.25.8）---
+     宽度够、竖着矮：接着上面「宽手机」的骨架，把横向空间用满 ——
+     记录卡 3 列（竖屏是 2 列）、标签页一行 6 个、记录区留高一些。 */
+  @media (min-width: 861px) and (max-width: 1000px) and (max-height: 700px) {
+    .rec-cards { grid-template-columns: 1fr 1fr 1fr; }
+    .tab { flex: 1 1 calc(16.666% - 8px); }
+    .history-wrap-scroll { max-height: 62vh; }
+    .snack-cards { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  }
+
   /* ============================================================
      小屏手机（≤400px，例如 iPhone SE / Surface Duo 折叠单屏 / 手机分屏）
      再紧凑一档：字号、间距、卡片、按钮一起缩，一屏能多放内容
      ============================================================ */
   @media (max-width: 400px) {
-    body { padding: 10px; }
+    body {
+      padding: calc(10px + env(safe-area-inset-top, 0px))
+               calc(10px + env(safe-area-inset-right, 0px))
+               calc(10px + env(safe-area-inset-bottom, 0px))
+               calc(10px + env(safe-area-inset-left, 0px));
+    }
     header { padding: 12px 12px; gap: 8px; border-radius: 12px; }
     header h1 { font-size: 17px; }
     .ver { font-size: 10px; padding: 1px 7px; }
@@ -3575,6 +3616,15 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.8  2026-10-29
+  //    + 修：iOS 上点输入框，整页被自动放大、还要手动捏回来（iPhone Duo 真机反馈）★
+  //      · 根因是 Safari 聚焦字号 < 16px 的表单控件就放大整页
+  //      · 加 iOS 专用规则（@supports -webkit-touch-callout）：input/select/textarea 统一 16px
+  //    + iPhone Duo 针对性适配：真 safe-area（灵动岛 / 圆角 / 手势条 / 展开横屏右侧 Dock）
+  //      · viewport 加 viewport-fit=cover，body 四边内边距改成 calc(原值 + env(safe-area-inset-*))
+  //      · 「回到顶部」按钮原来写的 env() 一直是 0，现在才真正生效
+  //    + 修：展开横屏 890×626（Duo 内屏横放）没有专门版式，掉进桌面表格、记录要横向滑
+  //      · 新断点 (宽 861~1000 且高 ≤700) 也走手机版骨架，记录卡排 3 列、标签页一行 6 个
   //  v3.25.7  2026-10-29
   //    + 人民币账单：汇率后面不再显示「（含加点 0.33%）」（用户要求，账单上不需要看加点）
   //      · 账单只留「汇率：1 澳币 = 4.6814 人民币 · 报价时间：…」
@@ -4269,7 +4319,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.7";
+  var APP_VER = "v3.25.8";
   var APP_DATE = "2026-10-29";
   function applyVersion() {
     var el = document.getElementById("appVer");
