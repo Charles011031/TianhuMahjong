@@ -3336,6 +3336,10 @@
   var recPushTimer = null;
 
   function recFingerprint(kind, r) {
+    // ★ v3.25.7：老数据 / 导入数据的 items 可能是字符串（如 "水×1"）而不是数组 ✗
+    //   以前直接 .map() 会抛错，而且这是【启动时】建快照就调用的 → 一条坏记录整页打不开 ✗
+    //   现在不是数组就当空数组处理（指纹里体现为空，不影响同步判断）✓
+    var its = Array.isArray(r.items) ? r.items : [];
     if (kind === "records") {
       return [r.date, r.tableNo, r.start, r.end, r.hours, r.tableFee, r.other, r.total, r.grand,
               r.payType, r.memberName, r.balanceUsed, r.collected, r.rmbActual,
@@ -3343,11 +3347,11 @@
     }
     if (kind === "snacks") {
       return [r.date, r.time, r.subtotal, r.fee, r.grand, r.payType, r.rmb, r.discount,
-              (r.items || []).map(function (x) { return x.name + "x" + x.qty + "@" + (x.price || 0); }).join(",")].join("|");
+              its.map(function (x) { return x.name + "x" + x.qty + "@" + (x.price || 0); }).join(",")].join("|");
     }
     if (kind === "vapes") {
       return [r.date, r.time, r.sticks, r.subtotal, r.cardAdd, r.fee, r.grand, r.payType, r.rmb,
-              (r.items || []).map(function (x) { return x.gen + x.name + "x" + x.qty; }).join(",")].join("|");
+              its.map(function (x) { return x.gen + x.name + "x" + x.qty; }).join(",")].join("|");
     }
     if (kind === "attendance") {
       return [r.date, r.name, r.clockIn, r.clockOut, r.hours, r.shift].join("|");
@@ -3571,6 +3575,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.7  2026-10-29
+  //    + 人民币账单：汇率后面不再显示「（含加点 0.33%）」（用户要求，账单上不需要看加点）
+  //      · 账单只留「汇率：1 澳币 = 4.6814 人民币 · 报价时间：…」
+  //      · 加点仍然生效（自动取价时照样乘加点），只是不在账单上显示
+  //    + 修：老/异常数据里 items 是字符串（不是数组）时，启动建同步快照会抛错 → 整页打不开
+  //      · recFingerprint 里先判断 Array.isArray，不是数组就按空数组处理（发布测试门禁抓到）
   //  v3.25.6  2026-10-28
   //    + 空闲卡的「＋ 挂零食」和计时卡对不齐（用户发现：一个在「空闲」块里居中、一个在挂单行，差 29px）★
   //      · 空闲卡改成「空闲」占「开始时间 + 台费」两块（46px），挂零食入口走统一的挂单行
@@ -4259,8 +4269,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.6";
-  var APP_DATE = "2026-10-28";
+  var APP_VER = "v3.25.7";
+  var APP_DATE = "2026-10-29";
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
@@ -16251,7 +16261,6 @@ document.addEventListener("mousedown", function (e) {
       '<td class="num">' + fmtMoney(info.totalAud) + '</td>' +
       '<td class="num">' + (info.fx > 0 ? "¥" + info.totalRmb.toFixed(2) : "—") + '</td></tr></tfoot></table>' +
       '<div class="rb-rate">汇率：1 澳币 = ' + (info.fx || "—") + ' 人民币' +
-      (Number(state.fxMarkup) ? '（含加点 ' + state.fxMarkup + '%）' : '') +
       '　·　报价时间：' + new Date().toLocaleString("zh-CN") + '</div>' +
       '<div class="rb-totals">' +
       '<div class="rb-total-box"><div class="lab">合计（澳币）</div><div class="amt">A$' + info.totalAud.toFixed(2) + '</div></div>' +
