@@ -16515,6 +16515,7 @@ document.addEventListener("mousedown", function (e) {
   document.body.appendChild(bar);
 
   var zoomOff = false, mode = 'off';
+  window.__duoZoomWasOff = false;
   function applyMode() {
     var on = (mode === 'A' || mode === 'B');
     document.body.classList.toggle('dock-on', on);
@@ -16528,20 +16529,20 @@ document.addEventListener("mousedown", function (e) {
     }
     try {
       if (zoomOff) { window.uiAutoScale = function () { return 1; }; window.applyUiZoom(true); }
-      else { window.location.reload(); return; }
+      else if (window.__duoZoomWasOff) { window.location.reload(); return; }   // 只在"从取消缩放切回"时重载一次
     } catch (e) {}
   }
   bar.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('button') : null;
     if (!b) return;
     var m = b.getAttribute('data-m');
-    if (m === 'z') { zoomOff = !zoomOff; applyMode(); return; }
+    if (m === 'z') { zoomOff = !zoomOff; window.__duoZoomWasOff = zoomOff; applyMode(); return; }
     mode = m; applyMode();
   });
 
   var q = (location.search.match(/[?&]mode=([ABz]+)/) || [])[1];
   if (q) { if (q.indexOf('A') >= 0) mode = 'A'; else if (q.indexOf('B') >= 0) mode = 'B'; }
-  if (/[?&]zoom=1/.test(location.search)) zoomOff = true;
+  if (/[?&]zoom=1/.test(location.search)) { zoomOff = true; window.__duoZoomWasOff = true; }
   applyMode();
 })();
 </script>
