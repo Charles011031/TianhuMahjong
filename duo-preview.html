@@ -16443,6 +16443,10 @@ document.addEventListener("mousedown", function (e) {
   body.dark #duoRail .dr-stat b { color: #5ee2a0; }
   #duoRail .dr-stat span { font-size: 10px; color: var(--muted); }
   #duoRail .dr-btns { margin-top: auto; display: flex; flex-direction: column; gap: 7px; }
+  /* A 模式：整条都是工具，按钮平均分布、加高 */
+  #duoRail.rail-a .dr-btns { flex: 1 1 auto; margin-top: 6px; justify-content: space-evenly; gap: 10px; }
+  #duoRail.rail-a .dr-btns button { min-height: 58px; font-size: 22px; }
+  #duoRail.rail-a .dr-btns button span { font-size: 10.5px; margin-top: 2px; }
   #duoRail .dr-btns button {
     min-height: 46px; border: 1px solid var(--line); background: #f7f9f8; border-radius: 12px;
     font-size: 15px; font-weight: 800; color: var(--green-dark); display: flex;
@@ -16465,7 +16469,7 @@ document.addEventListener("mousedown", function (e) {
   var rail = document.createElement('div');
   rail.id = 'duoRail'; rail.hidden = true;
   rail.innerHTML =
-    '<div class="dr-title">今日</div>' +
+    '<div class="dr-title">快捷工具</div>' +
     '<div class="dr-stat"><b id="drToday">$0</b><span>已结</span></div>' +
     '<div class="dr-stat"><b id="drPend">0</b><span>待结算</span></div>' +
     '<div class="dr-stat"><b id="drRun">0</b><span>进行中</span></div>' +
@@ -16473,6 +16477,8 @@ document.addEventListener("mousedown", function (e) {
       '<button id="drTop">↑<span>回顶</span></button>' +
       '<button id="drRefresh">↻<span>刷新</span></button>' +
       '<button id="drFont">Aa<span>字号</span></button>' +
+      '<button data-goto="records">🧾<span>记录</span></button>' +
+      '<button data-goto="stats">📊<span>统计</span></button>' +
     '</div>';
   document.body.appendChild(rail);
 
@@ -16501,6 +16507,12 @@ document.addEventListener("mousedown", function (e) {
     if (b) { b.click(); return; }
     location.href = location.pathname + '?v=' + Date.now();
   };
+  rail.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-goto]') : null;
+    if (!b) return;
+    var t = document.querySelector('.tabs .tab[data-tab="' + b.getAttribute('data-goto') + '"]');
+    if (t) t.click();
+  });
   document.getElementById('drFont').onclick = function () {
     var b = document.querySelector('.head-actions button[data-act="font"], button[title*="字号"]');
     if (b) b.click();
@@ -16520,9 +16532,12 @@ document.addEventListener("mousedown", function (e) {
     var on = (mode === 'A' || mode === 'B');
     document.body.classList.toggle('dock-on', on);
     rail.hidden = !on;
-    rail.querySelectorAll('.dr-stat, .dr-title').forEach(function (el) {
+    rail.className = (mode === 'A') ? 'rail-a' : ((mode === 'B') ? 'rail-b' : '');
+    rail.querySelectorAll('.dr-stat').forEach(function (el) {
       el.style.display = (mode === 'B') ? '' : 'none';
     });
+    var ttl = rail.querySelector('.dr-title');
+    if (ttl) ttl.textContent = (mode === 'B') ? '今日' : '快捷';
     for (var i = 0; i < bar.children.length; i++) {
       var b = bar.children[i], m = b.getAttribute('data-m');
       b.classList.toggle('on', m === mode || (m === 'z' && zoomOff));
