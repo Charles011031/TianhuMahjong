@@ -61,6 +61,21 @@
   input, select, textarea {
     font-size: calc(16px / var(--ui-zoom, 1)) !important;
   }
+  /* ============================================================
+     全屏（添加到主屏幕）时：绿色标题栏顶到状态栏下面（v3.25.10）
+     ------------------------------------------------------------
+     只靠 body 的 safe-area 内边距，iOS 会在顶上留一条 ~70pt 的白带，
+     看起来像"上方空了一块"（Duo 真机反馈）。这里改成：
+     body 顶部不再留白，改由 header 自己多吃一份 top inset —— 状态栏
+     图标直接压在绿灯片上，看着就像原生 App。
+     ============================================================ */
+  @media (display-mode: standalone) {
+    body { padding-top: 0; }
+    header {
+      padding-top: calc(18px + env(safe-area-inset-top, 0px));
+      margin-top: 0;
+    }
+  }
   /* 页面最底下的工具栏（不浮动，跟着内容走），版本号在它下面 */
   .bottom-bar {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -3637,6 +3652,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.10  2026-10-29
+  //    + iPhone Duo 真机：顶上那条白带 + 右侧 Dock 那条空白（用户反馈"最上方空一块、右边没用上"）
+  //      · 全屏（添加到主屏幕）时 body 不再留 top inset，改由绿色标题栏自己吃下，
+  //        状态栏图标压在绿片上 → 上方不再空一条（v3.25.8 加的 body 内边距留下的白带）
+  //      · 新增 ?debug=1 探针：右上角浮一层黑底绿字，显示 inner/dpr/safe-area/ui-zoom/显示模式，
+  //        用来精确量出右侧 Dock 到底占了多少 pt（平时不出现）
   //  v3.25.9  2026-10-29
   //    + 修（v3.25.8 没治住）：iPhone Duo 上点任何输入框，整页还是被放大 ★
   //      · 上一版把修复挂在 @supports (-webkit-touch-callout: none) 里，
@@ -4347,8 +4368,41 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.9";
+  var APP_VER = "v3.25.10";
   var APP_DATE = "2026-10-29";
+
+  // ===== 真机测量探针（v3.25.10）=====
+  // 打开网址后面加 ?debug=1 → 右上角浮一层黑底绿字，显示真实的安全区/缩放/显示模式。
+  // 排查 Duo 这类折叠屏"哪里空、哪里被挡"用的，平时不出现。
+  var DBG_ON = false;
+  try { DBG_ON = /[?&]debug/.test((window.location && window.location.search) || ""); } catch (e) {}
+  if (DBG_ON) {
+    (function () {
+      function envPx(name) {
+        var el = document.createElement("i");
+        el.style.cssText = "position:absolute;left:0;top:0;height:0;visibility:hidden;width:env(" + name + ", 0px)";
+        document.body.appendChild(el);
+        var v = el.getBoundingClientRect().width;
+        if (el.parentNode) el.parentNode.removeChild(el);
+        return Math.round(v);
+      }
+      var vv = window.visualViewport;
+      var box = document.createElement("pre");
+      box.style.cssText = "position:fixed;right:0;top:0;z-index:99999;margin:0;padding:6px 8px;" +
+        "background:rgba(0,0,0,.84);color:#7CFC9E;font:11px/1.45 ui-monospace,Menlo,monospace;" +
+        "border-bottom-left-radius:8px;pointer-events:none;white-space:pre;text-align:left";
+      box.textContent = "debug " + APP_VER + "\n" +
+        "inner " + window.innerWidth + "x" + window.innerHeight + "\n" +
+        "dpr " + (window.devicePixelRatio || 1) + "\n" +
+        "safe  t" + envPx("safe-area-inset-top") + " r" + envPx("safe-area-inset-right") +
+        " b" + envPx("safe-area-inset-bottom") + " l" + envPx("safe-area-inset-left") + "\n" +
+        "ui-zoom " + (getComputedStyle(document.documentElement).getPropertyValue("--ui-zoom") || "1") + "\n" +
+        "mode " + (window.matchMedia("(display-mode: standalone)").matches ? "standalone" : "browser") + "\n" +
+        "vv " + (vv ? Math.round(vv.width) + "x" + Math.round(vv.height) + " s" + vv.scale : "-");
+      document.body.appendChild(box);
+    })();
+  }
+
   function applyVersion() {
     var el = document.getElementById("appVer");
     if (el) el.textContent = APP_VER;
