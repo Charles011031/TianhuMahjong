@@ -50,15 +50,16 @@
     margin: 0 auto;
   }
   /* ============================================================
-     iOS（iPhone / iPad / Duo）专用：点输入框时整页被自动放大
+     表单控件字号（v3.25.9）：iOS 点输入框整页被放大的根治
      ------------------------------------------------------------
-     根因：iOS Safari 聚焦表单控件时，字号 < 16px 会把整页放大，
-     而且不会自己缩回来，得手动捏小（v3.25.8 真机反馈）。
-     把控件字号统一按 16px 排 → 不再触发自动放大。
-     只在 iOS 生效（-webkit-touch-callout 只有 iOS Safari 认）。
+     iOS Safari 聚焦「字号 < 16px」的控件时会把整页放大，且不会自己缩回。
+     ① 控件字号统一按 16px 排（不再挂 @supports，所有浏览器都这么排）；
+     ② 本页还有「小屏自动缩放」（body zoom，横屏 0.85）会把它视觉上再缩小，
+        而 iOS 判定的是视觉大小 → 按 --ui-zoom 反向放大回去，
+        保证「计算字号 ≥16px、屏幕上也是 16px」，两条判定都过。
      ============================================================ */
-  @supports (-webkit-touch-callout: none) {
-    input, select, textarea { font-size: 16px !important; }
+  input, select, textarea {
+    font-size: calc(16px / var(--ui-zoom, 1)) !important;
   }
   /* 页面最底下的工具栏（不浮动，跟着内容走），版本号在它下面 */
   .bottom-bar {
@@ -3605,17 +3606,44 @@
       var z = uiAutoScale() * uiFontScale;
       z = Math.round(z * 1000) / 1000;
       document.body.style.zoom = (z === 1 ? "" : String(z));
+      // ★ v3.25.9：把当前缩放倍数告诉 CSS —— 输入框按它反向放大到视觉 16px，
+      //   否则 iOS 在对焦时判定「字太小」又会把整页放大（横屏 0.85 时必犯）。
+      document.documentElement.style.setProperty("--ui-zoom", String(z));
     } catch (e) {}
   }
   applyUiZoom(true);
   window.addEventListener("orientationchange", function () { setTimeout(function () { applyUiZoom(true); }, 300); });
   window.addEventListener("resize", function () { applyUiZoom(false); });
 
+  // ===== 输入框聚焦兜底（v3.25.9）=====
+  // CSS 已把控件排到 16px；这里再加一道保险：聚焦期间给 viewport 加 maximum-scale=1，
+  // 失焦再恢复（平时双指缩放不受影响），万一某些 iOS 版本仍判定字号偏小也不会放大。
+  (function () {
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) return;
+    var base = meta.getAttribute("content");
+    document.addEventListener("focusin", function (e) {
+      var t = e.target;
+      if (!t || !/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName || "")) return;
+      try { meta.setAttribute("content", base + ", maximum-scale=1"); } catch (x) {}
+    });
+    document.addEventListener("focusout", function () {
+      setTimeout(function () { try { meta.setAttribute("content", base); } catch (x) {} }, 250);
+    });
+  })();
+
   // ===== 版本号 =====
   // ============================================================
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.25.9  2026-10-29
+  //    + 修（v3.25.8 没治住）：iPhone Duo 上点任何输入框，整页还是被放大 ★
+  //      · 上一版把修复挂在 @supports (-webkit-touch-callout: none) 里，
+  //        iOS 27 判定不支持 → 整条规则没生效（真机截图 v3.25.8 行为跟没改一样）
+  //      · 现在改成无条件生效；再按 --ui-zoom 反向放大：横屏 body zoom 0.85 时
+  //        输入框排成 18.8px，计算字号和屏幕上看到的都是 16px，两条判定都过
+  //      · 再加一道兜底：聚焦期间给 viewport 加 maximum-scale=1，失焦恢复（不影响平时双指缩放）
   //  v3.25.8  2026-10-29
   //    + 修：iOS 上点输入框，整页被自动放大、还要手动捏回来（iPhone Duo 真机反馈）★
   //      · 根因是 Safari 聚焦字号 < 16px 的表单控件就放大整页
@@ -4319,7 +4347,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.8";
+  var APP_VER = "v3.25.9";
   var APP_DATE = "2026-10-29";
   function applyVersion() {
     var el = document.getElementById("appVer");
