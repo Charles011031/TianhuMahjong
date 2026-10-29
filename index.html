@@ -3898,6 +3898,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.30.4  2026-10-30
+  //    + 没有存种类的老记录，群消息里【不再写种类】（用户要求）★
+  //      · 原来看的是桌台当前值 → 把 2 号桌从 108 改成 136 后，10-29 那批老记录全跟着变
+  //      · 现在只认结算时存下的 rec.mahjongType；老记录没存就不写种类那一格
+  //      · 桌台 / 待结算的桌用的是当前种类（那是"现在"的桌，不受影响）
   //  v3.30.3  2026-10-30
   //    + 群消息里麻将种类后面加「张」：108张 / 136张 / 144张（用户要求）
   //      · 只对纯数字种类加；兜底的「川麻」这种不加
@@ -4681,7 +4686,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.30.3";
+  var APP_VER = "v3.30.4";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -17028,14 +17033,12 @@ rows += "<tr>" +
   //    · 开台：1号桌 川麻 20:29开始
   //  数据全部取自已有记录（台费/罚款/零食明细/分账 parts/会员扣卡/人民币）
   // ============================================================
-  var WX_GAME_NAME = "川麻";       // 兜底：桌台没选「麻将种类」时用
   // 这张桌的「麻将种类」—— 桌台卡右上角那格（108 / 136 / 144，或手填的其它数）
-  //   新结算记录会把种类存进 rec.mahjongType；老记录没有就从桌台当前值取
+  //   ★ v3.30.4：只认结算时存下的 rec.mahjongType。
+  //     老记录（v3.29.1 之前）没存种类 → 返回空，群消息里就不写种类
+  //     （用户反馈：改桌台种类后，历史记录全跟着变，不如不写）
   function wxGameOf(rec) {
-    if (rec && rec.mahjongType) return String(rec.mahjongType);
-    var t = (rec && rec.tableNo != null) ? state.tables[rec.tableNo] : null;
-    if (t && t.mahjongType) return String(t.mahjongType);
-    return WX_GAME_NAME;
+    return (rec && rec.mahjongType) ? String(rec.mahjongType) : "";
   }
   // ★ v3.30.3：种类显示成「108 张」（纯数字才加「张」，兜底的「川麻」这种不加）
   function wxGameLabel(g) {
@@ -17115,7 +17118,9 @@ rows += "<tr>" +
   function wxSettleMsg(rec) {
     if (!rec) return "";
     var no = wxTableNo(rec);
-    var head = no + "号桌 " + wxGameLabel(wxGameOf(rec)) + " " + wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
+    var gLabel = wxGameLabel(wxGameOf(rec));   // 老记录没存种类 → 空，不写
+    var head = no + "号桌 " + (gLabel ? gLabel + " " : "") +
+               wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
     var segs = [];
     var tableFee = Number(rec.tableFee != null ? rec.tableFee : rec.total) || 0;
     if (tableFee > 0.005) segs.push("台费" + wxNum(tableFee) + "刀");
@@ -17155,16 +17160,17 @@ rows += "<tr>" +
       if (!t || !t.sessionStart) continue;
       if (bizDate(t.sessionStart) !== day) continue;
       var st = t.sessionStart;
-      var gname = wxGameLabel(t.mahjongType || WX_GAME_NAME);
+      var gname = wxGameLabel(t.mahjongType || "");
+      var gpart = gname ? " " + gname : "";      // 没选种类就不写（v3.30.4）
       if (t.status === "running" || t.status === "paused") {
         // 用户要求：正在打的只写「x号桌 种类 xx:xx开始」，不写「计时中」
-        items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
+        items.push({ ts: st, line: wxTableNoOf(t) + gpart + " " + fmtHM(st) + "开始" });
       } else if (t.status === "ended") {
         var et = t.endedAt || Date.now();
         var exS = extrasMoney(t.extras);
         items.push({
           ts: st,
-          line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始 " +
+          line: wxTableNoOf(t) + gpart + " " + fmtHM(st) + "开始 " +
                 wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀" +
                 (exS > 0.005 ? " 零食" + wxNum(exS) + "刀" : "") + " 待结算"
         });
@@ -17178,11 +17184,12 @@ rows += "<tr>" +
       if (bizDate(p.startTs) !== day) continue;
       var pEnd = Number(p.endTs) || Date.now();
       var pName = String(p.tableName || ((p.tableNo != null ? p.tableNo : "") + " 号桌")).replace(/\s+/g, "");
-      var pGame = wxGameLabel(p.mahjongType || WX_GAME_NAME);
+      var pGame = wxGameLabel(p.mahjongType || "");
+      var pGpart = pGame ? " " + pGame : "";
       var pEx = extrasMoney(p.extras);
       items.push({
         ts: Number(p.startTs),
-        line: pName + " " + pGame + " " + fmtHM(p.startTs) + "开始 " +
+        line: pName + pGpart + " " + fmtHM(p.startTs) + "开始 " +
               wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(tableFeeOf(Math.max(0, pEnd - p.startTs))) + "刀" +
               (pEx > 0.005 ? " 零食" + wxNum(pEx) + "刀" : "") + " 待结算"
       });
