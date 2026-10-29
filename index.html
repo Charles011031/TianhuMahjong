@@ -412,6 +412,19 @@
   .rmb-line b { font-size: 20px; color: #92400e; }
   .modal-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
   .modal-btns button { width: 100%; }
+  /* v3.30.0：微信群消息弹窗的营业日切换（日期框外面那对 ◀ ▶ 是页面通用组件自动加的） */
+  .wx-daybar { display: flex; gap: 6px; align-items: center; margin: 0 0 10px; }
+  .wx-daybar .ds-wrap { flex: 1 1 auto; min-width: 0; }
+  .wx-daybar .ds-wrap .ds-btn { flex: 0 0 auto; margin: 0; }
+  .wx-daybar .ds-wrap input[type=date] {
+    flex: 1 1 auto; min-width: 0; width: auto; margin: 0; padding: 8px 10px; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink);
+  }
+  .wx-daybar .wx-day-today {
+    flex: 0 0 auto; width: auto; margin: 0; padding: 8px 11px; font-size: 14px; font-weight: 700;
+    background: var(--green); color: #fff; border: 1px solid var(--green); border-radius: 9px; cursor: pointer;
+  }
+  body.dark .wx-daybar .ds-wrap input[type=date] { background: #1b1f22; color: #e5e7eb; }
   .divider { border-top: 1px dashed var(--line); margin: 12px 0; }
   @media (max-width: 560px) {
     header { flex-direction: column; align-items: stretch; text-align: center; }
@@ -2493,6 +2506,12 @@
     <div class="overlay" id="copyOverlay">
       <div class="modal">
         <h3 id="copyTitle">今日文案</h3>
+        <!-- v3.30.0：微信群消息的营业日切换（只看统计页文案时隐藏）
+             注意：页面已有「日期输入框自动加 ◀ ▶」的通用组件，这里不要再自己加一对箭头 -->
+        <div class="wx-daybar" id="wxDayBar" hidden>
+          <input type="date" id="wxDayPick">
+          <button type="button" class="wx-day-today" id="wxDayToday">今天</button>
+        </div>
         <textarea id="copyText" readonly style="width:100%;min-height:96px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;line-height:1.7;font-family:inherit;resize:vertical;background:#f8fafc;color:var(--ink);"></textarea>
         <div class="modal-btns">
           <button id="copyDo" class="btn-start">📋 复制</button>
@@ -3879,6 +3898,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.30.0  2026-10-30
+  //    + 💬 群消息弹窗可以选【营业日】（用户要求：能看之前的、按营业日排）★★
+  //      · 弹窗顶部加 ◀ 日期 ▶ 今天：切到哪一天就生成那一天的整段文案并自动复制
+  //      · 历史营业日只有已结算记录；进行中 / 待结算只在「今天」显示
+  //      · 统计页的「生成文案」共用同一个弹窗，但不显示日期切换
   //  v3.29.2  2026-10-30
   //    + 修：收进「待结算」的桌子不出现在群文案里（用户反馈）
   //      · 之前只扫了桌台上的 ended 桌，没扫 state.pending（收进待结算后桌台已空出来）
@@ -4643,7 +4667,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.29.2";
+  var APP_VER = "v3.30.0";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -17094,52 +17118,55 @@ rows += "<tr>" +
     for (var j = 0; j < pay.length; j++) segs.push(pay[j]);
     return head + " " + segs.join(" ");
   }
-  // ★ v3.29.0：今天（营业日）的全部桌 → 一整段群消息
+  // ★ v3.30.0：指定营业日的全部桌 → 一整段群消息（默认今天）
   //   · 已结算：完整一行（台费 / 罚款 / 零食明细 / 收款方式）
-  //   · 正在打 / 暂停：X号桌 川麻 20:29开始 计时中
-  //   · 已结束没结账（待结算）：X号桌 川麻 20:34开始 01:17结束 台费xx刀 待结算
-  //   用户要求：每次发都是"完整一段"（每桌一行，带序号），粘到群里就叠在上一条消息下面
+  //   · 正在打 / 暂停：X号桌 种类 20:29开始（只有"今天"才有，历史日期没有进行中的桌）
+  //   · 已结束没结账 / 收进待结算：X号桌 种类 20:34开始 01:17结束 台费xx刀 待结算
+  //   全部按开始时间排、统一编号；用户要求：每次发都是"完整一段"，叠在上一条消息下面
   function wxTableNoOf(t) { return String((t && t.name) || "").replace(/\s+/g, ""); }
-  function wxTodayMsg() {
-    var day = bizDate(Date.now());
+  function wxDayMsg(day) {
+    day = day || bizDate(Date.now());
+    var isToday = (day === bizDate(Date.now()));
     var items = [];
-    var ids = Object.keys(state.tables || {});
-    for (var i = 0; i < ids.length; i++) {
-      var t = state.tables[ids[i]];
-      if (!t || !t.sessionStart) continue;
-      if (bizDate(t.sessionStart) !== day) continue;
-      var st = t.sessionStart;
-      var gname = String(t.mahjongType || WX_GAME_NAME);
-      if (t.status === "running" || t.status === "paused") {
-        // 用户要求：正在打的只写「x号桌 种类 xx:xx开始」，不写「计时中」
-        items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
-      } else if (t.status === "ended") {
-        var et = t.endedAt || Date.now();
-        var exS = extrasMoney(t.extras);
+    if (isToday) {
+      var ids = Object.keys(state.tables || {});
+      for (var i = 0; i < ids.length; i++) {
+        var t = state.tables[ids[i]];
+        if (!t || !t.sessionStart) continue;
+        if (bizDate(t.sessionStart) !== day) continue;
+        var st = t.sessionStart;
+        var gname = String(t.mahjongType || WX_GAME_NAME);
+        if (t.status === "running" || t.status === "paused") {
+          // 用户要求：正在打的只写「x号桌 种类 xx:xx开始」，不写「计时中」
+          items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
+        } else if (t.status === "ended") {
+          var et = t.endedAt || Date.now();
+          var exS = extrasMoney(t.extras);
+          items.push({
+            ts: st,
+            line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始 " +
+                  wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀" +
+                  (exS > 0.005 ? " 零食" + wxNum(exS) + "刀" : "") + " 待结算"
+          });
+        }
+      }
+      // ★ v3.29.2：收进「待结算」的条目（Firebase 版，桌台已经空出来）也要列进来
+      var pend = state.pending || [];
+      for (var pi = 0; pi < pend.length; pi++) {
+        var p = pend[pi];
+        if (!p || !p.startTs) continue;
+        if (bizDate(p.startTs) !== day) continue;
+        var pEnd = Number(p.endTs) || Date.now();
+        var pName = String(p.tableName || ((p.tableNo != null ? p.tableNo : "") + " 号桌")).replace(/\s+/g, "");
+        var pGame = String(p.mahjongType || WX_GAME_NAME);
+        var pEx = extrasMoney(p.extras);
         items.push({
-          ts: st,
-          line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始 " +
-                wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀" +
-                (exS > 0.005 ? " 零食" + wxNum(exS) + "刀" : "") + " 待结算"
+          ts: Number(p.startTs),
+          line: pName + " " + pGame + " " + fmtHM(p.startTs) + "开始 " +
+                wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(tableFeeOf(Math.max(0, pEnd - p.startTs))) + "刀" +
+                (pEx > 0.005 ? " 零食" + wxNum(pEx) + "刀" : "") + " 待结算"
         });
       }
-    }
-    // ★ v3.29.2：收进「待结算」的条目（Firebase 版，桌台已经空出来）也要列进来
-    var pend = state.pending || [];
-    for (var pi = 0; pi < pend.length; pi++) {
-      var p = pend[pi];
-      if (!p || !p.startTs) continue;
-      if (bizDate(p.startTs) !== day) continue;
-      var pEnd = Number(p.endTs) || Date.now();
-      var pName = String(p.tableName || ((p.tableNo != null ? p.tableNo : "") + " 号桌")).replace(/\s+/g, "");
-      var pGame = String(p.mahjongType || WX_GAME_NAME);
-      var pEx = extrasMoney(p.extras);
-      items.push({
-        ts: Number(p.startTs),
-        line: pName + " " + pGame + " " + fmtHM(p.startTs) + "开始 " +
-              wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(tableFeeOf(Math.max(0, pEnd - p.startTs))) + "刀" +
-              (pEx > 0.005 ? " 零食" + wxNum(pEx) + "刀" : "") + " 待结算"
-      });
     }
     for (var j = 0; j < state.history.length; j++) {
       var h = state.history[j];
@@ -17152,41 +17179,50 @@ rows += "<tr>" +
     for (var k = 0; k < items.length; k++) lines.push((k + 1) + ". " + items[k].line);
     return lines.join("\n");
   }
-  // 复制 + 右下角提示（顶部整体文案兜底用）
-  function wxCopyToast(txt, okMsg) {
-    if (!txt) return;
-    copyToClipboard(txt, function (ok) {
-      toast(ok ? (okMsg || "群消息已复制") + " ✓ 粘到微信就行"
-               : ("没复制成功：" + txt), ok ? "#15803d" : "#b45309");
-    });
-  }
-  // 弹窗显示文案 + 自动复制（复用统计页的文案弹窗）
-  function openWxCopy(txt, titleStr) {
-    if (!txt) return;
-    var ov = document.getElementById("copyOverlay");
-    var ta = document.getElementById("copyText");
+  // 弹窗：显示某个营业日的整段文案（v3.30.0 带日期切换）
+  var wxDayCur = "";
+  function renderWxDay(autoCopy) {
+    var today = bizDate(Date.now());
+    if (!wxDayCur) wxDayCur = today;
+    var pick = document.getElementById("wxDayPick");
+    if (pick) pick.value = wxDayCur;
     var title = document.getElementById("copyTitle");
+    if (title) title.textContent = (wxDayCur === today ? "今天全部桌" : "营业日 " + wxDayCur);
+    var txt = wxDayMsg(wxDayCur);
+    var ta = document.getElementById("copyText");
+    if (ta) {
+      ta.value = txt || "这天还没有记录";
+      try { ta.rows = Math.min(14, Math.max(3, String(txt || "x").split("\n").length)); } catch (e) {}
+    }
     var hint = document.getElementById("copyHint");
-    if (!ov || !ta) { wxCopyToast(txt, "群消息已复制"); return; }
-    ta.value = txt;
-    var lines = String(txt).split("\n").length;
-    try { ta.rows = Math.min(14, Math.max(3, lines)); } catch (e) {}   // 多桌自动加高，不用上下滚
-    if (title) title.textContent = titleStr || "微信群消息";
-    if (hint) hint.textContent = "正在复制…";
-    ov.classList.add("show");
-    setTimeout(function () { try { ta.focus(); ta.select(); } catch (e) {} }, 60);
-    copyToClipboard(txt, function (ok) {
-      if (hint) hint.textContent = ok
-        ? "已复制到剪贴板 ✓（现在去微信粘贴发送就行）"
-        : "浏览器拦住了自动复制，请点下面的「📋 复制」或手动选中文字复制";
-    });
+    if (hint) hint.textContent = txt ? "正在复制…" : "这天还没有记录";
+    if (txt && autoCopy) {
+      copyToClipboard(txt, function (ok) {
+        if (hint) hint.textContent = ok
+          ? "已复制到剪贴板 ✓（现在去微信粘贴发送就行）"
+          : "浏览器拦住了自动复制，请点下面的「📋 复制」或手动选中文字复制";
+      });
+    }
   }
-  // ★ v3.28.0：顶部「💬」按钮 → 复制今天所有桌的整段文案（发群里时叠在上一条消息下面）
+  function openWxDay(day) {
+    wxDayCur = day || bizDate(Date.now());
+    var bar = document.getElementById("wxDayBar");
+    if (bar) bar.hidden = false;
+    var ov = document.getElementById("copyOverlay");
+    if (ov) ov.classList.add("show");
+    renderWxDay(true);
+    setTimeout(function () {
+      try { var ta = document.getElementById("copyText"); ta.focus(); ta.select(); } catch (e) {}
+    }, 60);
+  }
+  // ★ v3.30.0：顶部「💬」按钮 → 今天全部桌；弹窗里用日期框（自带 ◀ ▶）换营业日看历史
   var wxAllBtn = document.getElementById("wxAllBtn");
-  if (wxAllBtn) wxAllBtn.addEventListener("click", function () {
-    var txt = wxTodayMsg();
-    if (!txt) { toast("今天还没有结算记录", "#b45309"); return; }
-    openWxCopy(txt, "今天全部桌（" + txt.split("\n").length + " 条）");
+  if (wxAllBtn) wxAllBtn.addEventListener("click", function () { openWxDay(bizDate(Date.now())); });
+  var wxDayTodayEl = document.getElementById("wxDayToday");
+  if (wxDayTodayEl) wxDayTodayEl.addEventListener("click", function () { wxDayCur = bizDate(Date.now()); renderWxDay(true); });
+  var wxDayPickEl = document.getElementById("wxDayPick");
+  if (wxDayPickEl) wxDayPickEl.addEventListener("change", function () {
+    if (wxDayPickEl.value) { wxDayCur = wxDayPickEl.value; renderWxDay(true); }
   });
 
   // ============================================================
@@ -17245,6 +17281,8 @@ rows += "<tr>" +
     var ta = document.getElementById("copyText");
     var title = document.getElementById("copyTitle");
     var hint = document.getElementById("copyHint");
+    var bar = document.getElementById("wxDayBar");
+    if (bar) bar.hidden = true;      // v3.30.0：统计页文案不显示营业日切换
     var day = document.getElementById("stDate").value || "";
     ta.value = txt;
     if (title) title.textContent = (statsScope === "month" ? "本月文案" : (day === bizDate(Date.now()) ? "今日文案" : "当日文案"));
