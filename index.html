@@ -3898,6 +3898,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.30.3  2026-10-30
+  //    + 群消息里麻将种类后面加「张」：108张 / 136张 / 144张（用户要求）
+  //      · 只对纯数字种类加；兜底的「川麻」这种不加
   //  v3.30.2  2026-10-30
   //    + 群消息里所有金额都带单位（用户要求）★
   //      · 刷卡 18.15×3=54.45 → 刷卡18.15刀×3=54.45刀
@@ -4678,7 +4681,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.30.2";
+  var APP_VER = "v3.30.3";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -17034,6 +17037,11 @@ rows += "<tr>" +
     if (t && t.mahjongType) return String(t.mahjongType);
     return WX_GAME_NAME;
   }
+  // ★ v3.30.3：种类显示成「108 张」（纯数字才加「张」，兜底的「川麻」这种不加）
+  function wxGameLabel(g) {
+    var s = String(g == null ? "" : g);
+    return /^\d+$/.test(s) ? (s + "张") : s;
+  }
 
   // 金额：整数不写 .00（69.33 / 5 / 9）
   function wxNum(v) {
@@ -17107,7 +17115,7 @@ rows += "<tr>" +
   function wxSettleMsg(rec) {
     if (!rec) return "";
     var no = wxTableNo(rec);
-    var head = no + "号桌 " + wxGameOf(rec) + " " + wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
+    var head = no + "号桌 " + wxGameLabel(wxGameOf(rec)) + " " + wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
     var segs = [];
     var tableFee = Number(rec.tableFee != null ? rec.tableFee : rec.total) || 0;
     if (tableFee > 0.005) segs.push("台费" + wxNum(tableFee) + "刀");
@@ -17147,7 +17155,7 @@ rows += "<tr>" +
       if (!t || !t.sessionStart) continue;
       if (bizDate(t.sessionStart) !== day) continue;
       var st = t.sessionStart;
-      var gname = String(t.mahjongType || WX_GAME_NAME);
+      var gname = wxGameLabel(t.mahjongType || WX_GAME_NAME);
       if (t.status === "running" || t.status === "paused") {
         // 用户要求：正在打的只写「x号桌 种类 xx:xx开始」，不写「计时中」
         items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
@@ -17170,7 +17178,7 @@ rows += "<tr>" +
       if (bizDate(p.startTs) !== day) continue;
       var pEnd = Number(p.endTs) || Date.now();
       var pName = String(p.tableName || ((p.tableNo != null ? p.tableNo : "") + " 号桌")).replace(/\s+/g, "");
-      var pGame = String(p.mahjongType || WX_GAME_NAME);
+      var pGame = wxGameLabel(p.mahjongType || WX_GAME_NAME);
       var pEx = extrasMoney(p.extras);
       items.push({
         ts: Number(p.startTs),
