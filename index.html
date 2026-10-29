@@ -3879,6 +3879,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.29.0  2026-10-30
+  //    + 💬 整体文案把【没结账的桌】也列进去（用户要求）★★
+  //      · 正在打 / 暂停：`X号桌 川麻 20:29开始 计时中`
+  //      · 已结束没结账：`X号桌 川麻 20:34开始 01:17结束 台费xx刀 待结算`
+  //      · 全部按【开始时间】排（进行中 / 待结算 / 已结算混在一条时间线上）
   //  v3.28.1  2026-10-30
   //    + 整体文案每桌前面加序号（1. 2. 3. …）（用户要求）
   //    + 去掉开台的自动复制（用户要求：开台不用发群消息）
@@ -4629,7 +4634,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.28.1";
+  var APP_VER = "v3.29.0";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -17070,21 +17075,41 @@ rows += "<tr>" +
     for (var j = 0; j < pay.length; j++) segs.push(pay[j]);
     return head + " " + segs.join(" ");
   }
-  // ★ v3.28.0：今天（营业日）所有已结算记录 → 一整段群消息
-  //   用户要求：每次发都是"完整一段"（每桌一行，带序号），粘贴到群里就叠在上一条消息下面，
-  //   不再一条一条单独复制。按结束时间排（凌晨那几桌排后面，和结算记录列表一致）。
+  // ★ v3.29.0：今天（营业日）的全部桌 → 一整段群消息
+  //   · 已结算：完整一行（台费 / 罚款 / 零食明细 / 收款方式）
+  //   · 正在打 / 暂停：X号桌 川麻 20:29开始 计时中
+  //   · 已结束没结账（待结算）：X号桌 川麻 20:34开始 01:17结束 台费xx刀 待结算
+  //   用户要求：每次发都是"完整一段"（每桌一行，带序号），粘到群里就叠在上一条消息下面
+  function wxTableNoOf(t) { return String((t && t.name) || "").replace(/\s+/g, ""); }
   function wxTodayMsg() {
     var day = bizDate(Date.now());
-    var rows = [];
-    for (var i = 0; i < state.history.length; i++) {
-      var h = state.history[i];
+    var items = [];
+    var ids = Object.keys(state.tables || {});
+    for (var i = 0; i < ids.length; i++) {
+      var t = state.tables[ids[i]];
+      if (!t || !t.sessionStart) continue;
+      if (bizDate(t.sessionStart) !== day) continue;
+      var st = t.sessionStart;
+      if (t.status === "running" || t.status === "paused") {
+        items.push({ ts: st, line: wxTableNoOf(t) + " " + WX_GAME_NAME + " " + fmtHM(st) + "开始 计时中" });
+      } else if (t.status === "ended") {
+        var et = t.endedAt || Date.now();
+        items.push({
+          ts: st,
+          line: wxTableNoOf(t) + " " + WX_GAME_NAME + " " + fmtHM(st) + "开始 " +
+                wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀 待结算"
+        });
+      }
+    }
+    for (var j = 0; j < state.history.length; j++) {
+      var h = state.history[j];
       var d = h.date || (h.startTs ? bizDate(h.startTs) : "");
       if (d !== day) continue;
-      rows.push({ h: h, t: timeMinutes(h.end || h.start) });
+      items.push({ ts: h.startTs || 0, line: wxSettleMsg(h) });
     }
-    rows.sort(function (a, b) { return a.t - b.t; });
+    items.sort(function (a, b) { return a.ts - b.ts; });
     var lines = [];
-    for (var j = 0; j < rows.length; j++) lines.push((j + 1) + ". " + wxSettleMsg(rows[j].h));
+    for (var k = 0; k < items.length; k++) lines.push((k + 1) + ". " + items[k].line);
     return lines.join("\n");
   }
   // 复制 + 右下角提示（顶部整体文案兜底用）
