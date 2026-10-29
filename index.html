@@ -3898,6 +3898,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.30.2  2026-10-30
+  //    + 群消息里所有金额都带单位（用户要求）★
+  //      · 刷卡 18.15×3=54.45 → 刷卡18.15刀×3=54.45刀
+  //      · 扣卡selina17.94（余额70.63）→ 扣卡selina17.94刀（余额70.63刀）
+  //      · 现金32 → 现金32刀；老记录兜底的刷卡/现金同理
+  //      · 已有单位的（台费xx刀 / 罚款xx刀 / 零食xx刀 / 微信收xx人民币）不变
   //  v3.30.1  2026-10-30
   //    + 修：切到【前一天营业日】时，跨夜还在打的桌 / 待结算的桌不显示（用户反馈）★★
   //      · 原因：v3.30.0 只在"今天"这一屏扫桌台和 state.pending
@@ -4672,7 +4678,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.30.1";
+  var APP_VER = "v3.30.2";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -17068,14 +17074,15 @@ rows += "<tr>" +
         if (i && Math.abs(cardAmts[i] - cardAmts[0]) > 0.005) same = false;
       }
       sum = round2(sum);
-      if (same && cardAmts.length > 1) out.push("刷卡" + wxNum(cardAmts[0]) + "×" + cardAmts.length + "=" + wxNum(sum));
-      else out.push("刷卡" + wxNum(sum));
+      // ★ v3.30.2：金额一律带单位（用户要求）
+      if (same && cardAmts.length > 1) out.push("刷卡" + wxNum(cardAmts[0]) + "刀×" + cardAmts.length + "=" + wxNum(sum) + "刀");
+      else out.push("刷卡" + wxNum(sum) + "刀");
     }
     for (i = 0; i < mems.length; i++) {
       p = mems[i];
       var nm = p.memberName || ((p.memberId && findMember(p.memberId)) ? findMember(p.memberId).name : "") || "会员";
       var bal = wxMemberBal(p);
-      out.push("扣卡" + nm + wxNum(p.amount) + (bal != null ? "（余额" + wxNum(bal) + "）" : ""));
+      out.push("扣卡" + nm + wxNum(p.amount) + "刀" + (bal != null ? "（余额" + wxNum(bal) + "刀）" : ""));
     }
     for (i = 0; i < rmbs.length; i++) {
       p = rmbs[i];
@@ -17084,15 +17091,15 @@ rows += "<tr>" +
       if (out.length) out.push("剩下" + wxNum(p.amount) + "刀微信收" + wxNum(rv) + "人民币");
       else out.push("微信收" + wxNum(rv) + "人民币");
     }
-    for (i = 0; i < cashes.length; i++) out.push("现金" + wxNum(cashes[i]));
+    for (i = 0; i < cashes.length; i++) out.push("现金" + wxNum(cashes[i]) + "刀");
     // 老记录没有 parts → 用主字段兜底（优雅降级，不让文案空白）
     if (!out.length) {
       var collected = Number(rec.collected != null ? rec.collected : rec.grand) || 0;
       if (Number(rec.rmbActual) > 0.005) out.push("微信收" + wxNum(rec.rmbActual) + "人民币");
       else if (rec.payType === "rmb") out.push("微信收" + wxNum(rmbOf(collected)) + "人民币");
-      else if (rec.payType === "cash") out.push("现金" + wxNum(collected));
-      else if (rec.payType === "member") out.push("扣卡" + wxNum(collected) + (rec.memberName ? "（" + rec.memberName + "）" : ""));
-      else out.push("刷卡" + wxNum(collected));
+      else if (rec.payType === "cash") out.push("现金" + wxNum(collected) + "刀");
+      else if (rec.payType === "member") out.push("扣卡" + wxNum(collected) + "刀" + (rec.memberName ? "（" + rec.memberName + "）" : ""));
+      else out.push("刷卡" + wxNum(collected) + "刀");
     }
     return out;
   }
