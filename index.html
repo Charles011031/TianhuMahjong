@@ -339,8 +339,8 @@
   .history tbody tr:last-child td { border-bottom: none; }
   .history td.money { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
   .history td.grand { font-weight: 800; color: var(--green-dark); font-variant-numeric: tabular-nums; font-size: 16px; }
-  .row-edit, .row-copy { padding: 7px 13px; font-size: 13px; font-weight: 600; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; white-space: nowrap; }
-  .row-edit:hover, .row-copy:hover { background: #f3f4f6; }
+  .row-edit { padding: 7px 13px; font-size: 13px; font-weight: 600; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .row-edit:hover { background: #f3f4f6; }
   .cell-who { display: flex; align-items: center; gap: 10px; }
   .cell-who .mem-avatar { width: 32px; height: 32px; font-size: 14px; }
   .cell-who .mem-name { font-size: 14px; font-weight: 700; }
@@ -412,15 +412,6 @@
   .rmb-line b { font-size: 20px; color: #92400e; }
   .modal-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
   .modal-btns button { width: 100%; }
-  /* v3.27.0：结算弹窗里的「微信群消息」预览框（手机上尽量紧凑，别把按钮顶出屏幕） */
-  .wx-msg-box { margin: 10px 0 4px; text-align: left; }
-  .wx-msg-box .t { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
-  .wx-msg-box .t b { font-size: 13px; color: var(--ink); }
-  .wx-msg-box .hint-x { font-size: 12px; font-weight: 700; }
-  .wx-msg-box textarea { width: 100%; box-sizing: border-box; min-height: 50px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: 13px; line-height: 1.6; font-family: inherit; background: #f8fafc; color: var(--ink); resize: vertical; }
-  body.dark .wx-msg-box textarea { background: #1b1f22; }
-  .modal-btns.wx-btns { flex-direction: row; }
-  .modal-btns.wx-btns button { width: auto; flex: 1 1 0; }
   .divider { border-top: 1px dashed var(--line); margin: 12px 0; }
   @media (max-width: 560px) {
     header { flex-direction: column; align-items: stretch; text-align: center; }
@@ -2082,6 +2073,7 @@
         <div class="sub">6 张桌台 · 独立计时 · 统一价格（澳币 AUD）· 手续费可调 · 支持人民币结算</div>
       </div>
       <div class="head-actions">
+        <button type="button" class="icon-btn" id="wxAllBtn" title="复制今天所有桌的微信群消息（整段发群里）">💬</button>
         <button type="button" class="icon-btn" id="resEntryBtn" title="预约台账（新预约会亮红点）">📅<span class="note-badge" id="resDot" hidden>0</span></button>
         <button type="button" class="icon-btn" id="noteBtn" title="店铺待办（补餐巾纸 / 垃圾袋…）">📌<span class="note-badge" id="noteBadge" hidden>0</span></button>
         <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）">📊</button>
@@ -2647,15 +2639,7 @@
       <h3 id="mTitle">结算完成</h3>
       <div class="big" id="mTotal">$0.00</div>
       <div class="rows" id="mRows"></div>
-      <!-- v3.27.0：结算完成自动生成微信群消息并复制（用户需求：每次结账都要在群里发） -->
-      <div class="wx-msg-box" id="mWxBox">
-        <div class="t"><b>💬 微信群消息</b><span class="hint-x" id="mWxHint">正在复制…</span></div>
-        <textarea id="mWxMsg" readonly></textarea>
-      </div>
-      <div class="modal-btns wx-btns">
-        <button id="mCopyMsg" class="btn-start">📋 再复制一次</button>
-        <button id="mClose" class="btn-ghost">知道了</button>
-      </div>
+      <button id="mClose">知道了</button>
     </div>
   </div>
 
@@ -3895,6 +3879,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.28.0  2026-10-30
+  //    + 💬 顶部「复制今天整体文案」按钮（用户反馈：不要一条条复制）★★
+  //      · 顶部面板加 💬：一键复制【今天所有已结桌】的整段群消息（每桌一行，按结束时间排）
+  //        粘到微信里就叠在上一条消息下面，不用一桌一桌复制
+  //      · 去掉 v3.27.0 在结算弹窗里的「再复制一次」和结算记录列表的 📋（用户不要单条复制）
+  //      · 开台仍然自动复制「1号桌 川麻 20:29开始」（这条是单开的，和整体文案不冲突）
   //  v3.27.0  2026-10-30
   //    + 📋 微信群消息：开台 / 结账自动生成文案并复制（用户需求）★★
   //      · 结账完成弹窗里直接显示「微信群消息」并自动复制到剪贴板
@@ -4636,7 +4626,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.27.0";
+  var APP_VER = "v3.28.0";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -5242,7 +5232,7 @@
             " · 零食 " + (other > 0.005 ? fmtMoney(other) : "—") +
             (showFee && Number(h.fee) > 0.005 ? " · 手续费 $" + Number(h.fee).toFixed(2) : "") + "</div>" +
           '<div class="rec-bottom"><span class="rec-pays">' + chipHtml + "</span>" +
-            '<span class="rec-acts"><button class="row-copy" data-idx="' + idx + '" title="复制微信群消息">📋</button><button class="row-edit" data-idx="' + idx + '">编辑</button></span></div>' +
+            '<span class="rec-acts"><button class="row-edit" data-idx="' + idx + '">编辑</button></span></div>' +
           "</div>";
         rows += "<tr>" +
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(timeTxt) + "</td>" +
@@ -5259,7 +5249,7 @@
             (showFee && Number(h.fee) > 0.005 ? '<div class="cell-note">含手续费 $' + Number(h.fee).toFixed(2) + "</div>" : "") +
           "</td>" +
           '<td class="pay-cell">' + chipHtml + "</td>" +
-          '<td><button class="row-copy" data-idx="' + idx + '" title="复制微信群消息">📋</button><button class="row-edit" data-idx="' + idx + '">编辑</button></td>' +
+          '<td><button class="row-edit" data-idx="' + idx + '">编辑</button></td>' +
           "</tr>";
       }
     }
@@ -5487,14 +5477,6 @@
   });
 
   document.getElementById("historyWrap").addEventListener("click", function (e) {
-    // ★ v3.27.0：📋 复制微信群消息（必须放在 row-edit 之前判断，按钮同时带两个 class）
-    var cp = e.target.closest("button.row-copy");
-    if (cp) {
-      var ci = parseInt(cp.getAttribute("data-idx"), 10);
-      var ch = state.history[ci];
-      if (ch) openWxCopy(wxSettleMsg(ch));
-      return;
-    }
     var btn = e.target.closest("button.row-edit");
     if (!btn) return;
     var idx = parseInt(btn.getAttribute("data-idx"), 10);
@@ -8506,33 +8488,8 @@
     else if (rec.unpaid > 0.005) html += "<br><span class='warn-note'>这次没收到 $" + Number(rec.unpaid).toFixed(2) + "，已记在这张桌上，下次一起结</span>";
     if (rec.carryIn > 0.005) html += "<br>（本次已包含上次未付 $" + Number(rec.carryIn).toFixed(2) + "）";
     document.getElementById("mRows").innerHTML = html;
-    // ★ v3.27.0：结算完成 → 自动生成「微信群消息」并复制（用户需求：每次结账都要发一条到群里）
-    var wxTxt = "";
-    try { wxTxt = wxSettleMsg(rec); } catch (e) { wxTxt = ""; }
-    var wxTa = document.getElementById("mWxMsg");
-    if (wxTa) wxTa.value = wxTxt;
-    var wxHintEl = document.getElementById("mWxHint");
-    if (wxHintEl) { wxHintEl.textContent = "正在复制…"; wxHintEl.style.color = "var(--muted)"; }
     overlay.classList.add("show");
-    if (wxTxt) {
-      wxCopy(wxTxt, function (ok) {
-        if (wxHintEl) {
-          wxHintEl.textContent = ok ? "已复制 ✓ 去微信粘贴" : "没复制成功，点下面按钮";
-          wxHintEl.style.color = ok ? "var(--green-dark)" : "#b45309";
-        }
-      });
-    }
   }
-  // 「再复制一次」按钮（v3.27.0）
-  var mCopyMsgEl = document.getElementById("mCopyMsg");
-  if (mCopyMsgEl) mCopyMsgEl.addEventListener("click", function () {
-    var ta = document.getElementById("mWxMsg");
-    var h = document.getElementById("mWxHint");
-    wxCopy(ta ? ta.value : "", function (ok) {
-      if (h) { h.textContent = ok ? "已复制 ✓" : "复制失败，请手动选中文字"; h.style.color = ok ? "var(--green-dark)" : "#b45309"; }
-      toast(ok ? "群消息已复制 ✓" : "复制被拦住了，请手动选中文字复制", ok ? "#15803d" : "#b45309");
-    });
-  });
   document.getElementById("mClose").addEventListener("click", function () {
     overlay.classList.remove("show");
   });
@@ -17119,6 +17076,23 @@ rows += "<tr>" +
     var ts = t.sessionStart || Date.now();
     return no + " " + WX_GAME_NAME + " " + fmtHM(ts) + "开始";
   }
+  // ★ v3.28.0：今天（营业日）所有已结算记录 → 一整段群消息
+  //   用户要求：每次发都是"完整一段"（每桌一行），粘贴到群里就叠在上一条消息下面，
+  //   不再一条一条单独复制。按结束时间排（凌晨那几桌排后面，和结算记录列表一致）。
+  function wxTodayMsg() {
+    var day = bizDate(Date.now());
+    var rows = [];
+    for (var i = 0; i < state.history.length; i++) {
+      var h = state.history[i];
+      var d = h.date || (h.startTs ? bizDate(h.startTs) : "");
+      if (d !== day) continue;
+      rows.push({ h: h, t: timeMinutes(h.end || h.start) });
+    }
+    rows.sort(function (a, b) { return a.t - b.t; });
+    var lines = [];
+    for (var j = 0; j < rows.length; j++) lines.push(wxSettleMsg(rows[j].h));
+    return lines.join("\n");
+  }
   // 复制 + 右下角提示（开台用，不弹窗）
   function wxCopyToast(txt, okMsg) {
     if (!txt) return;
@@ -17127,13 +17101,8 @@ rows += "<tr>" +
                : ("没复制成功：" + txt), ok ? "#15803d" : "#b45309");
     });
   }
-  // 复制 + 回调（结算弹窗里显示"已复制/失败"用）
-  function wxCopy(txt, onDone) {
-    if (!txt) { if (onDone) onDone(false); return; }
-    copyToClipboard(txt, onDone);
-  }
-  // 记录列表点 📋 → 弹窗显示文案 + 自动复制（复用统计页的文案弹窗）
-  function openWxCopy(txt) {
+  // 弹窗显示文案 + 自动复制（复用统计页的文案弹窗）
+  function openWxCopy(txt, titleStr) {
     if (!txt) return;
     var ov = document.getElementById("copyOverlay");
     var ta = document.getElementById("copyText");
@@ -17141,7 +17110,9 @@ rows += "<tr>" +
     var hint = document.getElementById("copyHint");
     if (!ov || !ta) { wxCopyToast(txt, "群消息已复制"); return; }
     ta.value = txt;
-    if (title) title.textContent = "微信群消息";
+    var lines = String(txt).split("\n").length;
+    try { ta.rows = Math.min(14, Math.max(3, lines)); } catch (e) {}   // 多桌自动加高，不用上下滚
+    if (title) title.textContent = titleStr || "微信群消息";
     if (hint) hint.textContent = "正在复制…";
     ov.classList.add("show");
     setTimeout(function () { try { ta.focus(); ta.select(); } catch (e) {} }, 60);
@@ -17151,6 +17122,13 @@ rows += "<tr>" +
         : "浏览器拦住了自动复制，请点下面的「📋 复制」或手动选中文字复制";
     });
   }
+  // ★ v3.28.0：顶部「💬」按钮 → 复制今天所有桌的整段文案（发群里时叠在上一条消息下面）
+  var wxAllBtn = document.getElementById("wxAllBtn");
+  if (wxAllBtn) wxAllBtn.addEventListener("click", function () {
+    var txt = wxTodayMsg();
+    if (!txt) { toast("今天还没有结算记录", "#b45309"); return; }
+    openWxCopy(txt, "今天全部桌（" + txt.split("\n").length + " 条）");
+  });
 
   // ============================================================
   //  ★ v3.23.0：一键生成文案（发群里用）
