@@ -3879,6 +3879,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.29.2  2026-10-30
+  //    + 修：收进「待结算」的桌子不出现在群文案里（用户反馈）
+  //      · 之前只扫了桌台上的 ended 桌，没扫 state.pending（收进待结算后桌台已空出来）
+  //      · 现在把 pending 条目也按「x号桌 种类 xx:xx开始 xx:xx结束 台费xx刀 待结算」列进去
+  //      · 待结算行有挂桌零食的也一起写上「零食xx刀」
   //  v3.29.1  2026-10-30
   //    + 群文案里的「川麻」改成每张桌的【麻将种类】（桌台右上角那格 108/136/144）（用户要求）
   //    + 正在打的桌只写「x号桌 种类 xx:xx开始」，不再写「计时中」；待结算行照旧保留
@@ -4638,7 +4643,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.29.1";
+  var APP_VER = "v3.29.2";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -17110,12 +17115,31 @@ rows += "<tr>" +
         items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
       } else if (t.status === "ended") {
         var et = t.endedAt || Date.now();
+        var exS = extrasMoney(t.extras);
         items.push({
           ts: st,
           line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始 " +
-                wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀 待结算"
+                wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀" +
+                (exS > 0.005 ? " 零食" + wxNum(exS) + "刀" : "") + " 待结算"
         });
       }
+    }
+    // ★ v3.29.2：收进「待结算」的条目（Firebase 版，桌台已经空出来）也要列进来
+    var pend = state.pending || [];
+    for (var pi = 0; pi < pend.length; pi++) {
+      var p = pend[pi];
+      if (!p || !p.startTs) continue;
+      if (bizDate(p.startTs) !== day) continue;
+      var pEnd = Number(p.endTs) || Date.now();
+      var pName = String(p.tableName || ((p.tableNo != null ? p.tableNo : "") + " 号桌")).replace(/\s+/g, "");
+      var pGame = String(p.mahjongType || WX_GAME_NAME);
+      var pEx = extrasMoney(p.extras);
+      items.push({
+        ts: Number(p.startTs),
+        line: pName + " " + pGame + " " + fmtHM(p.startTs) + "开始 " +
+              wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(tableFeeOf(Math.max(0, pEnd - p.startTs))) + "刀" +
+              (pEx > 0.005 ? " 零食" + wxNum(pEx) + "刀" : "") + " 待结算"
+      });
     }
     for (var j = 0; j < state.history.length; j++) {
       var h = state.history[j];
