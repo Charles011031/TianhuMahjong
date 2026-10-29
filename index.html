@@ -3879,6 +3879,9 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.28.1  2026-10-30
+  //    + 整体文案每桌前面加序号（1. 2. 3. …）（用户要求）
+  //    + 去掉开台的自动复制（用户要求：开台不用发群消息）
   //  v3.28.0  2026-10-30
   //    + 💬 顶部「复制今天整体文案」按钮（用户反馈：不要一条条复制）★★
   //      · 顶部面板加 💬：一键复制【今天所有已结桌】的整段群消息（每桌一行，按结束时间排）
@@ -4626,7 +4629,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.28.0";
+  var APP_VER = "v3.28.1";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -5292,8 +5295,6 @@
       t.elapsedAtPause = 0;
       t.lastResult = null;
       save(); render();
-      // ★ v3.27.0：开台自动复制「X号桌 川麻 20:29开始」，直接去微信粘贴
-      wxCopyToast(wxOpenMsg(t), "开台消息已复制");
     } else if (act === "resume") {
       if (t.status === "paused") {
         t.sessionStart = Date.now() - (t.elapsedAtPause || 0);
@@ -17069,15 +17070,8 @@ rows += "<tr>" +
     for (var j = 0; j < pay.length; j++) segs.push(pay[j]);
     return head + " " + segs.join(" ");
   }
-  // 开台消息：1号桌 川麻 20:29开始
-  function wxOpenMsg(t) {
-    if (!t) return "";
-    var no = String(t.name || "").replace(/\s+/g, "");
-    var ts = t.sessionStart || Date.now();
-    return no + " " + WX_GAME_NAME + " " + fmtHM(ts) + "开始";
-  }
   // ★ v3.28.0：今天（营业日）所有已结算记录 → 一整段群消息
-  //   用户要求：每次发都是"完整一段"（每桌一行），粘贴到群里就叠在上一条消息下面，
+  //   用户要求：每次发都是"完整一段"（每桌一行，带序号），粘贴到群里就叠在上一条消息下面，
   //   不再一条一条单独复制。按结束时间排（凌晨那几桌排后面，和结算记录列表一致）。
   function wxTodayMsg() {
     var day = bizDate(Date.now());
@@ -17090,10 +17084,10 @@ rows += "<tr>" +
     }
     rows.sort(function (a, b) { return a.t - b.t; });
     var lines = [];
-    for (var j = 0; j < rows.length; j++) lines.push(wxSettleMsg(rows[j].h));
+    for (var j = 0; j < rows.length; j++) lines.push((j + 1) + ". " + wxSettleMsg(rows[j].h));
     return lines.join("\n");
   }
-  // 复制 + 右下角提示（开台用，不弹窗）
+  // 复制 + 右下角提示（顶部整体文案兜底用）
   function wxCopyToast(txt, okMsg) {
     if (!txt) return;
     copyToClipboard(txt, function (ok) {
