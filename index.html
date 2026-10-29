@@ -3898,6 +3898,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.30.1  2026-10-30
+  //    + 修：切到【前一天营业日】时，跨夜还在打的桌 / 待结算的桌不显示（用户反馈）★★
+  //      · 原因：v3.30.0 只在"今天"这一屏扫桌台和 state.pending
+  //        → 昨天营业日开的、现在还在打（或还没结账）的桌，在昨天那页一条都不显示
+  //      · 现在不管看哪一天，都按【开始时间所在营业日】把未结的桌扫进来
   //  v3.30.0  2026-10-30
   //    + 💬 群消息弹窗可以选【营业日】（用户要求：能看之前的、按营业日排）★★
   //      · 弹窗顶部加 ◀ 日期 ▶ 今天：切到哪一天就生成那一天的整段文案并自动复制
@@ -4667,7 +4672,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.30.0";
+  var APP_VER = "v3.30.1";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -17120,53 +17125,52 @@ rows += "<tr>" +
   }
   // ★ v3.30.0：指定营业日的全部桌 → 一整段群消息（默认今天）
   //   · 已结算：完整一行（台费 / 罚款 / 零食明细 / 收款方式）
-  //   · 正在打 / 暂停：X号桌 种类 20:29开始（只有"今天"才有，历史日期没有进行中的桌）
+  //   · 正在打 / 暂停：X号桌 种类 20:29开始
   //   · 已结束没结账 / 收进待结算：X号桌 种类 20:34开始 01:17结束 台费xx刀 待结算
   //   全部按开始时间排、统一编号；用户要求：每次发都是"完整一段"，叠在上一条消息下面
   function wxTableNoOf(t) { return String((t && t.name) || "").replace(/\s+/g, ""); }
   function wxDayMsg(day) {
     day = day || bizDate(Date.now());
-    var isToday = (day === bizDate(Date.now()));
     var items = [];
-    if (isToday) {
-      var ids = Object.keys(state.tables || {});
-      for (var i = 0; i < ids.length; i++) {
-        var t = state.tables[ids[i]];
-        if (!t || !t.sessionStart) continue;
-        if (bizDate(t.sessionStart) !== day) continue;
-        var st = t.sessionStart;
-        var gname = String(t.mahjongType || WX_GAME_NAME);
-        if (t.status === "running" || t.status === "paused") {
-          // 用户要求：正在打的只写「x号桌 种类 xx:xx开始」，不写「计时中」
-          items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
-        } else if (t.status === "ended") {
-          var et = t.endedAt || Date.now();
-          var exS = extrasMoney(t.extras);
-          items.push({
-            ts: st,
-            line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始 " +
-                  wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀" +
-                  (exS > 0.005 ? " 零食" + wxNum(exS) + "刀" : "") + " 待结算"
-          });
-        }
-      }
-      // ★ v3.29.2：收进「待结算」的条目（Firebase 版，桌台已经空出来）也要列进来
-      var pend = state.pending || [];
-      for (var pi = 0; pi < pend.length; pi++) {
-        var p = pend[pi];
-        if (!p || !p.startTs) continue;
-        if (bizDate(p.startTs) !== day) continue;
-        var pEnd = Number(p.endTs) || Date.now();
-        var pName = String(p.tableName || ((p.tableNo != null ? p.tableNo : "") + " 号桌")).replace(/\s+/g, "");
-        var pGame = String(p.mahjongType || WX_GAME_NAME);
-        var pEx = extrasMoney(p.extras);
+    // ★ v3.30.1：不管在看哪一天的营业日，未结的桌都按【开始时间所在营业日】算进来
+    //   （以前只在"今天"这一屏扫桌台 → 跨夜还在打的桌 / 待结算的桌，在昨天那页看不见 —— 用户反馈）
+    var ids = Object.keys(state.tables || {});
+    for (var i = 0; i < ids.length; i++) {
+      var t = state.tables[ids[i]];
+      if (!t || !t.sessionStart) continue;
+      if (bizDate(t.sessionStart) !== day) continue;
+      var st = t.sessionStart;
+      var gname = String(t.mahjongType || WX_GAME_NAME);
+      if (t.status === "running" || t.status === "paused") {
+        // 用户要求：正在打的只写「x号桌 种类 xx:xx开始」，不写「计时中」
+        items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
+      } else if (t.status === "ended") {
+        var et = t.endedAt || Date.now();
+        var exS = extrasMoney(t.extras);
         items.push({
-          ts: Number(p.startTs),
-          line: pName + " " + pGame + " " + fmtHM(p.startTs) + "开始 " +
-                wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(tableFeeOf(Math.max(0, pEnd - p.startTs))) + "刀" +
-                (pEx > 0.005 ? " 零食" + wxNum(pEx) + "刀" : "") + " 待结算"
+          ts: st,
+          line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始 " +
+                wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀" +
+                (exS > 0.005 ? " 零食" + wxNum(exS) + "刀" : "") + " 待结算"
         });
       }
+    }
+    // ★ v3.29.2：收进「待结算」的条目（Firebase 版，桌台已经空出来）也要列进来
+    var pend = state.pending || [];
+    for (var pi = 0; pi < pend.length; pi++) {
+      var p = pend[pi];
+      if (!p || !p.startTs) continue;
+      if (bizDate(p.startTs) !== day) continue;
+      var pEnd = Number(p.endTs) || Date.now();
+      var pName = String(p.tableName || ((p.tableNo != null ? p.tableNo : "") + " 号桌")).replace(/\s+/g, "");
+      var pGame = String(p.mahjongType || WX_GAME_NAME);
+      var pEx = extrasMoney(p.extras);
+      items.push({
+        ts: Number(p.startTs),
+        line: pName + " " + pGame + " " + fmtHM(p.startTs) + "开始 " +
+              wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(tableFeeOf(Math.max(0, pEnd - p.startTs))) + "刀" +
+              (pEx > 0.005 ? " 零食" + wxNum(pEx) + "刀" : "") + " 待结算"
+      });
     }
     for (var j = 0; j < state.history.length; j++) {
       var h = state.history[j];
