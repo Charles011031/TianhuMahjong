@@ -339,8 +339,8 @@
   .history tbody tr:last-child td { border-bottom: none; }
   .history td.money { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
   .history td.grand { font-weight: 800; color: var(--green-dark); font-variant-numeric: tabular-nums; font-size: 16px; }
-  .row-edit { padding: 7px 13px; font-size: 13px; font-weight: 600; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; white-space: nowrap; }
-  .row-edit:hover { background: #f3f4f6; }
+  .row-edit, .row-copy { padding: 7px 13px; font-size: 13px; font-weight: 600; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .row-edit:hover, .row-copy:hover { background: #f3f4f6; }
   .cell-who { display: flex; align-items: center; gap: 10px; }
   .cell-who .mem-avatar { width: 32px; height: 32px; font-size: 14px; }
   .cell-who .mem-name { font-size: 14px; font-weight: 700; }
@@ -412,6 +412,15 @@
   .rmb-line b { font-size: 20px; color: #92400e; }
   .modal-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
   .modal-btns button { width: 100%; }
+  /* v3.27.0：结算弹窗里的「微信群消息」预览框（手机上尽量紧凑，别把按钮顶出屏幕） */
+  .wx-msg-box { margin: 10px 0 4px; text-align: left; }
+  .wx-msg-box .t { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .wx-msg-box .t b { font-size: 13px; color: var(--ink); }
+  .wx-msg-box .hint-x { font-size: 12px; font-weight: 700; }
+  .wx-msg-box textarea { width: 100%; box-sizing: border-box; min-height: 50px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: 13px; line-height: 1.6; font-family: inherit; background: #f8fafc; color: var(--ink); resize: vertical; }
+  body.dark .wx-msg-box textarea { background: #1b1f22; }
+  .modal-btns.wx-btns { flex-direction: row; }
+  .modal-btns.wx-btns button { width: auto; flex: 1 1 0; }
   .divider { border-top: 1px dashed var(--line); margin: 12px 0; }
   @media (max-width: 560px) {
     header { flex-direction: column; align-items: stretch; text-align: center; }
@@ -1951,6 +1960,115 @@
     .rb-total-box.rmb .amt { font-size: 30px; }
   }
 
+
+  /* ============================================================
+     预约改版（v3.26.0）：今日提醒条 / 新预约弹窗 / 台账 / 历史 / 客服端
+     ============================================================ */
+  .res-bar { background:#fff; border:1px solid var(--line); border-radius:14px; margin-bottom:14px; overflow:hidden; }
+  .res-bar.rb-soon { background:#fffbeb; border-color:#f0d9a8; }
+  .res-bar.rb-late { background:#fff5f5; border-color:#fca5a5; }
+  .rb-toggle { width:100%; display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:12px 14px; border:0; background:transparent; text-align:left; font-size:14px; color:var(--ink); cursor:pointer; }
+  .rb-ico { font-size:18px; }
+  .rb-sum { flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .rb-sum b { font-weight:800; }
+  .rb-next b { color:var(--green-dark); font-size:15px; }
+  .rb-chip { font-size:12px; padding:2px 8px; border-radius:999px; background:#eef1f0; color:#4b5563; }
+  .rb-left { font-size:12.5px; font-weight:700; color:var(--green-dark); }
+  .rb-left.late { color:#b91c1c; }
+  .rb-more { margin-left:auto; font-size:12.5px; color:var(--muted); white-space:nowrap; }
+  .rb-list { border-top:1px dashed var(--line); padding:2px 14px 8px; }
+  .rb-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 0; border-bottom:1px dashed #eef1f0; font-size:13.5px; }
+  .rb-row:last-child { border-bottom:0; }
+  .rb-row .t { font-weight:800; min-width:52px; font-variant-numeric:tabular-nums; }
+  .rb-row .who { font-weight:700; }
+  .rb-row .meta { color:var(--muted); font-size:12.5px; }
+  .rb-row.late .t { color:#b91c1c; }
+  .rb-row .acts { margin-left:auto; display:flex; gap:6px; }
+  .rb-foot { font-size:12px; color:var(--muted); line-height:1.7; padding:9px 0 4px; }
+  .rb-foot b { color:#4b5563; }
+  .chip-sm { font-size:11.5px; padding:2px 8px; border-radius:999px; font-weight:700; background:#eef1f0; color:#4b5563; white-space:nowrap; }
+  .chip-sm.amber { background:#fdf1dc; color:#92400e; }
+  .chip-sm.red { background:#fee2e2; color:#b91c1c; }
+  .chip-sm.ok { background:#e2f4ea; color:var(--green-dark); }
+  .res-group { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; font-weight:800; color:#6b7280; letter-spacing:.3px; padding:11px 0 3px; }
+  .res-group span { font-weight:500; color:#9aa0a6; letter-spacing:0; }
+  .res-done { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#f1f8f4; border:1px solid #cfe0d6; color:var(--green-dark); border-radius:10px; padding:10px 13px; font-size:13px; font-weight:700; margin:2px 0 11px; }
+  .res-conflict { display:none; background:#fff5f5; border:1px solid #fecaca; color:#b91c1c; border-radius:10px; padding:9px 12px; font-size:13px; margin:0 0 10px; }
+  .res-conflict.show { display:block; }
+  .res-row .unread-dot { width:7px; height:7px; border-radius:50%; background:#ef4444; flex:0 0 auto; }
+  .res-row .sub { display:block; font-size:11.5px; color:var(--muted); margin-top:2px; }
+  /* 新预约弹窗 */
+  .res-pop-overlay { position:fixed; inset:0; z-index:95; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(17,24,39,.46); }
+  .res-pop-overlay.show { display:flex; }
+  .res-pop { width:min(94vw,460px); background:#fff; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.28); animation:rpopin .22s ease-out; }
+  @keyframes rpopin { from { transform:translateY(14px) scale(.97); opacity:0; } to { transform:none; opacity:1; } }
+  .rp-head { display:flex; align-items:center; gap:8px; padding:13px 18px; background:linear-gradient(135deg,var(--green),var(--green-dark)); color:#fff; }
+  .rp-head .rp-badge { font-size:14px; font-weight:800; letter-spacing:.3px; }
+  .rp-head .rp-now { margin-left:auto; font-size:12px; opacity:.9; background:rgba(255,255,255,.18); padding:3px 9px; border-radius:999px; }
+  .rp-body { padding:16px 18px 6px; }
+  .rp-title { font-size:25px; font-weight:800; color:var(--green-dark); line-height:1.25; }
+  .rp-title small { font-size:14px; font-weight:700; color:var(--muted); margin-left:6px; }
+  .rp-grid { display:grid; grid-template-columns:auto 1fr; gap:8px 14px; margin:14px 0 6px; font-size:14px; }
+  .rp-grid .k { color:var(--muted); white-space:nowrap; }
+  .rp-grid .v { font-weight:700; word-break:break-word; }
+  .rp-note { margin-top:10px; padding:9px 12px; border-radius:10px; background:#fffbeb; border:1px solid #f0d9a8; color:#8a5a00; font-size:13px; }
+  .rp-hint { font-size:12px; color:var(--muted); padding:2px 18px 0; line-height:1.7; }
+  .rp-actions { display:flex; gap:10px; padding:14px 18px 16px; }
+  .rp-actions button { flex:1; padding:13px 10px; font-size:15px; border-radius:12px; font-weight:800; }
+  /* 预约历史 */
+  .res-hist-modal { width:min(94vw,760px); max-height:88vh; overflow:auto; text-align:left; }
+  .res-hist-filter { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .res-hist-filter input { flex:1 1 180px; padding:9px 11px; border:1px solid var(--line); border-radius:9px; font-size:14px; }
+  .res-hist-row { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:9px 0; border-bottom:1px dashed #eef1f0; font-size:13.5px; }
+  .res-hist-row:last-child { border-bottom:0; }
+  .res-hist-row .t { font-weight:800; min-width:96px; font-variant-numeric:tabular-nums; }
+  .res-hist-row .n { flex:1 1 150px; min-width:90px; }
+  .res-hist-row .sub { display:block; font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .res-hist-empty { color:var(--muted); font-size:13px; padding:12px 0; }
+  /* 客服端（#cs） */
+  .cs-view { position:fixed; inset:0; z-index:80; background:var(--bg); overflow:auto; padding:calc(14px + env(safe-area-inset-top,0px)) 12px 30px; display:none; }
+  .cs-view.show { display:block; }
+  .cs-card { width:min(100%,560px); margin:0 auto; background:#fff; border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,.10); }
+  .cs-head { display:flex; align-items:flex-start; gap:10px; background:linear-gradient(135deg,var(--green),var(--green-dark)); color:#fff; padding:16px 18px; }
+  .cs-head .cs-t { font-size:16px; font-weight:800; }
+  .cs-head .cs-s { font-size:12px; opacity:.88; margin-top:3px; }
+  .cs-head .cs-exit { margin-left:auto; flex:0 0 auto; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.4); color:#fff; padding:7px 10px; border-radius:9px; font-size:12px; font-weight:700; }
+  .cs-body { padding:14px 16px 18px; }
+  .cs-label { font-size:12px; font-weight:800; color:var(--muted); letter-spacing:.4px; margin:14px 0 7px; display:flex; align-items:center; gap:8px; }
+  .cs-label:first-child { margin-top:0; }
+  .cs-label .tip { font-weight:500; letter-spacing:0; color:#9aa0a6; }
+  .cs-paste { display:flex; gap:8px; align-items:flex-start; background:#f8faf9; border:1px dashed #cfe0d6; border-radius:12px; padding:10px; }
+  .cs-paste textarea { flex:1; min-height:62px; resize:vertical; border:0; background:transparent; font-size:14px; line-height:1.5; color:var(--ink); outline:none; font-family:inherit; }
+  .cs-paste-acts { display:flex; flex-direction:column; gap:6px; }
+  .cs-seg { display:flex; gap:8px; flex-wrap:wrap; }
+  .cs-seg button { flex:1 1 0; min-width:76px; padding:11px 6px; border-radius:11px; border:1px solid var(--line); background:#fff; font-size:14px; font-weight:700; color:var(--ink); cursor:pointer; }
+  .cs-seg button.on { background:var(--green); border-color:var(--green); color:#fff; }
+  .cs-field { display:flex; gap:8px; flex-wrap:wrap; }
+  .cs-field input { flex:1 1 120px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; font-size:15px; background:#fff; }
+  .cs-seats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .cs-seat { border:1px solid var(--line); background:#fff; border-radius:12px; padding:10px 8px; cursor:pointer; text-align:left; font-weight:700; font-size:14px; }
+  .cs-seat .s-n { font-size:14.5px; }
+  .cs-seat .s-st { display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-top:3px; }
+  .cs-seat.on { border-color:var(--green); box-shadow:0 0 0 2px rgba(29,122,79,.18); background:#f1f8f4; }
+  .cs-seat.busy .s-st { color:#b45309; }
+  .cs-seat.booked .s-st { color:#8a5a00; }
+  .cs-seat.free .s-st { color:var(--green-dark); }
+  .cs-warn { display:none; color:#b91c1c; font-size:12.5px; margin-top:7px; font-weight:700; }
+  .cs-warn.show { display:block; }
+  .cs-save { width:100%; margin-top:16px; padding:15px; border:0; border-radius:13px; background:var(--green); color:#fff; font-size:16px; font-weight:800; cursor:pointer; }
+  .cs-copy { margin-top:14px; border:1px solid #cfe0d6; background:#f1f8f4; border-radius:12px; padding:11px 13px; }
+  .cs-copy .cp-t { font-size:12.5px; font-weight:800; color:var(--green-dark); margin-bottom:6px; }
+  .cs-copy .cp-x { font-size:13.5px; line-height:1.65; white-space:pre-wrap; color:#1f2933; }
+  .cs-copy .cp-a { display:flex; gap:8px; margin-top:9px; }
+  body.cs-mode > header, body.cs-mode > nav.tabs, body.cs-mode > .panel, body.cs-mode > footer,
+  body.cs-mode > .bottom-bar, body.cs-mode > .foot-ver { display:none !important; }
+  body.dark .res-bar, body.dark .res-pop, body.dark .res-hist-modal, body.dark .cs-card { background:#17222c !important; color:#e8eef4; }
+  body.dark .rb-row, body.dark .res-hist-row { border-color:#243441; }
+  body.dark .rb-chip, body.dark .chip-sm { background:#243441; color:#cbd5e1; }
+  body.dark .cs-seat, body.dark .cs-seg button { background:#111827; color:#e8eef4; border-color:#2a3846; }
+  body.dark .cs-paste { background:#111827; border-color:#2a3846; }
+  body.dark .cs-copy { background:#12241c; border-color:#1f3d30; }
+  body.dark .res-hist-filter input, body.dark .cs-field input, body.dark .res-form input, body.dark .res-form select { background:#111827; color:#e8eef4; border-color:#2a3846; }
 </style>
 </head>
 <body>
@@ -1964,6 +2082,7 @@
         <div class="sub">6 张桌台 · 独立计时 · 统一价格（澳币 AUD）· 手续费可调 · 支持人民币结算</div>
       </div>
       <div class="head-actions">
+        <button type="button" class="icon-btn" id="resEntryBtn" title="预约台账（新预约会亮红点）">📅<span class="note-badge" id="resDot" hidden>0</span></button>
         <button type="button" class="icon-btn" id="noteBtn" title="店铺待办（补餐巾纸 / 垃圾袋…）">📌<span class="note-badge" id="noteBadge" hidden>0</span></button>
         <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）">📊</button>
         <button type="button" class="icon-btn" id="nightBtn" title="夜间模式（跟随时间 / 开 / 关）">🌙</button>
@@ -2014,22 +2133,34 @@
   </nav>
 
   <div class="panel" id="panel-tables">
+  <section class="res-bar" id="resBar" hidden>
+    <button type="button" class="rb-toggle" id="rbToggle" aria-expanded="false">
+      <span class="rb-ico">📅</span>
+      <span class="rb-sum" id="rbSum"></span>
+      <span class="rb-more" id="rbMore">展开 ▾</span>
+    </button>
+    <div class="rb-list" id="rbList" hidden></div>
+  </section>
   <div class="grid" id="grid"></div>
 
-  <section class="card-box" style="margin-top:18px;">
+  <section class="card-box" id="resSection" style="margin-top:18px;">
     <div class="box-head">
-      <h2>📅 预约</h2>
-      <span class="hint" style="margin:0 0 0 auto;">有预约的桌台会在卡片上显示提醒</span>
+      <h2>📅 预约台账</h2>
+      <span class="hint" id="resHint" style="margin:0 0 0 auto;">全部预约 · 录入 / 到店 / 取消 / 删除</span>
+      <button type="button" class="btn-ghost sm" id="resHistBtn">📜 历史</button>
+      <button type="button" class="btn-ghost sm" id="resCSBtn">📝 客服录入</button>
     </div>
     <div class="res-form">
       <input type="date" id="resDate">
       <input type="text" id="resTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
       <input type="text" id="resName" placeholder="姓名">
       <input type="text" id="resPhone" placeholder="电话">
-      <input type="text" id="resNote" placeholder="备注" style="flex:1;min-width:170px;">
+      <input type="number" id="resPeople" placeholder="人数" min="1" max="30" style="width:76px;">
+      <input type="text" id="resNote" placeholder="备注" style="flex:1;min-width:150px;">
       <select id="resTable"></select>
       <button id="resAdd" class="btn-start sm">+ 添加预约</button>
     </div>
+    <div class="res-conflict" id="resConflict"></div>
     <div id="resList"></div>
   </section>
 
@@ -2397,6 +2528,109 @@
   <!-- 右下角轻提示（"已同步到表格" 之类）-->
   <div class="toast" id="toast"></div>
 
+  <!-- 📅 新预约弹窗（必须点确认才消失） -->
+  <div class="res-pop-overlay" id="resPopOverlay">
+    <div class="res-pop">
+      <div class="rp-head">
+        <span class="rp-badge">📅 新预约</span>
+        <span class="rp-now" id="rpNow">刚刚</span>
+      </div>
+      <div class="rp-body">
+        <div class="rp-title" id="rpTitle"></div>
+        <div class="rp-grid" id="rpGrid"></div>
+        <div class="rp-note" id="rpNote"></div>
+      </div>
+      <div class="rp-hint">点「收到，已安排」后弹窗才消失；其他设备上的同一条也会一起收起。响铃 + 震动只响 2 秒。</div>
+      <div class="rp-actions">
+        <button type="button" class="btn-start" id="rpAck">收到，已安排 ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📜 预约历史（最近 30 天） -->
+  <div class="overlay" id="resHistOverlay">
+    <div class="modal res-hist-modal">
+      <h3>📜 预约历史（最近 30 天）</h3>
+      <div class="res-hist-filter">
+        <input type="text" id="resHistSearch" placeholder="搜姓名 / 电话 / 日期（如 10-30）">
+        <button type="button" class="btn-ghost" id="resHistClose">关闭</button>
+      </div>
+      <div id="resHistList"></div>
+    </div>
+  </div>
+
+  <!-- 📝 客服端（#cs）：整屏录入界面 -->
+  <div class="cs-view" id="csView">
+    <div class="cs-card">
+      <div class="cs-head">
+        <div>
+          <div class="cs-t">📅 预约录入 · 客服端</div>
+          <div class="cs-s">收藏这个带 #cs 的链接，打开就是这一页 · 录完店里立刻弹提醒</div>
+        </div>
+        <button type="button" class="cs-exit" id="csExit">返回完整系统</button>
+      </div>
+      <div class="cs-body">
+        <div class="cs-label">① 粘贴客人微信原话 <span class="tip">自动拆出时间 / 人数 / 电话</span></div>
+        <div class="cs-paste">
+          <textarea id="csPaste" placeholder="比如：明天晚上8点，4位，姓王，电话0412345678，想要安静点的桌"></textarea>
+          <div class="cs-paste-acts">
+            <button type="button" class="btn-ghost sm" id="csSample">填示例</button>
+            <button type="button" class="btn-start sm" id="csParse">识别</button>
+          </div>
+        </div>
+
+        <div class="cs-label">② 日期 <span class="tip" id="csDayTip"></span></div>
+        <div class="cs-seg" id="csDaySeg">
+          <button type="button" data-csday="0" class="on">今天</button>
+          <button type="button" data-csday="1">明天</button>
+          <button type="button" data-csday="2">后天</button>
+        </div>
+
+        <div class="cs-label">③ 时间</div>
+        <div class="cs-seg" id="csTimeSeg">
+          <button type="button" data-cstime="14:00">14:00</button>
+          <button type="button" data-cstime="16:00">16:00</button>
+          <button type="button" data-cstime="18:00">18:00</button>
+          <button type="button" data-cstime="20:00" class="on">20:00</button>
+          <button type="button" data-cstime="22:00">22:00</button>
+        </div>
+
+        <div class="cs-label">④ 人数</div>
+        <div class="cs-seg" id="csPeopleSeg">
+          <button type="button" data-cspeople="2">2 人</button>
+          <button type="button" data-cspeople="4" class="on">4 人</button>
+          <button type="button" data-cspeople="6">6 人</button>
+        </div>
+
+        <div class="cs-label">⑤ 姓名 / 电话 <span class="tip">至少填一个</span></div>
+        <div class="cs-field">
+          <input type="text" id="csName" placeholder="姓名">
+          <input type="text" id="csPhone" placeholder="电话">
+        </div>
+
+        <div class="cs-label">⑥ 桌号 <span class="tip">橙色 = 这个时间已有预约</span></div>
+        <div class="cs-seats" id="csSeats"></div>
+        <div class="cs-warn" id="csWarn"></div>
+
+        <div class="cs-label">⑦ 备注 <span class="tip">可选</span></div>
+        <div class="cs-field">
+          <input type="text" id="csNote" placeholder="比如：要安静点的桌 / 带小孩" style="flex:1 1 100%;">
+        </div>
+
+        <button type="button" class="cs-save" id="csSave">保存预约 → 店里立刻弹提醒</button>
+
+        <div class="cs-copy" id="csCopy" hidden>
+          <div class="cp-t">保存成功 ✓ 顺手复制这段发给客人（不会自动发）</div>
+          <div class="cp-x" id="csCopyText"></div>
+          <div class="cp-a">
+            <button type="button" class="btn-start sm" id="csCopyBtn">📋 复制话术</button>
+            <button type="button" class="btn-ghost sm" id="csCopyClose">关掉</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 📊 汇率对照弹窗 -->
   <div class="overlay" id="fxLogOverlay">
     <div class="modal" style="max-width:640px;width:92vw;">
@@ -2413,7 +2647,15 @@
       <h3 id="mTitle">结算完成</h3>
       <div class="big" id="mTotal">$0.00</div>
       <div class="rows" id="mRows"></div>
-      <button id="mClose">知道了</button>
+      <!-- v3.27.0：结算完成自动生成微信群消息并复制（用户需求：每次结账都要在群里发） -->
+      <div class="wx-msg-box" id="mWxBox">
+        <div class="t"><b>💬 微信群消息</b><span class="hint-x" id="mWxHint">正在复制…</span></div>
+        <textarea id="mWxMsg" readonly></textarea>
+      </div>
+      <div class="modal-btns wx-btns">
+        <button id="mCopyMsg" class="btn-start">📋 再复制一次</button>
+        <button id="mClose" class="btn-ghost">知道了</button>
+      </div>
     </div>
   </div>
 
@@ -3653,6 +3895,15 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.27.0  2026-10-30
+  //    + 📋 微信群消息：开台 / 结账自动生成文案并复制（用户需求）★★
+  //      · 结账完成弹窗里直接显示「微信群消息」并自动复制到剪贴板
+  //        格式：1号桌 川麻 20:29开始 00:58结束 台费72.60刀 刷卡18.15×3=54.45 扣卡selina17.94（余额70.63）
+  //        金额从结算记录现取：台费 / 罚款 / 零食明细（品名×数量）/ 刷卡（同额自动 X×N=总额）/
+  //        会员扣卡（带扣后余额）/ 人民币（单人付写"微信收xxx人民币"，混着付写"剩下xxx刀微信收xxx人民币"）
+  //      · 开台后自动复制「1号桌 川麻 20:29开始」+ 右下角提示；计时中/暂停的桌卡加了「📋 开台」可补发
+  //      · 结算记录列表每条加了「📋」小按钮，事后补发/重发都行（弹窗显示 + 自动复制）
+  //      · 会员扣卡的「扣后余额」会存进这次记录的 parts，之后余额再变也不影响当时那条文案
   //  v3.25.13  2026-10-30
   //    + 修：电脑上卡片里的「麻将种类」下拉框字太大（用户反馈）★
   //      · 根因是 v3.25.9 给 input/select/textarea 加的 16px !important 是全局的，
@@ -4385,7 +4636,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.25.13";
+  var APP_VER = "v3.27.0";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -4690,7 +4941,7 @@
       html += '<div class="' + cls + '" data-id="' + i + '">';
       var resv = resForTable(i);
       var badgesHtml =
-        (resv ? '<span class="badge-res">📅 ' + esc(resv.time) + ' ' + esc(resv.name) + '</span>' : '') +
+        (resv ? '<span class="badge-res">📅 ' + (resv.date === fmtDate(Date.now()) ? "" : (resv.date === fmtDate(Date.now() + 86400000) ? "明天 " : esc(String(resv.date || "").slice(5)) + " ")) + esc(resv.time) + ' ' + esc(resv.name) + '</span>' : '') +
         ((Number(t.carry) || 0) > 0.005 ? '<span class="badge-res" style="background:#fee2e2;color:#b91c1c;">上次未付 $' + (Number(t.carry) || 0).toFixed(2) + '</span>' : '');
       var mjHtml = '<span class="mahjong-type"><label>麻将种类</label>' + mahjongSelect(t, i) + '</span>';
       html += '  <div class="top"><span class="name">🀄 ' + esc(t.name) + '</span>' + badgeHtml(t.status) +
@@ -4810,6 +5061,7 @@
     if (hasExtraBadges) grid.classList.add("has-extra-badges");
     else grid.classList.remove("has-extra-badges");
     renderHistory();
+    try { if (typeof renderResPanel === "function") renderResPanel(); } catch (e) {}
   }
 
   // "HH:MM" → 分钟数（用来排序；解析不出来返回 -1）
@@ -4990,7 +5242,7 @@
             " · 零食 " + (other > 0.005 ? fmtMoney(other) : "—") +
             (showFee && Number(h.fee) > 0.005 ? " · 手续费 $" + Number(h.fee).toFixed(2) : "") + "</div>" +
           '<div class="rec-bottom"><span class="rec-pays">' + chipHtml + "</span>" +
-            '<span class="rec-acts"><button class="row-edit" data-idx="' + idx + '">编辑</button></span></div>' +
+            '<span class="rec-acts"><button class="row-copy" data-idx="' + idx + '" title="复制微信群消息">📋</button><button class="row-edit" data-idx="' + idx + '">编辑</button></span></div>' +
           "</div>";
         rows += "<tr>" +
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(timeTxt) + "</td>" +
@@ -5007,7 +5259,7 @@
             (showFee && Number(h.fee) > 0.005 ? '<div class="cell-note">含手续费 $' + Number(h.fee).toFixed(2) + "</div>" : "") +
           "</td>" +
           '<td class="pay-cell">' + chipHtml + "</td>" +
-          '<td><button class="row-edit" data-idx="' + idx + '">编辑</button></td>' +
+          '<td><button class="row-copy" data-idx="' + idx + '" title="复制微信群消息">📋</button><button class="row-edit" data-idx="' + idx + '">编辑</button></td>' +
           "</tr>";
       }
     }
@@ -5050,6 +5302,8 @@
       t.elapsedAtPause = 0;
       t.lastResult = null;
       save(); render();
+      // ★ v3.27.0：开台自动复制「X号桌 川麻 20:29开始」，直接去微信粘贴
+      wxCopyToast(wxOpenMsg(t), "开台消息已复制");
     } else if (act === "resume") {
       if (t.status === "paused") {
         t.sessionStart = Date.now() - (t.elapsedAtPause || 0);
@@ -5233,6 +5487,14 @@
   });
 
   document.getElementById("historyWrap").addEventListener("click", function (e) {
+    // ★ v3.27.0：📋 复制微信群消息（必须放在 row-edit 之前判断，按钮同时带两个 class）
+    var cp = e.target.closest("button.row-copy");
+    if (cp) {
+      var ci = parseInt(cp.getAttribute("data-idx"), 10);
+      var ch = state.history[ci];
+      if (ch) openWxCopy(wxSettleMsg(ch));
+      return;
+    }
     var btn = e.target.closest("button.row-edit");
     if (!btn) return;
     var idx = parseInt(btn.getAttribute("data-idx"), 10);
@@ -6288,6 +6550,7 @@
     var paySet = {};
     var memberDeduct = {};      // memberId -> 本次扣多少
     var memberNames = [];
+    var memBalRun = {};         // ★ v3.27.0：逐笔算"扣后余额"（微信群消息里要显示）
     for (var k = 0; k < settleParts.length; k++) {
       var pt = settleParts[k];
       var due = partDue(pt), f = partFee(pt), paid = partPaid(pt);
@@ -6305,11 +6568,22 @@
         }
       } else cardSum = round2(cardSum + paid);
       paySet[pt.payType] = true;
+      // ★ v3.27.0：会员扣卡把「扣后余额」存进明细（微信群消息要写"扣卡谁 多少（余额多少）"）
+      var balAfter = null;
+      if (pt.payType === "member") {
+        var mmb = findMember(pt.memberId);
+        if (mmb) {
+          var prevBal = (memBalRun[mmb.id] != null) ? memBalRun[mmb.id] : (Number(mmb.balance) || 0);
+          balAfter = round2(prevBal - paid);
+          memBalRun[mmb.id] = balAfter;
+        }
+      }
       partsRec.push({
         amount: round2(pt.amount), payType: pt.payType,
         fee: f, due: due, rmb: pt.payType === "rmb" ? rv : null,
         memberId: pt.payType === "member" ? (pt.memberId || "") : "",
-        memberName: pt.payType === "member" ? ((findMember(pt.memberId) || {}).name || "") : ""
+        memberName: pt.payType === "member" ? ((findMember(pt.memberId) || {}).name || "") : "",
+        balanceAfter: balAfter
       });
     }
     var payKeys = [];
@@ -8232,8 +8506,33 @@
     else if (rec.unpaid > 0.005) html += "<br><span class='warn-note'>这次没收到 $" + Number(rec.unpaid).toFixed(2) + "，已记在这张桌上，下次一起结</span>";
     if (rec.carryIn > 0.005) html += "<br>（本次已包含上次未付 $" + Number(rec.carryIn).toFixed(2) + "）";
     document.getElementById("mRows").innerHTML = html;
+    // ★ v3.27.0：结算完成 → 自动生成「微信群消息」并复制（用户需求：每次结账都要发一条到群里）
+    var wxTxt = "";
+    try { wxTxt = wxSettleMsg(rec); } catch (e) { wxTxt = ""; }
+    var wxTa = document.getElementById("mWxMsg");
+    if (wxTa) wxTa.value = wxTxt;
+    var wxHintEl = document.getElementById("mWxHint");
+    if (wxHintEl) { wxHintEl.textContent = "正在复制…"; wxHintEl.style.color = "var(--muted)"; }
     overlay.classList.add("show");
+    if (wxTxt) {
+      wxCopy(wxTxt, function (ok) {
+        if (wxHintEl) {
+          wxHintEl.textContent = ok ? "已复制 ✓ 去微信粘贴" : "没复制成功，点下面按钮";
+          wxHintEl.style.color = ok ? "var(--green-dark)" : "#b45309";
+        }
+      });
+    }
   }
+  // 「再复制一次」按钮（v3.27.0）
+  var mCopyMsgEl = document.getElementById("mCopyMsg");
+  if (mCopyMsgEl) mCopyMsgEl.addEventListener("click", function () {
+    var ta = document.getElementById("mWxMsg");
+    var h = document.getElementById("mWxHint");
+    wxCopy(ta ? ta.value : "", function (ok) {
+      if (h) { h.textContent = ok ? "已复制 ✓" : "复制失败，请手动选中文字"; h.style.color = ok ? "var(--green-dark)" : "#b45309"; }
+      toast(ok ? "群消息已复制 ✓" : "复制被拦住了，请手动选中文字复制", ok ? "#15803d" : "#b45309");
+    });
+  });
   document.getElementById("mClose").addEventListener("click", function () {
     overlay.classList.remove("show");
   });
@@ -15006,113 +15305,776 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   });
 
   // ============================================================
-  //  预约
+  //  预约（v3.26.0 改版）
+  //    顶部「今天待来」提醒条 / 新预约弹窗（响铃+震动+多设备确认）
+  //    / 预约台账 / 预约历史 / 客服端（#cs）
   // ============================================================
-  function resDateTime(r) { return (r.date || "") + " " + (r.time || ""); }
+  var RES_SEEN_KEY = "mahjong_res_seen_v1";
+  var RES_DEV_KEY = "mahjong_res_dev";
+  var resSeen = {}, resSeenList = [], resPopCur = null, resPopQueue = [];
+  function resHashVal() {
+    try { return String((typeof location !== "undefined" && location && location.hash) || ""); } catch (e) { return ""; }
+  }
+  var resCSMode = (resHashVal().replace(/^#/, "") === "cs");
+  var resCS = { day: 0, time: "20:00", people: 4, table: 0, name: "", phone: "", note: "" };
+  var resAudio = null;
 
-  function resForTable(no) {
-    var today = fmtDate(Date.now());
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function resDevId() {
+    var v = "";
+    try { v = String(localStorage.getItem(RES_DEV_KEY) || ""); } catch (e) {}
+    if (!v) {
+      v = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      try { localStorage.setItem(RES_DEV_KEY, v); } catch (e) {}
+    }
+    return v;
+  }
+  (function resSeenLoad() {
+    try {
+      var a = JSON.parse(localStorage.getItem(RES_SEEN_KEY) || "[]");
+      if (Array.isArray(a)) resSeenList = a.slice(-500);
+    } catch (e) {}
+    for (var i = 0; i < resSeenList.length; i++) resSeen[resSeenList[i]] = 1;
+  })();
+  function resSeenAdd(id) {
+    if (!id || resSeen[id]) return;
+    resSeen[id] = 1;
+    resSeenList.push(id);
+    if (resSeenList.length > 500) resSeenList = resSeenList.slice(-500);
+    try { localStorage.setItem(RES_SEEN_KEY, JSON.stringify(resSeenList)); } catch (e) {}
+  }
+
+  function resDateTime(r) { return (r.date || "") + " " + (r.time || ""); }
+  function resTimeMin(t) { var p = parseTimeStr(t); return p ? p.h * 60 + p.min : -1; }
+  function resTodayStr() { return fmtDate(Date.now()); }
+  function resTableName(no) { var t = no && state.tables[no]; return t ? t.name : "未指定桌"; }
+  function resActor() { return resCSMode ? "客服" : (noteWhoGet() || "店员"); }
+  function resFind(id) {
+    if (!Array.isArray(state.reservations)) state.reservations = [];
     for (var i = 0; i < state.reservations.length; i++) {
-      var r = state.reservations[i];
-      if (r.status !== "booked") continue;
-      if (String(r.tableNo) !== String(no)) continue;
-      if (r.date !== today) continue;
-      return r;
+      if (state.reservations[i] && state.reservations[i].id === id) return state.reservations[i];
     }
     return null;
   }
-
-  function renderReservations() {
-    var rs = document.getElementById("resTable");
-    var h = '<option value="">不指定桌</option>';
-    for (var i = 1; i <= TABLE_COUNT; i++) h += '<option value="' + i + '">' + esc(state.tables[i].name) + '</option>';
-    var cur = rs.value; rs.innerHTML = h; if (cur) rs.value = cur;
-
-    var today = fmtDate(Date.now());
-    var list = state.reservations.slice().sort(function (a, b) { return resDateTime(a) < resDateTime(b) ? -1 : 1; });
-    var shown = [];
-    for (var k = 0; k < list.length; k++) {
-      if (list[k].status === "booked" || list[k].date === today) shown.push(list[k]);
+  function resMarkWrite(id) { try { if (typeof fbMarkWrite === "function") fbMarkWrite("reservations", id); } catch (e) {} }
+  function resMarkDel(id) { try { if (typeof fbMarkDel === "function") fbMarkDel("reservations", id); } catch (e) {} }
+  function resAgo(ts) {
+    ts = Number(ts) || 0;
+    if (!ts) return "";
+    var m = Math.floor((Date.now() - ts) / 60000);
+    if (m < 1) return "刚刚";
+    if (m < 60) return m + " 分钟前";
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + " 小时前";
+    var d = Math.floor(h / 24);
+    if (d < 31) return d + " 天前";
+    return fmtDate(ts);
+  }
+  function resLeftTxt(timeStr) {
+    var m = resTimeMin(timeStr);
+    if (m < 0) return "";
+    var d = new Date(), nowMin = d.getHours() * 60 + d.getMinutes();
+    var diff = m - nowMin;
+    if (diff >= 0) {
+      if (diff < 60) return "还有 " + diff + " 分钟";
+      return "还有 " + Math.floor(diff / 60) + " 小时" + (diff % 60 ? " " + (diff % 60) + " 分" : "");
     }
-    if (shown.length > 50) shown = shown.slice(-50);
-    var wrap = document.getElementById("resList");
-    if (!shown.length) { wrap.innerHTML = '<div class="empty-mini">暂无预约</div>'; return; }
-    var html = "";
-    for (var n = 0; n < shown.length; n++) {
-      var r = shown[n];
-      var badge = r.status === "arrived" ? '<span class="badge-res ok">已到店</span>'
-                : r.status === "cancelled" ? '<span class="badge-res" style="background:#f3f4f6;color:#6b7280;">已取消</span>'
-                : '<span class="badge-res">待来</span>';
-      html += '<div class="res-row">' +
-        '<span class="rt">' + esc(r.date || "") + ' ' + esc(r.time || "") + '</span>' +
-        '<span class="rn">' + (function () {
-          // ★ 姓名 / 电话 至少有一个 ✓ 显示得干净些（不要开头多个 " · "✓）
-          if (r.name && r.phone) return esc(r.name) + " · " + esc(r.phone);
-          if (r.name) return esc(r.name);
-          if (r.phone) return esc(r.phone);
-          return '<span style="color:var(--muted);">（未填姓名/电话）</span>';
-        })() +
-          (r.note ? '<span class="res-note" title="' + esc(r.note) + '">📝 ' + esc(r.note) + '</span>' : "") + '</span>' +
-        '<span>' + (r.tableNo ? esc(state.tables[r.tableNo].name) : "未指定桌") + '</span>' +
-        badge +
-        '<button class="btn-ghost sm" data-res="arrived" data-id="' + r.id + '">到店</button>' +
-        '<button class="btn-ghost sm" data-res="cancel" data-id="' + r.id + '">取消</button>' +
-        '<button class="btn-ghost sm" data-res="del" data-id="' + r.id + '" data-armkey="res-del"' +
-          (armGet("res-del") === r.id ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
-          (armGet("res-del") === r.id ? "再点一次" : "删除") + "</button>" +
-        '</div>';
-    }
-    wrap.innerHTML = html;
+    diff = -diff;
+    if (diff < 60) return "已超时 " + diff + " 分钟";
+    return "已超时 " + Math.floor(diff / 60) + " 小时" + (diff % 60 ? " " + (diff % 60) + " 分" : "");
+  }
+  function resDateLabel(date) {
+    var today = resTodayStr();
+    if (date === today) return "今天";
+    if (date === fmtDate(Date.now() + 86400000)) return "明天";
+    if (date === fmtDate(Date.now() + 2 * 86400000)) return "后天";
+    return String(date || "").slice(5);
   }
 
+  // ---------- 牌桌卡片上的预约徽章（今天优先，没有就取最近的一场） ----------
+  function resForTable(no) {
+    var today = resTodayStr(), best = null;
+    for (var i = 0; i < state.reservations.length; i++) {
+      var r = state.reservations[i];
+      if (!r || r.status !== "booked") continue;
+      if (String(r.tableNo) !== String(no)) continue;
+      if (!r.date || r.date < today) continue;
+      if (!best || resDateTime(r) < resDateTime(best)) best = r;
+    }
+    return best;
+  }
+
+  // ---------- 新预约的推送提醒 ----------
+  function resDing() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!resAudio) resAudio = new Ctx();
+      if (resAudio.state === "suspended") resAudio.resume();
+      var t0 = resAudio.currentTime;
+      [880, 1318.5].forEach(function (f, i) {
+        var o = resAudio.createOscillator(), g = resAudio.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        var t = t0 + i * 0.16;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.28, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+        o.connect(g); g.connect(resAudio.destination);
+        o.start(t); o.stop(t + 0.55);
+      });
+    } catch (e) {}
+  }
+  function resBuzz() { try { if (navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch (e) {} }
+  document.addEventListener("pointerdown", function resAudioUnlock() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx && !resAudio) resAudio = new Ctx();
+      if (resAudio && resAudio.state === "suspended") resAudio.resume();
+    } catch (e) {}
+  }, { once: true });
+
+  function resPopShow(r) {
+    if (!r) return;
+    resPopCur = r.id;
+    var what = r.people ? " · " + r.people + " 位" : "";
+    document.getElementById("rpTitle").innerHTML =
+      resDateLabel(r.date) + " " + esc(r.time || "") + what + "<small>" + esc(resTableName(r.tableNo)) + "</small>";
+    var who = r.name && r.phone ? esc(r.name) + " · " + esc(r.phone) : (esc(r.name) || esc(r.phone) || "（未填）");
+    var grid = "";
+    grid += '<span class="k">姓名 / 电话</span><span class="v">' + who + "</span>";
+    grid += '<span class="k">桌号</span><span class="v">' + esc(resTableName(r.tableNo)) + "</span>";
+    grid += '<span class="k">录入</span><span class="v">' + esc(r.by || "店员") + (r.createdAt ? " · " + resAgo(r.createdAt) : "") + "</span>";
+    document.getElementById("rpGrid").innerHTML = grid;
+    var note = document.getElementById("rpNote");
+    if (r.note) { note.hidden = false; note.innerHTML = "📝 备注：<b>" + esc(r.note) + "</b>"; }
+    else if (r.people) { note.hidden = false; note.innerHTML = "👥 人数：<b>" + esc(r.people) + " 位</b>"; }
+    else { note.hidden = true; }
+    document.getElementById("rpNow").textContent = r.by ? (r.by + " 录入") : "刚刚";
+    document.getElementById("resPopOverlay").classList.add("show");
+    resDing(); resBuzz();
+  }
+  function resPopClose() {
+    document.getElementById("resPopOverlay").classList.remove("show");
+    resPopCur = null;
+  }
+  function resPopNext() {
+    resPopQueue = resPopQueue.filter(function (id) {
+      var r = resFind(id);
+      return r && r.status === "booked" && !r.ack;
+    });
+    if (resPopCur || !resPopQueue.length) return;
+    var r = resFind(resPopQueue.shift());
+    if (r) resPopShow(r);
+  }
+  function resPopAck() {
+    var r = resFind(resPopCur);
+    if (r) {
+      r.ack = Date.now();
+      r.ackBy = resActor();
+      resMarkWrite(r.id);
+      save();
+    }
+    resPopClose();
+    renderReservations();
+    render();
+    try { toast("已确认 ✓ 其他设备上的这条弹窗也会一起收起", "var(--green-dark)"); } catch (e) {}
+    setTimeout(resPopNext, 80);
+  }
+  function resCheckNew() {
+    if (resCSMode) return;                       // 客服端自己不弹
+    var now = Date.now(), cands = [];
+    state.reservations.forEach(function (r) {
+      if (!r || !r.id) return;
+      if (r.status !== "booked" || r.ack) { resSeenAdd(r.id); return; }
+      if (!r.createdAt) { resSeenAdd(r.id); return; }            // 老数据不弹
+      if (now - Number(r.createdAt) > 6 * 3600 * 1000) { resSeenAdd(r.id); return; }
+      if (resSeen[r.id]) return;
+      cands.push(r);
+    });
+    cands.sort(function (a, b) { return Number(a.createdAt) - Number(b.createdAt); });
+    cands.forEach(function (r) { if (!resSeen[r.id]) { resSeenAdd(r.id); resPopQueue.push(r.id); } });
+    if (!resPopCur && resPopQueue.length) resPopNext();
+  }
+
+  // ---------- 顶部「今天待来」提醒条 ----------
+  function resBarRender() {
+    var bar = document.getElementById("resBar");
+    if (!bar) return;
+    var today = resTodayStr();
+    var booked = state.reservations.filter(function (r) {
+      return r && r.status === "booked" && r.date === today;
+    }).sort(function (a, b) { return resTimeMin(a.time) - resTimeMin(b.time); });
+    if (!booked.length) { bar.hidden = true; return; }
+    bar.hidden = false;
+
+    var nowMin = (function () { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); })();
+    var next = null, late = 0;
+    for (var i = 0; i < booked.length; i++) {
+      var m = resTimeMin(booked[i].time);
+      if (m >= 0 && m < nowMin) { late++; continue; }
+      if (!next) next = booked[i];
+    }
+    bar.className = "res-bar" + (late ? " rb-late" : (next && (resTimeMin(next.time) - nowMin) <= 30 ? " rb-soon" : ""));
+
+    var arrived = 0, cancelled = 0;
+    state.reservations.forEach(function (r) {
+      if (!r || r.date !== today) return;
+      if (r.status === "arrived") arrived++;
+      else if (r.status === "cancelled") cancelled++;
+    });
+    var h = "<b>今天待来 " + booked.length + " 场</b>";
+    if (next) {
+      h += '<span class="rb-next">下一场 <b>' + esc(next.time) + "</b> " + esc(next.name || next.phone || "客人") +
+           ' <span class="rb-chip">' + esc(resTableName(next.tableNo)) + "</span></span>";
+      h += '<span class="rb-left">' + resLeftTxt(next.time) + "</span>";
+    }
+    if (late) h += '<span class="rb-left late">⚠️ ' + late + " 场没到（超时）</span>";
+    if (arrived) h += '<span class="rb-chip">已到 ' + arrived + "</span>";
+    if (cancelled) h += '<span class="rb-chip">已取消 ' + cancelled + "</span>";
+    document.getElementById("rbSum").innerHTML = h;
+
+    var rows = "";
+    for (var j = 0; j < booked.length; j++) {
+      var r = booked[j], rm = resTimeMin(r.time), isLate = rm >= 0 && rm < nowMin;
+      rows += '<div class="rb-row' + (isLate ? " late" : "") + '">' +
+        '<span class="t">' + esc(r.time) + "</span>" +
+        '<span class="who">' + esc(r.name || r.phone || "客人") + (r.people ? " · " + esc(r.people) + " 位" : "") + "</span>" +
+        (r.phone ? '<span class="meta">' + esc(r.phone) + "</span>" : "") +
+        '<span class="rb-chip">' + esc(resTableName(r.tableNo)) + "</span>" +
+        (r.note ? '<span class="meta">📝 ' + esc(r.note) + "</span>" : "") +
+        (isLate ? '<span class="chip-sm red">超时 ' + resLeftTxt(r.time).replace("已超时 ", "") + "</span>"
+                : '<span class="chip-sm amber">待来</span>') +
+        '<span class="acts">' +
+          '<button type="button" class="btn-start sm" data-resarrive="' + esc(r.id) + '">到店开台</button>' +
+          '<button type="button" class="btn-ghost sm" data-rescancel="' + esc(r.id) + '">取消</button>' +
+        "</span>" +
+        "</div>";
+    }
+    document.getElementById("rbList").innerHTML = rows +
+      '<div class="rb-foot">这里只显示<b>今天还没到店</b>的预约；录入、全部预约、已到店/已取消记录在下面的「📅 预约台账」。</div>';
+  }
+
+  // ---------- 今日收工判定 ----------
+  function resClosedToday() {
+    var today = resTodayStr();
+    var todays = state.reservations.filter(function (r) { return r && r.date === today; });
+    if (!todays.length) return false;
+    for (var i = 0; i < todays.length; i++) if (todays[i].status === "booked") return false;
+    for (var k = 1; k <= TABLE_COUNT; k++) if (state.tables[k].status !== "idle") return false;
+    return true;
+  }
+
+  // ---------- 预约台账 ----------
+  function resStatusChip(r) {
+    if (r.status === "arrived") return '<span class="chip-sm ok">已到店</span>';
+    if (r.status === "cancelled") return '<span class="chip-sm">已取消</span>';
+    return '<span class="chip-sm amber">待来</span>';
+  }
+  function resLedgerRow(r) {
+    var unread = (r.status === "booked" && !r.ack && r.createdAt && r.dev && r.dev !== resDevId()) ? '<span class="unread-dot" title="还没人确认"></span>' : "";
+    var who = r.name && r.phone ? esc(r.name) + " · " + esc(r.phone) : (esc(r.name) || esc(r.phone) || "（未填姓名/电话）");
+    var meta = [];
+    if (r.by) meta.push(esc(r.by));
+    if (r.createdAt) meta.push(resAgo(r.createdAt));
+    var del = (armGet("res-del") === r.id);
+    return '<div class="res-row">' + unread +
+      '<span class="rt">' + esc(r.date || "") + " " + esc(r.time || "") + "</span>" +
+      '<span class="rn">' + who +
+        (r.people ? " · " + esc(r.people) + " 位" : "") +
+        (r.note ? '<span class="res-note" title="' + esc(r.note) + '">📝 ' + esc(r.note) + "</span>" : "") +
+        (meta.length ? '<span class="sub">' + meta.join(" · ") + "</span>" : "") +
+      "</span>" +
+      '<span class="tbl">' + esc(resTableName(r.tableNo)) + "</span>" + resStatusChip(r) +
+      (r.status === "booked"
+        ? '<button type="button" class="btn-start sm" data-res="arrived" data-resarrive="' + esc(r.id) + '">到店</button>' +
+          '<button type="button" class="btn-ghost sm" data-res="cancel" data-rescancel="' + esc(r.id) + '">取消</button>'
+        : "") +
+      '<button type="button" class="btn-ghost sm" data-res="del" data-resdel="' + esc(r.id) + '" data-armkey="res-del"' +
+        (del ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+        (del ? "再点一次" : "删除") + "</button>" +
+      "</div>";
+  }
+  function resLedgerRender() {
+    var wrap = document.getElementById("resList");
+    if (!wrap) return;
+    var sel = document.getElementById("resTable");
+    if (sel) {
+      var cur = sel.value;
+      var opts = '<option value="">不指定桌</option>';
+      for (var i = 1; i <= TABLE_COUNT; i++) opts += '<option value="' + i + '">' + esc(state.tables[i].name) + "</option>";
+      sel.innerHTML = opts;
+      if (cur) sel.value = cur;
+    }
+
+    var today = resTodayStr();
+    var todayRows = [], futureRows = [], staleRows = [];
+    state.reservations.forEach(function (r) {
+      if (!r) return;
+      if (!r.date) { if (r.status === "booked") staleRows.push(r); return; }
+      if (r.date === today) todayRows.push(r);
+      else if (r.date > today) futureRows.push(r);
+      else if (r.status === "booked" && r.date >= fmtDate(Date.now() - 30 * 86400000)) staleRows.push(r);   // 近 30 天过期还没处理的
+    });
+    function byTime(a, b) { return resTimeMin(a.time) - resTimeMin(b.time); }
+    function byDateTime(a, b) { return resDateTime(a) < resDateTime(b) ? -1 : 1; }
+    todayRows.sort(byTime); futureRows.sort(byDateTime); staleRows.sort(byDateTime);
+
+    function groupHead(title, sub, rows) {
+      return '<div class="res-group">' + title + " · " + rows.length + ' 条<span>' + sub + "</span></div>";
+    }
+    function rowsHtml(rows) {
+      if (!rows.length) return '<div class="empty-mini" style="padding:6px 0;">没有</div>';
+      return rows.map(resLedgerRow).join("");
+    }
+
+    var html = "";
+    var closed = resClosedToday();
+    if (closed) {
+      var n = todayRows.length;
+      html += '<div class="res-done">✅ 今天已收工（' + n + ' 场预约全部处理完 · 台费已结清），当日预约不再显示</div>';
+    } else if (todayRows.length) {
+      html += groupHead("今天", "（上面的提醒条只显示今天还没到店的）", todayRows) + rowsHtml(todayRows);
+    }
+    if (futureRows.length) html += groupHead("明天以后", "（含未指定桌的）", futureRows) + rowsHtml(futureRows);
+    if (staleRows.length) html += groupHead("过期待处理", "（日期已过但还没标到店/取消）", staleRows) + rowsHtml(staleRows);
+    if (!html) html = '<div class="empty-mini">暂无预约</div>';
+
+    wrap.innerHTML = html;
+    var hint = document.getElementById("resHint");
+    if (hint) hint.textContent = "今天待来 " + state.reservations.filter(function (r) { return r && r.status === "booked" && r.date === today; }).length + " · 明天以后 " + futureRows.length + " · 收工后自动隐藏当天";
+  }
+
+  // ---------- 顶部红点（别的设备新录、还没人确认） ----------
+  function resDotRender() {
+    var d = document.getElementById("resDot");
+    if (!d) return;
+    var me = resDevId(), n = 0, now = Date.now();
+    state.reservations.forEach(function (r) {
+      if (!r || r.status !== "booked" || r.ack) return;
+      if (!r.createdAt || r.dev === me) return;
+      if (now - Number(r.createdAt) > 24 * 3600 * 1000) return;
+      n++;
+    });
+    if (n) { d.hidden = false; d.textContent = n > 9 ? "9+" : String(n); }
+    else { d.hidden = true; }
+  }
+
+  // ---------- 预约历史（最近 30 天） ----------
+  function resHistRender() {
+    var wrap = document.getElementById("resHistList");
+    if (!wrap) return;
+    var q = String((document.getElementById("resHistSearch") || {}).value || "").trim().toLowerCase();
+    var today = resTodayStr();
+    var from = fmtDate(Date.now() - 29 * 86400000);
+    var rows = state.reservations.filter(function (r) {
+      if (!r || !r.date || r.date < from || r.date > today) return false;
+      if (!q) return true;
+      var hay = ((r.name || "") + " " + (r.phone || "") + " " + (r.date || "") + " " + (r.note || "") + " " + (r.tableNo || "")).toLowerCase();
+      return hay.indexOf(q) >= 0;
+    });
+    rows.sort(function (a, b) { return resDateTime(a) < resDateTime(b) ? 1 : -1; });
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="res-hist-empty">最近 30 天没有匹配的预约</div>';
+      return;
+    }
+    var h = "";
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var who = r.name && r.phone ? esc(r.name) + " · " + esc(r.phone) : (esc(r.name) || esc(r.phone) || "（未填）");
+      var meta = [];
+      if (r.by) meta.push(esc(r.by));
+      if (r.createdAt) meta.push(resAgo(r.createdAt) + " 录入");
+      h += '<div class="res-hist-row">' +
+        '<span class="t">' + esc(r.date) + " " + esc(r.time || "") + "</span>" +
+        '<span class="n">' + who + (r.people ? " · " + esc(r.people) + " 位" : "") +
+          (r.note ? '<span class="sub">📝 ' + esc(r.note) + "</span>" : "") +
+          (meta.length ? '<span class="sub">' + meta.join(" · ") + "</span>" : "") + "</span>" +
+        '<span class="tbl">' + esc(resTableName(r.tableNo)) + "</span>" + resStatusChip(r) +
+        "</div>";
+    }
+    wrap.innerHTML = h;
+  }
+  function resHistOpen() {
+    var ov = document.getElementById("resHistOverlay");
+    if (!ov) return;
+    document.getElementById("resHistSearch").value = "";
+    resHistRender();
+    ov.classList.add("show");
+  }
+  function resHistClose() {
+    var ov = document.getElementById("resHistOverlay");
+    if (ov) ov.classList.remove("show");
+  }
+
+  // ---------- 到店 / 取消 / 删除 ----------
+  function resArrive(id) {
+    var r = resFind(id);
+    if (!r || r.status !== "booked") return;
+    r.status = "arrived";
+    r.arrivedAt = Date.now();
+    resMarkWrite(id);
+    var no = parseInt(r.tableNo, 10) || 0;
+    var t = no ? state.tables[no] : null;
+    if (t && t.status === "idle") {
+      t.status = "running";
+      t.sessionStart = Date.now();
+      t.elapsedAtPause = 0;
+      t.lastResult = null;
+      if (r.name) t.note = (t.note ? t.note + " · " : "") + r.name;
+      try { toast("已到店 → " + t.name + " 已开台" + (r.name ? "（" + r.name + "）" : ""), "var(--green-dark)"); } catch (e) {}
+    } else {
+      try { toast("已到店" + (t ? "（" + t.name + " 不是空闲，没开台）" : "（没指定桌）")); } catch (e) {}
+    }
+    save(); renderReservations(); render();
+  }
+  function resCancel(id) {
+    var r = resFind(id);
+    if (!r || r.status !== "booked") return;
+    r.status = "cancelled";
+    r.cancelAt = Date.now();
+    resMarkWrite(id);
+    save(); renderReservations(); render();
+    try { toast("已取消"); } catch (e) {}
+  }
+  function resRemove(id) {
+    resMarkDel(id);
+    state.reservations = state.reservations.filter(function (r) { return r && r.id !== id; });
+    save(); renderReservations(); render();
+    try { toast("已删除"); } catch (e) {}
+  }
+
+  // ---------- 新增预约（台账 + 客服端共用） ----------
+  function resAddOne(data) {
+    var r = {
+      id: genId(),
+      date: data.date,
+      time: data.time,
+      name: data.name || "",
+      phone: data.phone || "",
+      people: data.people || "",
+      tableNo: data.tableNo || "",
+      note: data.note || "",
+      status: "booked",
+      by: data.by || resActor(),
+      createdAt: Date.now(),
+      dev: resDevId(),
+      ack: 0,
+      ackBy: ""
+    };
+    if (!Array.isArray(state.reservations)) state.reservations = [];
+    state.reservations.push(r);
+    resSeenAdd(r.id);          // 本机自己录的不用再弹
+    resMarkWrite(r.id);
+    save(); renderReservations(); render();
+    return r;
+  }
+  function resConflictOf(date, time, tableNo) {
+    tableNo = parseInt(tableNo, 10) || 0;
+    if (!tableNo) return null;
+    var m = resTimeMin(time);
+    if (m < 0) return null;
+    var hit = null;
+    state.reservations.forEach(function (r) {
+      if (!r || r.status !== "booked" || r.date !== date) return;
+      if ((parseInt(r.tableNo, 10) || 0) !== tableNo) return;
+      var rm = resTimeMin(r.time);
+      if (rm < 0) return;
+      if (Math.abs(rm - m) < 90) hit = r;
+    });
+    return hit;
+  }
+
+  // ---------- 客服端（#cs） ----------
+  function csDateStr() { return fmtDate(Date.now() + resCS.day * 86400000); }
+  function csRender() {
+    var current = "今天明天后天".indexOf(""); // noop
+    function markOn(b, on) {
+      if (!b || !b.classList) return;
+      if (on) b.classList.add("on"); else b.classList.remove("on");
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("#csDaySeg button"), function (b) {
+      markOn(b, Number(b.getAttribute("data-csday")) === resCS.day);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#csTimeSeg button"), function (b) {
+      markOn(b, b.getAttribute("data-cstime") === resCS.time);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#csPeopleSeg button"), function (b) {
+      markOn(b, Number(b.getAttribute("data-cspeople")) === resCS.people);
+    });
+    document.getElementById("csDayTip").textContent = "已选：" + resDateLabel(csDateStr());
+    var wrap = document.getElementById("csSeats");
+    if (!wrap) return;
+    var date = csDateStr(), h = "";
+    for (var no = 1; no <= TABLE_COUNT; no++) {
+      var state2 = { kind: "free", txt: "空着" };
+      var t = state.tables[no];
+      if (resCS.day === 0 && t.status !== "idle") state2 = { kind: "busy", txt: "正在使用" };
+      var clash = null;
+      state.reservations.forEach(function (r) {
+        if (!r || r.status !== "booked" || r.date !== date) return;
+        if ((parseInt(r.tableNo, 10) || 0) !== no) return;
+        var rm = resTimeMin(r.time), cm = resTimeMin(resCS.time);
+        if (rm >= 0 && cm >= 0 && Math.abs(rm - cm) < 90) clash = r;
+      });
+      if (clash) state2 = { kind: "booked", txt: clash.time + " " + (clash.name || "预约") };
+      var on = resCS.table === no ? " on" : "";
+      h += '<button type="button" class="cs-seat ' + state2.kind + on + '" data-csseat="' + no + '">' +
+        '<span class="s-n">' + no + " 号桌</span><span class=\"s-st\">" + esc(state2.txt) + "</span></button>";
+    }
+    h += '<button type="button" class="cs-seat free' + (resCS.table === 0 ? " on" : "") + '" data-csseat="0">' +
+      '<span class="s-n">不指定桌</span><span class="s-st">先不占桌</span></button>';
+    wrap.innerHTML = h;
+  }
+  function csSeatWarn(msg) {
+    var w = document.getElementById("csWarn");
+    if (!w) return;
+    if (msg) { w.textContent = msg; w.classList.add("show"); } else { w.classList.remove("show"); }
+  }
+  function csParseText(txt) {
+    var out = {};
+    if (/后天/.test(txt)) out.day = 2;
+    else if (/明天|明晚/.test(txt)) out.day = 1;
+    else if (/今天|今晚/.test(txt)) out.day = 0;
+    var m = txt.match(/([01]?\d|2[0-3])[:：时点](\d{1,2})?/);
+    if (m) out.time = pad2(Number(m[1])) + ":" + pad2(Number(m[2] || 0));
+    else if (/晚(上)?8|八点/.test(txt)) out.time = "20:00";
+    var p = txt.match(/(\d{1,2})\s*(位|个人|人)/);
+    if (p) out.people = Number(p[1]);
+    var ph = txt.match(/1[3-9]\d[\s-]?\d{4}[\s-]?\d{4}/) || txt.match(/0\d{2,3}[\s-]?\d{3}[\s-]?\d{3}/);
+    if (ph) out.phone = ph[0].replace(/[\s-]/g, "");
+    var n = txt.match(/(?:姓|我姓|名字?叫?)([\u4e00-\u9fa5]{1,3})/);
+    if (n) out.name = n[1];
+    var note = [];
+    if (/安静/.test(txt)) note.push("想要安静点的桌");
+    if (/小孩|孩子|带娃/.test(txt)) note.push("带小孩");
+    if (note.length) out.note = note.join("；");
+    return out;
+  }
+  function csCopyText(r) {
+    var lines = [];
+    lines.push("✅ 天胡麻将馆预约已确认");
+    lines.push(resDateLabel(r.date) + " " + r.time + "，" + (r.people ? r.people + " 位，" : "") + resTableName(r.tableNo));
+    if (r.name) lines.push("留位名字：" + r.name);
+    if (r.note) lines.push("备注：" + r.note);
+    lines.push("到店报名字或打这个电话就行。临时有变请提前说一声～");
+    return lines.join("\n");
+  }
+  function csSave() {
+    var r = {
+      date: csDateStr(),
+      time: resCS.time,
+      name: String(document.getElementById("csName").value || "").trim(),
+      phone: String(document.getElementById("csPhone").value || "").trim(),
+      people: resCS.people,
+      tableNo: resCS.table || "",
+      note: String(document.getElementById("csNote").value || "").trim(),
+      by: "客服"
+    };
+    if (!r.name && !r.phone) { try { toast("姓名和电话至少填一个 ✓", "#b45309"); } catch (e) {} return; }
+    if (resConflictOf(r.date, r.time, r.tableNo)) {
+      try { toast("这张桌这个时间已经有预约了，换一张或先确认清楚"); } catch (e) {}
+      csSeatWarn("⚠️ " + resTableName(r.tableNo) + " 这个时间已有预约，换一张桌再保存");
+      return;
+    }
+    var saved = resAddOne(r);
+    var box = document.getElementById("csCopy");
+    document.getElementById("csCopyText").textContent = csCopyText(saved);
+    box.hidden = false;
+    try { toast("已保存 ✓ 店里设备会弹提醒", "var(--green-dark)"); } catch (e) {}
+    document.getElementById("csWarn").classList.remove("show");
+  }
+
+  // ---------- 统一刷新 ----------
+  function renderReservations() {
+    resBarRender();
+    resLedgerRender();
+    resDotRender();
+    if (resCSMode) csRender();
+    if (resPopCur) {
+      var cur = resFind(resPopCur);
+      if (!cur || cur.ack || cur.status !== "booked") {
+        resPopClose();
+        try { toast("这条预约已在别的设备上处理 ✓"); } catch (e) {}
+      }
+    }
+    resCheckNew();
+  }
+  function renderResPanel() { resBarRender(); resLedgerRender(); resDotRender(); }
+
+  // ---------- 事件绑定 ----------
+  document.getElementById("rbToggle").addEventListener("click", function () {
+    var list = document.getElementById("rbList");
+    var open = list.hidden;
+    list.hidden = !open;
+    this.setAttribute("aria-expanded", open ? "true" : "false");
+    document.getElementById("rbMore").textContent = open ? "收起 ▴" : "展开 ▾";
+  });
+  document.getElementById("resBar").addEventListener("click", function (e) {
+    var a = e.target.closest("[data-resarrive]");
+    if (a) { resArrive(a.getAttribute("data-resarrive")); return; }
+    var c = e.target.closest("[data-rescancel]");
+    if (c) resCancel(c.getAttribute("data-rescancel"));
+  });
+  document.getElementById("resList").addEventListener("click", function (e) {
+    var a = e.target.closest("[data-resarrive]");
+    if (a) { resArrive(a.getAttribute("data-resarrive")); return; }
+    var c = e.target.closest("[data-rescancel]");
+    if (c) { resCancel(c.getAttribute("data-rescancel")); return; }
+    var d = e.target.closest("[data-resdel]");
+    if (!d) return;
+    var id = d.getAttribute("data-resdel");
+    if (armGet("res-del") !== id) {           // 第一下：亮红提示
+      armSet("res-del", id);
+      renderReservations();
+      return;
+    }
+    armSet("res-del", null);                  // 第二下：真的删
+    resRemove(id);
+  });
+  document.getElementById("resEntryBtn").addEventListener("click", function () {
+    var sec = document.getElementById("resSection");
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  document.getElementById("resHistBtn").addEventListener("click", resHistOpen);
+  document.getElementById("resHistClose").addEventListener("click", resHistClose);
+  document.getElementById("resHistOverlay").addEventListener("click", function (e) {
+    if (e.target === this) resHistClose();
+  });
+  document.getElementById("resHistSearch").addEventListener("input", resHistRender);
+  document.getElementById("resCSBtn").addEventListener("click", function () {
+    try { location.hash = "cs"; } catch (e) { resCSMode = true; resCSApply(); }
+  });
+  document.getElementById("rpAck").addEventListener("click", resPopAck);
+
+  // 表单：添加预约（同一张桌同一时段重复 → 第二下确认才加）
   document.getElementById("resAdd").addEventListener("click", function () {
-    var date = document.getElementById("resDate").value || fmtDate(Date.now());
-    var time = document.getElementById("resTime").value.trim();
-    var name = document.getElementById("resName").value.trim();
-    var phone = document.getElementById("resPhone").value.trim();
+    var date = document.getElementById("resDate").value || resTodayStr();
+    var time = String(document.getElementById("resTime").value || "").trim();
+    var name = String(document.getElementById("resName").value || "").trim();
+    var phone = String(document.getElementById("resPhone").value || "").trim();
+    var people = String(document.getElementById("resPeople").value || "").trim();
     var tableNo = document.getElementById("resTable").value;
-    var note = document.getElementById("resNote").value.trim();
+    var note = String(document.getElementById("resNote").value || "").trim();
+    var tip = document.getElementById("resConflict");
     if (!parseTimeStr(time)) { document.getElementById("resTime").focus(); return; }
-    // ★ 姓名和电话【至少填一个】就行 ✓（用户要求：有电话就不用强制写姓名 ✓）
     if (!name && !phone) {
       try { toast("姓名和电话至少填一个 ✓", "#b45309"); } catch (e) {}
       document.getElementById("resName").focus();
       return;
     }
-    state.reservations.push({
-      id: genId(), date: date, time: time, name: name, phone: phone,
-      tableNo: tableNo ? parseInt(tableNo, 10) : "", note: note, status: "booked"
+    var clash = resConflictOf(date, time, tableNo);
+    var fp = date + "|" + time + "|" + tableNo;
+    if (clash && armGet("res-add") !== fp) {
+      armSet("res-add", fp);
+      tip.className = "res-conflict show";
+      tip.innerHTML = "⚠️ <b>冲突提示：</b>" + esc(resTableName(tableNo)) + " " + esc(date) + " " + esc(time) +
+        " 已有预约（" + esc(clash.name || clash.phone || "客人") + (clash.people ? " · " + esc(clash.people) + " 位" : "") +
+        "）—— 再点一次「仍要添加」才会保存";
+      this.textContent = "仍要添加（冲突）";
+      return;
+    }
+    armSet("res-add", null);
+    tip.className = "res-conflict";
+    this.textContent = "+ 添加预约";
+    resAddOne({
+      date: date, time: time, name: name, phone: phone, people: people,
+      tableNo: tableNo ? parseInt(tableNo, 10) : "", note: note
     });
     document.getElementById("resName").value = "";
     document.getElementById("resPhone").value = "";
+    document.getElementById("resPeople").value = "";
     document.getElementById("resNote").value = "";
     document.getElementById("resTime").value = "";
-    save(); renderReservations(); render();
-  });
-  document.getElementById("resList").addEventListener("click", function (e) {
-    var btn = e.target.closest("button[data-res]");
-    if (!btn) return;
-    var act = btn.getAttribute("data-res");
-    var id = btn.getAttribute("data-id");
-    if (act === "del") {
-      if (armGet("res-del") !== id) {                 // 第一下：亮红提示
-        armSet("res-del", id);
-        renderReservations();
-        return;
-      }
-      armSet("res-del", null);                        // 第二下：真的删
-      state.reservations = state.reservations.filter(function (r) { return r.id !== id; });
-    } else {
-      for (var i = 0; i < state.reservations.length; i++) {
-        if (state.reservations[i].id === id) {
-          state.reservations[i].status = (act === "arrived" ? "arrived" : "cancelled");
-          break;
-        }
-      }
-    }
-    save(); renderReservations(); render();
+    try { toast("已添加预约 ✓", "var(--green-dark)"); } catch (e) {}
   });
   maskTime(document.getElementById("resTime"));
+  var resDateInput = document.getElementById("resDate");
+  if (resDateInput) resDateInput.value = resTodayStr();
+
+  // 客服端事件
+  document.getElementById("csExit").addEventListener("click", function () {
+    try { location.hash = ""; } catch (e) { resCSMode = false; resCSApply(); }
+  });
+  document.getElementById("csDaySeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-csday]");
+    if (!b) return;
+    resCS.day = Number(b.getAttribute("data-csday"));
+    csSeatWarn("");
+    csRender();
+  });
+  document.getElementById("csTimeSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cstime]");
+    if (!b) return;
+    resCS.time = b.getAttribute("data-cstime");
+    csSeatWarn("");
+    csRender();
+  });
+  document.getElementById("csPeopleSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cspeople]");
+    if (!b) return;
+    resCS.people = Number(b.getAttribute("data-cspeople"));
+    csRender();
+  });
+  document.getElementById("csSeats").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-csseat]");
+    if (!b) return;
+    resCS.table = Number(b.getAttribute("data-csseat"));
+    csSeatWarn("");
+    csRender();
+  });
+  document.getElementById("csSample").addEventListener("click", function () {
+    document.getElementById("csPaste").value = "明天晚上8点，4位，姓王，电话0412345678，想要安静点的桌";
+  });
+  document.getElementById("csParse").addEventListener("click", function () {
+    var txt = String(document.getElementById("csPaste").value || "").trim();
+    if (!txt) { try { toast("先粘一段客人的话（或点「填示例」）"); } catch (e) {} return; }
+    var o = csParseText(txt);
+    if (o.day != null) resCS.day = o.day;
+    if (o.time) resCS.time = o.time;
+    if (o.people) resCS.people = o.people;
+    if (o.phone) document.getElementById("csPhone").value = o.phone;
+    if (o.name) document.getElementById("csName").value = o.name + (/姓/.test(txt) ? "先生/女士" : "");
+    if (o.note) document.getElementById("csNote").value = o.note;
+    csSeatWarn("");
+    csRender();
+    try { toast("已识别：" + resDateLabel(csDateStr()) + " " + resCS.time + " · " + resCS.people + " 位" + (o.phone ? " · " + o.phone : "")); } catch (e) {}
+  });
+  document.getElementById("csSave").addEventListener("click", csSave);
+  document.getElementById("csCopyBtn").addEventListener("click", function () {
+    var txt = document.getElementById("csCopyText").textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { try { toast("已复制，粘回客人微信就行", "var(--green-dark)"); } catch (e) {} },
+        function () { try { toast("复制失败，手动选中吧"); } catch (e) {} });
+    } else {
+      try { toast("这个浏览器不支持一键复制，手动选中吧"); } catch (e) {}
+    }
+  });
+  document.getElementById("csCopyClose").addEventListener("click", function () {
+    document.getElementById("csCopy").hidden = true;
+  });
+  function resCSApply() {
+    resCSMode = (resHashVal().replace(/^#/, "") === "cs");
+    try {
+      if (document.body && document.body.classList) {
+        if (resCSMode) document.body.classList.add("cs-mode");
+        else document.body.classList.remove("cs-mode");
+      }
+      var v = document.getElementById("csView");
+      if (v && v.classList) {
+        if (resCSMode) v.classList.add("show");
+        else v.classList.remove("show");
+      }
+    } catch (e) {}
+    if (resCSMode) csRender();
+  }
+  try {
+    if (typeof window !== "undefined" && window.addEventListener) {
+      window.addEventListener("hashchange", function () { try { location.reload(); } catch (e) { resCSApply(); } });
+    }
+  } catch (e) {}
+  resCSApply();
+  renderReservations();
+  setInterval(function () { if (!document.hidden) resBarRender(); }, 30000);
 
   // ============================================================
   //  员工工资
@@ -16045,6 +17007,149 @@ rows += "<tr>" +
       '　｜　<b style="font-size:16px;color:#145a3a;">营业额 ' + fmtMoney(biz) + "</b>" +
       (r.recharge > 0.005 ? '<br><span style="color:#6b7280;">会员充值 ' + fmtMoney(round2(r.recharge)) + "（不计营业额）" +
         (r.rechargeRmb > 0.005 ? " · 人民币 ¥" + round2(r.rechargeRmb).toFixed(2) : "") + "</span>" : "");
+  }
+
+  // ============================================================
+  //  ★ v3.27.0：微信群消息（开台 / 结账一键复制）
+  //  用户需求：每次开台、结账都要在微信群里发一条，原来纯手打、还要自己算数
+  //    · 结账：1号桌 川麻 20:29开始 00:58结束 台费72.60刀 刷卡18.15×3=54.45 ...
+  //    · 开台：1号桌 川麻 20:29开始
+  //  数据全部取自已有记录（台费/罚款/零食明细/分账 parts/会员扣卡/人民币）
+  // ============================================================
+  var WX_GAME_NAME = "川麻";       // 店里默认玩法（发群文案里用；只玩一种就留这个）
+
+  // 金额：整数不写 .00（69.33 / 5 / 9）
+  function wxNum(v) {
+    var n = round2(Number(v) || 0);
+    return (Math.abs(n - Math.round(n)) < 0.005) ? String(Math.round(n)) : n.toFixed(2);
+  }
+  // 记录里的时间可能带「次日 」前缀 → 群消息里只留 HH:MM
+  function wxHM(s) { return String(s == null ? "" : s).replace(/^次日\s*/, ""); }
+  // 桌名 "1 号桌" → "1号桌"
+  function wxTableNo(rec) {
+    if (!rec) return "";
+    if (rec.tableNo != null && rec.tableNo !== "") return String(rec.tableNo).replace(/\s+/g, "");
+    return String(rec.name || "").replace(/\s+/g, "");
+  }
+  // 会员扣卡那一笔的扣后余额：优先用结算时存下的 balanceAfter，老记录退回查当前余额
+  function wxMemberBal(p) {
+    if (p && p.balanceAfter != null) return Number(p.balanceAfter);
+    var m = (p && p.memberId) ? findMember(p.memberId) : null;
+    return m ? (Number(m.balance) || 0) : null;
+  }
+  // 收款明细：刷卡（同额合并成 X×N）/ 扣卡（带余额）/ 微信人民币 / 现金
+  function wxPaySegs(rec) {
+    var parts = rec.parts || [];
+    var cardAmts = [], mems = [], rmbs = [], cashes = [];
+    var i, p;
+    for (i = 0; i < parts.length; i++) {
+      p = parts[i];
+      if (p.payType === "card") cardAmts.push(Number(p.amount) || 0);
+      else if (p.payType === "member") mems.push(p);
+      else if (p.payType === "rmb") rmbs.push(p);
+      else if (p.payType === "cash") cashes.push(Number(p.amount) || 0);
+    }
+    var out = [];
+    if (cardAmts.length) {
+      var sum = 0, same = true;
+      for (i = 0; i < cardAmts.length; i++) {
+        sum += cardAmts[i];
+        if (i && Math.abs(cardAmts[i] - cardAmts[0]) > 0.005) same = false;
+      }
+      sum = round2(sum);
+      if (same && cardAmts.length > 1) out.push("刷卡" + wxNum(cardAmts[0]) + "×" + cardAmts.length + "=" + wxNum(sum));
+      else out.push("刷卡" + wxNum(sum));
+    }
+    for (i = 0; i < mems.length; i++) {
+      p = mems[i];
+      var nm = p.memberName || ((p.memberId && findMember(p.memberId)) ? findMember(p.memberId).name : "") || "会员";
+      var bal = wxMemberBal(p);
+      out.push("扣卡" + nm + wxNum(p.amount) + (bal != null ? "（余额" + wxNum(bal) + "）" : ""));
+    }
+    for (i = 0; i < rmbs.length; i++) {
+      p = rmbs[i];
+      var rv = (p.rmb != null) ? Number(p.rmb) : rmbOf(Number(p.amount) || 0);
+      if (rv == null) continue;
+      if (out.length) out.push("剩下" + wxNum(p.amount) + "刀微信收" + wxNum(rv) + "人民币");
+      else out.push("微信收" + wxNum(rv) + "人民币");
+    }
+    for (i = 0; i < cashes.length; i++) out.push("现金" + wxNum(cashes[i]));
+    // 老记录没有 parts → 用主字段兜底（优雅降级，不让文案空白）
+    if (!out.length) {
+      var collected = Number(rec.collected != null ? rec.collected : rec.grand) || 0;
+      if (Number(rec.rmbActual) > 0.005) out.push("微信收" + wxNum(rec.rmbActual) + "人民币");
+      else if (rec.payType === "rmb") out.push("微信收" + wxNum(rmbOf(collected)) + "人民币");
+      else if (rec.payType === "cash") out.push("现金" + wxNum(collected));
+      else if (rec.payType === "member") out.push("扣卡" + wxNum(collected) + (rec.memberName ? "（" + rec.memberName + "）" : ""));
+      else out.push("刷卡" + wxNum(collected));
+    }
+    return out;
+  }
+  // 结账群消息
+  function wxSettleMsg(rec) {
+    if (!rec) return "";
+    var no = wxTableNo(rec);
+    var head = no + "号桌 " + WX_GAME_NAME + " " + wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
+    var segs = [];
+    var tableFee = Number(rec.tableFee != null ? rec.tableFee : rec.total) || 0;
+    if (tableFee > 0.005) segs.push("台费" + wxNum(tableFee) + "刀");
+    if (Number(rec.fine) > 0.005) segs.push("罚款" + wxNum(rec.fine) + "刀");
+    var other = Number(rec.other) || 0;
+    if (other > 0.005) {
+      var exTxt = "";
+      var ex = rec.extras || [];
+      if (ex.length) {
+        var arr = [];
+        for (var i = 0; i < ex.length; i++) {
+          var q = Number(ex[i].qty) || 0;
+          arr.push((ex[i].name || "") + (q > 1 ? "×" + q : ""));
+        }
+        exTxt = "（" + arr.join(" ") + "）";
+      }
+      segs.push("零食" + wxNum(other) + "刀" + exTxt);
+    }
+    var pay = wxPaySegs(rec);
+    for (var j = 0; j < pay.length; j++) segs.push(pay[j]);
+    return head + " " + segs.join(" ");
+  }
+  // 开台消息：1号桌 川麻 20:29开始
+  function wxOpenMsg(t) {
+    if (!t) return "";
+    var no = String(t.name || "").replace(/\s+/g, "");
+    var ts = t.sessionStart || Date.now();
+    return no + " " + WX_GAME_NAME + " " + fmtHM(ts) + "开始";
+  }
+  // 复制 + 右下角提示（开台用，不弹窗）
+  function wxCopyToast(txt, okMsg) {
+    if (!txt) return;
+    copyToClipboard(txt, function (ok) {
+      toast(ok ? (okMsg || "群消息已复制") + " ✓ 粘到微信就行"
+               : ("没复制成功：" + txt), ok ? "#15803d" : "#b45309");
+    });
+  }
+  // 复制 + 回调（结算弹窗里显示"已复制/失败"用）
+  function wxCopy(txt, onDone) {
+    if (!txt) { if (onDone) onDone(false); return; }
+    copyToClipboard(txt, onDone);
+  }
+  // 记录列表点 📋 → 弹窗显示文案 + 自动复制（复用统计页的文案弹窗）
+  function openWxCopy(txt) {
+    if (!txt) return;
+    var ov = document.getElementById("copyOverlay");
+    var ta = document.getElementById("copyText");
+    var title = document.getElementById("copyTitle");
+    var hint = document.getElementById("copyHint");
+    if (!ov || !ta) { wxCopyToast(txt, "群消息已复制"); return; }
+    ta.value = txt;
+    if (title) title.textContent = "微信群消息";
+    if (hint) hint.textContent = "正在复制…";
+    ov.classList.add("show");
+    setTimeout(function () { try { ta.focus(); ta.select(); } catch (e) {} }, 60);
+    copyToClipboard(txt, function (ok) {
+      if (hint) hint.textContent = ok
+        ? "已复制到剪贴板 ✓（现在去微信粘贴发送就行）"
+        : "浏览器拦住了自动复制，请点下面的「📋 复制」或手动选中文字复制";
+    });
   }
 
   // ============================================================
