@@ -2073,6 +2073,21 @@
   body.dark .cs-paste { background:#111827; border-color:#2a3846; }
   body.dark .cs-copy { background:#12241c; border-color:#1f3d30; }
   body.dark .res-hist-filter input, body.dark .cs-field input, body.dark .res-form input, body.dark .res-form select { background:#111827; color:#e8eef4; border-color:#2a3846; }
+
+  /* ===== 到店开台：选桌弹窗（v3.31.0） ===== */
+  .res-arrive-modal { width:min(94vw,440px); text-align:left; }
+  .res-arrive-info { font-size:13.5px; color:var(--muted); line-height:1.75; margin:0 0 12px; }
+  .res-arrive-info b { color:var(--ink); }
+  .res-arrive-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .res-arrive-tab { padding:12px 10px; border-radius:12px; border:1px solid var(--line); background:#fff; cursor:pointer; font-weight:700; font-size:14.5px; text-align:left; line-height:1.3; }
+  .res-arrive-tab .st { display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-top:4px; }
+  .res-arrive-tab.free { border-color:#9fd6b5; background:#f4fbf7; }
+  .res-arrive-tab.free .st { color:var(--green-dark); }
+  .res-arrive-tab.mine { box-shadow:0 0 0 2px rgba(29,122,79,.35); }
+  .res-arrive-tab:disabled { opacity:.42; cursor:not-allowed; }
+  body.dark .res-arrive-tab { background:#111827; color:#e8eef4; border-color:#2a3846; }
+  body.dark .res-arrive-tab.free { background:#12241c; }
+  @media (max-width:420px) { .res-arrive-grid { grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
 <body>
@@ -3407,6 +3422,19 @@
     </div>
   </div>
 
+  <!-- 到店开台：先选哪一桌（v3.31.0） -->
+  <div class="overlay" id="resArriveOverlay">
+    <div class="modal res-arrive-modal">
+      <h3 id="resArriveTitle">到店开台</h3>
+      <div class="res-arrive-info" id="resArriveInfo"></div>
+      <div class="res-arrive-grid" id="resArriveGrid"></div>
+      <div class="modal-btns">
+        <button type="button" class="btn-ghost" id="resArriveOnly">只标到店（先不开台）</button>
+        <button type="button" class="btn-ghost" id="resArriveCancel">取消</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 挂桌零食 / 饮料编辑弹窗（v3.18.0） -->
   <div class="overlay" id="extrasOverlay">
     <div class="modal">
@@ -4686,7 +4714,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.30.4";
+  var APP_VER = "v3.31.0";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -15724,24 +15752,73 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   }
 
   // ---------- 到店 / 取消 / 删除 ----------
+  var resArriveId = null;
+  function resArriveNoteOf(r) {
+    return String((r && r.name) || "").trim() || String((r && r.phone) || "").trim();
+  }
+  function closeResArrive() {
+    var ov = document.getElementById("resArriveOverlay");
+    if (ov) ov.classList.remove("show");
+    resArriveId = null;
+  }
+  // 点「到店」先选桌：不一定是预约的那张，选哪张开哪张，选完直接开始计时
   function resArrive(id) {
     var r = resFind(id);
     if (!r || r.status !== "booked") return;
+    resArriveId = id;
+    var who = resArriveNoteOf(r);
+    document.getElementById("resArriveTitle").textContent =
+      "到店开台" + (r.time ? " · " + r.time : "") + (r.name ? " " + r.name : (r.phone ? " " + r.phone : ""));
+    var info = [];
+    info.push(esc(resDateLabel(r.date)) + " " + esc(r.time || "") + (r.people ? " · " + esc(r.people) + " 位" : ""));
+    if (r.phone) info.push("电话 " + esc(r.phone));
+    if (r.note) info.push("📝 " + esc(r.note));
+    info.push("选一张空闲桌 → 直接开始计时，备注写「" + esc(who || "（无姓名/电话）") + "」");
+    document.getElementById("resArriveInfo").innerHTML = info.join("<br>");
+    var grid = document.getElementById("resArriveGrid");
+    var h = "";
+    for (var no = 1; no <= TABLE_COUNT; no++) {
+      var t = state.tables[no];
+      var busy = t.status !== "idle";
+      var mine = String(r.tableNo) === String(no);
+      var st = busy
+        ? (t.status === "running" ? "计时中" : t.status === "paused" ? "暂停中" : "待结算")
+        : (mine ? "预约的桌 · 空着" : "空着");
+      h += '<button type="button" class="res-arrive-tab' + (busy ? "" : " free") + (mine ? " mine" : "") +
+        '" data-resarrive-no="' + no + '"' + (busy ? " disabled" : "") + ">" +
+        "<span>🀄 " + no + " 号桌</span><span class=\"st\">" + st + "</span></button>";
+    }
+    grid.innerHTML = h;
+    document.getElementById("resArriveOverlay").classList.add("show");
+  }
+  // no=0 → 只标到店，不开台
+  function resArriveTo(id, no) {
+    var r = resFind(id);
+    if (!r || r.status !== "booked") { closeResArrive(); return; }
+    var t = no ? state.tables[no] : null;
+    if (t && t.status !== "idle") {
+      try { toast("这张桌不是空闲，换一张"); } catch (e) {}
+      return;
+    }
     r.status = "arrived";
     r.arrivedAt = Date.now();
     resMarkWrite(id);
-    var no = parseInt(r.tableNo, 10) || 0;
-    var t = no ? state.tables[no] : null;
-    if (t && t.status === "idle") {
+    var who = resArriveNoteOf(r);
+    if (t) {
       t.status = "running";
       t.sessionStart = Date.now();
       t.elapsedAtPause = 0;
       t.lastResult = null;
-      if (r.name) t.note = (t.note ? t.note + " · " : "") + r.name;
-      try { toast("已到店 → " + t.name + " 已开台" + (r.name ? "（" + r.name + "）" : ""), "var(--green-dark)"); } catch (e) {}
+      if (who) {
+        var cur = String(t.note || "").trim();
+        if (!cur) t.note = who;
+        else if (cur.indexOf(who) < 0) t.note = cur + " · " + who;
+      }
+      try { toast("已到店 → " + t.name + " 已开台" + (who ? "（" + who + "）" : ""), "var(--green-dark)"); } catch (e) {}
     } else {
-      try { toast("已到店" + (t ? "（" + t.name + " 不是空闲，没开台）" : "（没指定桌）")); } catch (e) {}
+      try { toast("已到店（没开台）"); } catch (e) {}
     }
+    closeResArrive();
     save(); renderReservations(); render();
   }
   function resCancel(id) {
@@ -15962,6 +16039,13 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     try { location.hash = "cs"; } catch (e) { resCSMode = true; resCSApply(); }
   });
   document.getElementById("rpAck").addEventListener("click", resPopAck);
+  document.getElementById("resArriveOverlay").addEventListener("click", function (e) {
+    if (e.target === this) { closeResArrive(); return; }
+    var b = e.target.closest("[data-resarrive-no]");
+    if (b) { resArriveTo(resArriveId, Number(b.getAttribute("data-resarrive-no"))); }
+  });
+  document.getElementById("resArriveOnly").addEventListener("click", function () { resArriveTo(resArriveId, 0); });
+  document.getElementById("resArriveCancel").addEventListener("click", closeResArrive);
 
   // 表单：添加预约（同一张桌同一时段重复 → 第二下确认才加）
   document.getElementById("resAdd").addEventListener("click", function () {
