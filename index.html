@@ -3879,6 +3879,10 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.29.1  2026-10-30
+  //    + 群文案里的「川麻」改成每张桌的【麻将种类】（桌台右上角那格 108/136/144）（用户要求）
+  //    + 正在打的桌只写「x号桌 种类 xx:xx开始」，不再写「计时中」；待结算行照旧保留
+  //    + 结算记录里存下 mahjongType（老记录没存的，从桌台当前值兜底）
   //  v3.29.0  2026-10-30
   //    + 💬 整体文案把【没结账的桌】也列进去（用户要求）★★
   //      · 正在打 / 暂停：`X号桌 川麻 20:29开始 计时中`
@@ -4634,7 +4638,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.29.0";
+  var APP_VER = "v3.29.1";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -6612,6 +6616,8 @@
       id: genId(),
       tableNo: settleData.id,
       name: t.name,
+      // ★ v3.29.1：把「麻将种类」存进结算记录（群文案里写种类要用，之后桌台改了也不影响）
+      mahjongType: t.mahjongType || "",
       startTs: settleData.startTs,
       endTs: settleData.endTs,
       date: bizDate(settleData.startTs),            // 营业日（统计用）
@@ -16979,7 +16985,15 @@ rows += "<tr>" +
   //    · 开台：1号桌 川麻 20:29开始
   //  数据全部取自已有记录（台费/罚款/零食明细/分账 parts/会员扣卡/人民币）
   // ============================================================
-  var WX_GAME_NAME = "川麻";       // 店里默认玩法（发群文案里用；只玩一种就留这个）
+  var WX_GAME_NAME = "川麻";       // 兜底：桌台没选「麻将种类」时用
+  // 这张桌的「麻将种类」—— 桌台卡右上角那格（108 / 136 / 144，或手填的其它数）
+  //   新结算记录会把种类存进 rec.mahjongType；老记录没有就从桌台当前值取
+  function wxGameOf(rec) {
+    if (rec && rec.mahjongType) return String(rec.mahjongType);
+    var t = (rec && rec.tableNo != null) ? state.tables[rec.tableNo] : null;
+    if (t && t.mahjongType) return String(t.mahjongType);
+    return WX_GAME_NAME;
+  }
 
   // 金额：整数不写 .00（69.33 / 5 / 9）
   function wxNum(v) {
@@ -17052,7 +17066,7 @@ rows += "<tr>" +
   function wxSettleMsg(rec) {
     if (!rec) return "";
     var no = wxTableNo(rec);
-    var head = no + "号桌 " + WX_GAME_NAME + " " + wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
+    var head = no + "号桌 " + wxGameOf(rec) + " " + wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
     var segs = [];
     var tableFee = Number(rec.tableFee != null ? rec.tableFee : rec.total) || 0;
     if (tableFee > 0.005) segs.push("台费" + wxNum(tableFee) + "刀");
@@ -17090,13 +17104,15 @@ rows += "<tr>" +
       if (!t || !t.sessionStart) continue;
       if (bizDate(t.sessionStart) !== day) continue;
       var st = t.sessionStart;
+      var gname = String(t.mahjongType || WX_GAME_NAME);
       if (t.status === "running" || t.status === "paused") {
-        items.push({ ts: st, line: wxTableNoOf(t) + " " + WX_GAME_NAME + " " + fmtHM(st) + "开始 计时中" });
+        // 用户要求：正在打的只写「x号桌 种类 xx:xx开始」，不写「计时中」
+        items.push({ ts: st, line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始" });
       } else if (t.status === "ended") {
         var et = t.endedAt || Date.now();
         items.push({
           ts: st,
-          line: wxTableNoOf(t) + " " + WX_GAME_NAME + " " + fmtHM(st) + "开始 " +
+          line: wxTableNoOf(t) + " " + gname + " " + fmtHM(st) + "开始 " +
                 wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀 待结算"
         });
       }
