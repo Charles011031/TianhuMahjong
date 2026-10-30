@@ -2054,6 +2054,8 @@
   .cs-seg button.on { background:var(--green); border-color:var(--green); color:#fff; }
   .cs-field { display:flex; gap:8px; flex-wrap:wrap; }
   .cs-field input { flex:1 1 120px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; font-size:15px; background:#fff; }
+  /* v3.34.0：日期（日历）/ 时间（像闹钟的选择器）单独占一行，手指好点 */
+  .cs-field input[type="date"], .cs-field input[type="time"] { flex:1 1 100%; min-height:46px; font-size:16px; font-weight:700; color:var(--ink); }
   .cs-seats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .cs-seat { border:1px solid var(--line); background:#fff; border-radius:12px; padding:10px 8px; cursor:pointer; text-align:left; font-weight:700; font-size:14px; }
   .cs-seat .s-n { font-size:14.5px; }
@@ -2180,7 +2182,6 @@
       <input type="text" id="resTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
       <input type="text" id="resName" placeholder="姓名">
       <input type="text" id="resPhone" placeholder="电话">
-      <input type="number" id="resPeople" placeholder="人数" min="1" max="30" style="width:76px;">
       <input type="text" id="resNote" placeholder="备注" style="flex:1;min-width:150px;">
       <select id="resTable"></select>
       <button id="resAdd" class="btn-start sm">+ 添加预约</button>
@@ -2611,26 +2612,20 @@
         </div>
 
         <div class="cs-label">② 日期 <span class="tip" id="csDayTip"></span></div>
-        <div class="cs-seg" id="csDaySeg">
-          <button type="button" data-csday="0" class="on">今天</button>
-          <button type="button" data-csday="1">明天</button>
-          <button type="button" data-csday="2">后天</button>
+        <div class="cs-field">
+          <input type="date" id="csDate">
         </div>
 
-        <div class="cs-label">③ 时间</div>
-        <div class="cs-seg" id="csTimeSeg">
-          <button type="button" data-cstime="14:00">14:00</button>
-          <button type="button" data-cstime="16:00">16:00</button>
-          <button type="button" data-cstime="18:00">18:00</button>
-          <button type="button" data-cstime="20:00" class="on">20:00</button>
-          <button type="button" data-cstime="22:00">22:00</button>
+        <div class="cs-label">③ 时间 <span class="tip">点一下，像闹钟那样选</span></div>
+        <div class="cs-field">
+          <input type="time" id="csTime" value="20:00">
         </div>
 
-        <div class="cs-label">④ 人数</div>
-        <div class="cs-seg" id="csPeopleSeg">
-          <button type="button" data-cspeople="2">2 人</button>
-          <button type="button" data-cspeople="4" class="on">4 人</button>
-          <button type="button" data-cspeople="6">6 人</button>
+        <div class="cs-label">④ 桌数 <span class="tip">要几张桌</span></div>
+        <div class="cs-seg" id="csCountSeg">
+          <button type="button" data-cscount="1" class="on">1 张</button>
+          <button type="button" data-cscount="2">2 张</button>
+          <button type="button" data-cscount="3">3 张</button>
         </div>
 
         <div class="cs-label">⑤ 姓名 / 电话 <span class="tip">至少填一个</span></div>
@@ -2639,7 +2634,7 @@
           <input type="text" id="csPhone" placeholder="电话">
         </div>
 
-        <div class="cs-label">⑥ 桌号 <span class="tip">橙色 = 这个时间已有预约</span></div>
+        <div class="cs-label">⑥ 桌号 <span class="tip">可选：指定先开哪张；橙色 = 这个时间已有预约</span></div>
         <div class="cs-seats" id="csSeats"></div>
         <div class="cs-warn" id="csWarn"></div>
 
@@ -4755,7 +4750,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.33.1";
+  var APP_VER = "v3.34.0";
   var APP_DATE = "2026-10-31";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -15515,7 +15510,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     try { return String((typeof location !== "undefined" && location && location.hash) || ""); } catch (e) { return ""; }
   }
   var resCSMode = (resHashVal().replace(/^#/, "") === "cs");
-  var resCS = { day: 0, time: "20:00", people: 4, table: 0, name: "", phone: "", note: "" };
+  var resCS = { tableCount: 1, table: 0, name: "", phone: "", note: "" };
   var resAudio = null;
 
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
@@ -15547,6 +15542,14 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   function resTimeMin(t) { var p = parseTimeStr(t); return p ? p.h * 60 + p.min : -1; }
   function resTodayStr() { return fmtDate(Date.now()); }
   function resTableName(no) { var t = no && state.tables[no]; return t ? t.name : "未指定桌"; }
+  // ★ v3.34.0：预约「桌数」（新）优先显示；老数据没有桌数就退回显示「人数」
+  function resCountLabel(r) {
+    if (!r) return "";
+    var c = Number(r.tableCount) || 1;
+    if (c > 1) return c + " 张桌";
+    if (r.people) return r.people + " 位";
+    return "";
+  }
   function resActor() { return resCSMode ? "客服" : (noteWhoGet() || "店员"); }
   function resFind(id) {
     if (!Array.isArray(state.reservations)) state.reservations = [];
@@ -15635,7 +15638,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   function resPopShow(r) {
     if (!r) return;
     resPopCur = r.id;
-    var what = r.people ? " · " + r.people + " 位" : "";
+    var cnt0 = resCountLabel(r);
+    var what = cnt0 ? " · " + esc(cnt0) : "";
     document.getElementById("rpTitle").innerHTML =
       resDateLabel(r.date) + " " + esc(r.time || "") + what + "<small>" + esc(resTableName(r.tableNo)) + "</small>";
     var who = r.name && r.phone ? esc(r.name) + " · " + esc(r.phone) : (esc(r.name) || esc(r.phone) || "（未填）");
@@ -15646,6 +15650,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("rpGrid").innerHTML = grid;
     var note = document.getElementById("rpNote");
     if (r.note) { note.hidden = false; note.innerHTML = "📝 备注：<b>" + esc(r.note) + "</b>"; }
+    else if (Number(r.tableCount) > 1) { note.hidden = false; note.innerHTML = "🪑 桌数：<b>" + Number(r.tableCount) + " 张</b>"; }
     else if (r.people) { note.hidden = false; note.innerHTML = "👥 人数：<b>" + esc(r.people) + " 位</b>"; }
     else { note.hidden = true; }
     document.getElementById("rpNow").textContent = r.by ? (r.by + " 录入") : "刚刚";
@@ -15737,7 +15742,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var r = booked[j], rm = resTimeMin(r.time), isLate = rm >= 0 && rm < nowMin;
       rows += '<div class="rb-row' + (isLate ? " late" : "") + '">' +
         '<span class="t">' + esc(r.time) + "</span>" +
-        '<span class="who">' + esc(r.name || r.phone || "客人") + (r.people ? " · " + esc(r.people) + " 位" : "") + "</span>" +
+        '<span class="who">' + esc(r.name || r.phone || "客人") + (resCountLabel(r) ? " · " + esc(resCountLabel(r)) : "") + "</span>" +
         (r.phone ? '<span class="meta">' + esc(r.phone) + "</span>" : "") +
         '<span class="rb-chip">' + esc(resTableName(r.tableNo)) + "</span>" +
         (r.note ? '<span class="meta">📝 ' + esc(r.note) + "</span>" : "") +
@@ -15779,7 +15784,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     return '<div class="res-row">' + unread +
       '<span class="rt">' + esc(r.date || "") + " " + esc(r.time || "") + "</span>" +
       '<span class="rn">' + who +
-        (r.people ? " · " + esc(r.people) + " 位" : "") +
+        (resCountLabel(r) ? " · " + esc(resCountLabel(r)) : "") +
         (r.note ? '<span class="res-note" title="' + esc(r.note) + '">📝 ' + esc(r.note) + "</span>" : "") +
         (meta.length ? '<span class="sub">' + meta.join(" · ") + "</span>" : "") +
       "</span>" +
@@ -15885,7 +15890,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       if (r.createdAt) meta.push(resAgo(r.createdAt) + " 录入");
       h += '<div class="res-hist-row">' +
         '<span class="t">' + esc(r.date) + " " + esc(r.time || "") + "</span>" +
-        '<span class="n">' + who + (r.people ? " · " + esc(r.people) + " 位" : "") +
+        '<span class="n">' + who + (resCountLabel(r) ? " · " + esc(resCountLabel(r)) : "") +
           (r.note ? '<span class="sub">📝 ' + esc(r.note) + "</span>" : "") +
           (meta.length ? '<span class="sub">' + meta.join(" · ") + "</span>" : "") + "</span>" +
         '<span class="tbl">' + esc(resTableName(r.tableNo)) + "</span>" + resStatusChip(r) +
@@ -15924,7 +15929,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("resArriveTitle").textContent =
       "到店开台" + (r.time ? " · " + r.time : "") + (r.name ? " " + r.name : (r.phone ? " " + r.phone : ""));
     var info = [];
-    info.push(esc(resDateLabel(r.date)) + " " + esc(r.time || "") + (r.people ? " · " + esc(r.people) + " 位" : ""));
+    info.push(esc(resDateLabel(r.date)) + " " + esc(r.time || "") + (resCountLabel(r) ? " · " + esc(resCountLabel(r)) : ""));
     if (r.phone) info.push("电话 " + esc(r.phone));
     if (r.note) info.push("📝 " + esc(r.note));
     info.push("选一张空闲桌 → 直接开始计时，备注写「" + esc(who || "（无姓名/电话）") + "」");
@@ -15968,7 +15973,10 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         if (!cur) t.note = who;
         else if (cur.indexOf(who) < 0) t.note = cur + " · " + who;
       }
-      try { toast("已到店 → " + t.name + " 已开台" + (who ? "（" + who + "）" : ""), "var(--green-dark)"); } catch (e) {}
+      try {
+        var extra = Number(r.tableCount) > 1 ? " · 这单预约了 " + r.tableCount + " 张桌，开完这张再开另一张" : "";
+        toast("已到店 → " + t.name + " 已开台" + (who ? "（" + who + "）" : "") + extra, "var(--green-dark)");
+      } catch (e) {}
     } else {
       try { toast("已到店（没开台）"); } catch (e) {}
     }
@@ -16000,6 +16008,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       name: data.name || "",
       phone: data.phone || "",
       people: data.people || "",
+      tableCount: Math.max(1, Math.min(3, Number(data.tableCount) || 1)),   // ★ v3.34.0：预约几张桌
       tableNo: data.tableNo || "",
       note: data.note || "",
       status: "booked",
@@ -16033,35 +16042,42 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   }
 
   // ---------- 客服端（#cs） ----------
-  function csDateStr() { return fmtDate(Date.now() + resCS.day * 86400000); }
+  // ★ v3.34.0：日期改成日历、时间改成手机原生时间选择器（像定闹钟）；
+  //   人数去掉，换成「桌数」（1/2/3 张），桌号仍可指定先开哪张。
+  function csDateStr() {
+    var el = document.getElementById("csDate");
+    return (el && el.value) ? el.value : resTodayStr();
+  }
+  function csTimeStr() {
+    var el = document.getElementById("csTime");
+    return (el && el.value) ? el.value : "20:00";
+  }
   function csRender() {
-    var current = "今天明天后天".indexOf(""); // noop
-    function markOn(b, on) {
-      if (!b || !b.classList) return;
-      if (on) b.classList.add("on"); else b.classList.remove("on");
+    var dateEl = document.getElementById("csDate");
+    if (dateEl && !dateEl.value) dateEl.value = resTodayStr();      // 默认今天
+    var seg = document.getElementById("csCountSeg");
+    if (seg) {
+      var bs = seg.querySelectorAll("button");
+      for (var bi = 0; bi < bs.length; bi++) {
+        var b0 = bs[bi];
+        if (!b0.classList) continue;
+        if (Number(b0.getAttribute("data-cscount")) === resCS.tableCount) b0.classList.add("on");
+        else b0.classList.remove("on");
+      }
     }
-    Array.prototype.forEach.call(document.querySelectorAll("#csDaySeg button"), function (b) {
-      markOn(b, Number(b.getAttribute("data-csday")) === resCS.day);
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("#csTimeSeg button"), function (b) {
-      markOn(b, b.getAttribute("data-cstime") === resCS.time);
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("#csPeopleSeg button"), function (b) {
-      markOn(b, Number(b.getAttribute("data-cspeople")) === resCS.people);
-    });
     document.getElementById("csDayTip").textContent = "已选：" + resDateLabel(csDateStr());
     var wrap = document.getElementById("csSeats");
     if (!wrap) return;
-    var date = csDateStr(), h = "";
+    var date = csDateStr(), time = csTimeStr(), h = "";
     for (var no = 1; no <= TABLE_COUNT; no++) {
       var state2 = { kind: "free", txt: "空着" };
       var t = state.tables[no];
-      if (resCS.day === 0 && t.status !== "idle") state2 = { kind: "busy", txt: "正在使用" };
+      if (date === resTodayStr() && t.status !== "idle") state2 = { kind: "busy", txt: "正在使用" };
       var clash = null;
       state.reservations.forEach(function (r) {
         if (!r || r.status !== "booked" || r.date !== date) return;
         if ((parseInt(r.tableNo, 10) || 0) !== no) return;
-        var rm = resTimeMin(r.time), cm = resTimeMin(resCS.time);
+        var rm = resTimeMin(r.time), cm = resTimeMin(time);
         if (rm >= 0 && cm >= 0 && Math.abs(rm - cm) < 90) clash = r;
       });
       if (clash) state2 = { kind: "booked", txt: clash.time + " " + (clash.name || "预约") };
@@ -16084,10 +16100,15 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     else if (/明天|明晚/.test(txt)) out.day = 1;
     else if (/今天|今晚/.test(txt)) out.day = 0;
     var m = txt.match(/([01]?\d|2[0-3])[:：时点](\d{1,2})?/);
-    if (m) out.time = pad2(Number(m[1])) + ":" + pad2(Number(m[2] || 0));
-    else if (/晚(上)?8|八点/.test(txt)) out.time = "20:00";
+    if (m) {
+      var hh = Number(m[1]);
+      if (hh < 12 && /晚上|晚|下午|夜/.test(txt)) hh += 12;      // 「晚上8点」→ 20:00
+      out.time = pad2(hh) + ":" + pad2(Number(m[2] || 0));
+    } else if (/晚(上)?8|八点/.test(txt)) out.time = "20:00";
     var p = txt.match(/(\d{1,2})\s*(位|个人|人)/);
     if (p) out.people = Number(p[1]);
+    var tc = txt.match(/(\d)\s*(张|桌)\s*(桌)?/);
+    if (tc) out.tableCount = Math.max(1, Math.min(3, Number(tc[1])));
     var ph = txt.match(/1[3-9]\d[\s-]?\d{4}[\s-]?\d{4}/) || txt.match(/0\d{2,3}[\s-]?\d{3}[\s-]?\d{3}/);
     if (ph) out.phone = ph[0].replace(/[\s-]/g, "");
     var n = txt.match(/(?:姓|我姓|名字?叫?)([\u4e00-\u9fa5]{1,3})/);
@@ -16101,7 +16122,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   function csCopyText(r) {
     var lines = [];
     lines.push("✅ 天胡麻将馆预约已确认");
-    lines.push(resDateLabel(r.date) + " " + r.time + "，" + (r.people ? r.people + " 位，" : "") + resTableName(r.tableNo));
+    var cnt = Number(r.tableCount) || 1;
+    lines.push(resDateLabel(r.date) + " " + r.time + "，" +
+      (cnt > 1 ? cnt + " 张桌，" : "") + resTableName(r.tableNo));
     if (r.name) lines.push("留位名字：" + r.name);
     if (r.note) lines.push("备注：" + r.note);
     lines.push("到店报名字或打这个电话就行。临时有变请提前说一声～");
@@ -16110,10 +16133,10 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   function csSave() {
     var r = {
       date: csDateStr(),
-      time: resCS.time,
+      time: csTimeStr(),
       name: String(document.getElementById("csName").value || "").trim(),
       phone: String(document.getElementById("csPhone").value || "").trim(),
-      people: resCS.people,
+      tableCount: resCS.tableCount || 1,
       tableNo: resCS.table || "",
       note: String(document.getElementById("csNote").value || "").trim(),
       by: "客服"
@@ -16207,7 +16230,6 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var time = String(document.getElementById("resTime").value || "").trim();
     var name = String(document.getElementById("resName").value || "").trim();
     var phone = String(document.getElementById("resPhone").value || "").trim();
-    var people = String(document.getElementById("resPeople").value || "").trim();
     var tableNo = document.getElementById("resTable").value;
     var note = String(document.getElementById("resNote").value || "").trim();
     var tip = document.getElementById("resConflict");
@@ -16232,12 +16254,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     tip.className = "res-conflict";
     this.textContent = "+ 添加预约";
     resAddOne({
-      date: date, time: time, name: name, phone: phone, people: people,
+      date: date, time: time, name: name, phone: phone,
       tableNo: tableNo ? parseInt(tableNo, 10) : "", note: note
     });
     document.getElementById("resName").value = "";
     document.getElementById("resPhone").value = "";
-    document.getElementById("resPeople").value = "";
     document.getElementById("resNote").value = "";
     document.getElementById("resTime").value = "";
     try { toast("已添加预约 ✓", "var(--green-dark)"); } catch (e) {}
@@ -16250,49 +16271,41 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   document.getElementById("csExit").addEventListener("click", function () {
     try { location.hash = ""; } catch (e) { resCSMode = false; resCSApply(); }
   });
-  document.getElementById("csDaySeg").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-csday]");
+  // ★ v3.34.0：日期 / 时间用系统自带选择器（日历 / 时间滚轮），选完立刻重算冲突提示
+  document.getElementById("csDate").addEventListener("change", function () { csSeatWarn(""); csRender(); });
+  document.getElementById("csDate").addEventListener("input", function () { csSeatWarn(""); csRender(); });
+  document.getElementById("csTime").addEventListener("change", function () { csSeatWarn(""); csRender(); });
+  document.getElementById("csTime").addEventListener("input", function () { csSeatWarn(""); csRender(); });
+  document.getElementById("csCountSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cscount]");
     if (!b) return;
-    resCS.day = Number(b.getAttribute("data-csday"));
-    csSeatWarn("");
-    csRender();
-  });
-  document.getElementById("csTimeSeg").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-cstime]");
-    if (!b) return;
-    resCS.time = b.getAttribute("data-cstime");
-    csSeatWarn("");
-    csRender();
-  });
-  document.getElementById("csPeopleSeg").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-cspeople]");
-    if (!b) return;
-    resCS.people = Number(b.getAttribute("data-cspeople"));
+    resCS.tableCount = Math.max(1, Math.min(3, Number(b.getAttribute("data-cscount")) || 1));
     csRender();
   });
   document.getElementById("csSeats").addEventListener("click", function (e) {
     var b = e.target.closest("[data-csseat]");
     if (!b) return;
-    resCS.table = Number(b.getAttribute("data-csseat"));
+    var active = b.classList && b.classList.contains("on");
+    resCS.table = (active && Number(b.getAttribute("data-csseat")) !== 0) ? 0 : Number(b.getAttribute("data-csseat"));
     csSeatWarn("");
     csRender();
   });
   document.getElementById("csSample").addEventListener("click", function () {
-    document.getElementById("csPaste").value = "明天晚上8点，4位，姓王，电话0412345678，想要安静点的桌";
+    document.getElementById("csPaste").value = "明天晚上8点，2张桌，姓王，电话0412345678，想要安静点的桌";
   });
   document.getElementById("csParse").addEventListener("click", function () {
     var txt = String(document.getElementById("csPaste").value || "").trim();
     if (!txt) { try { toast("先粘一段客人的话（或点「填示例」）"); } catch (e) {} return; }
     var o = csParseText(txt);
-    if (o.day != null) resCS.day = o.day;
-    if (o.time) resCS.time = o.time;
-    if (o.people) resCS.people = o.people;
+    if (o.day != null) document.getElementById("csDate").value = fmtDate(Date.now() + o.day * 86400000);
+    if (o.time) document.getElementById("csTime").value = o.time;
+    if (o.tableCount) resCS.tableCount = o.tableCount;
     if (o.phone) document.getElementById("csPhone").value = o.phone;
     if (o.name) document.getElementById("csName").value = o.name + (/姓/.test(txt) ? "先生/女士" : "");
     if (o.note) document.getElementById("csNote").value = o.note;
     csSeatWarn("");
     csRender();
-    try { toast("已识别：" + resDateLabel(csDateStr()) + " " + resCS.time + " · " + resCS.people + " 位" + (o.phone ? " · " + o.phone : "")); } catch (e) {}
+    try { toast("已识别：" + resDateLabel(csDateStr()) + " " + csTimeStr() + " · " + resCS.tableCount + " 张桌" + (o.phone ? " · " + o.phone : "")); } catch (e) {}
   });
   document.getElementById("csSave").addEventListener("click", csSave);
   document.getElementById("csCopyBtn").addEventListener("click", function () {
