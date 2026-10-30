@@ -4750,7 +4750,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.34.0";
+  var APP_VER = "v3.34.1";
   var APP_DATE = "2026-10-31";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -15675,6 +15675,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (r) {
       r.ack = Date.now();
       r.ackBy = resActor();
+      r.updatedAt = Date.now();          // ★ v3.34.1：合并时按这个判断谁新（防止被别的设备旧数据盖回去）
       resMarkWrite(r.id);
       save();
     }
@@ -15961,6 +15962,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     }
     r.status = "arrived";
     r.arrivedAt = Date.now();
+    r.updatedAt = Date.now();          // ★ v3.34.1：合并时按这个判断谁新
     resMarkWrite(id);
     var who = resArriveNoteOf(r);
     if (t) {
@@ -15982,14 +15984,18 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     }
     closeResArrive();
     save(); renderReservations(); render();
+    // ★ v3.34.1：到店后立刻推送（不等 3 秒防抖），别让别的设备的旧预约状态把「待来」盖回来
+    try { if (typeof fbPushReservations === "function") fbPushReservations(); } catch (e) {}
   }
   function resCancel(id) {
     var r = resFind(id);
     if (!r || r.status !== "booked") return;
     r.status = "cancelled";
     r.cancelAt = Date.now();
+    r.updatedAt = Date.now();          // ★ v3.34.1：合并时按这个判断谁新
     resMarkWrite(id);
     save(); renderReservations(); render();
+    try { if (typeof fbPushReservations === "function") fbPushReservations(); } catch (e) {}
     try { toast("已取消"); } catch (e) {}
   }
   function resRemove(id) {
@@ -16014,6 +16020,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       status: "booked",
       by: data.by || resActor(),
       createdAt: Date.now(),
+      updatedAt: Date.now(),          // ★ v3.34.1：合并时按这个判断谁新
       dev: resDevId(),
       ack: 0,
       ackBy: ""
@@ -19193,6 +19200,9 @@ function fbPushReservations() {
 }
 
 // 套用一份「预约」云端快照（实时监听 / REST 轮询共用）
+// ★ v3.34.1：改成按 updatedAt 合并（谁新用谁）。
+//   以前非首次连接直接用云端行覆盖本机 → 本机刚点「到店」还没推上去时，
+//   另一台设备的旧快照一回来就被盖回「待来」，表现为「消失一下又重新出现」。
 function fbApplyReservationSnapshot(obj) {
   obj = obj || {};
   var rows = [], k;
@@ -19203,29 +19213,50 @@ function fbApplyReservationSnapshot(obj) {
     rows.push(o);
   }
   var first = !fbResvReady;
-  var merged;
-  if (first) {
-    // ★ 第一次连上：云端的和本机已有的【合并】，一条都不能丢。
-    //   （如果直接以云端为准，本机原本存着的预约会被空云端清掉 —— 那是真丢数据）
-    var byId = {}, list = [], i2, r2;
-    var local0 = Array.isArray(state.reservations) ? state.reservations : [];
-    for (i2 = 0; i2 < local0.length; i2++) {
-      r2 = local0[i2];
-      if (r2 && r2.id) { byId[r2.id] = r2; }
-    }
-    for (i2 = 0; i2 < rows.length; i2++) {
-      r2 = rows[i2];
-      if (r2 && r2.id) { byId[r2.id] = r2; }     // 云端优先（同 id 以云端为准）
-    }
-    for (var kk in byId) { if (byId.hasOwnProperty(kk)) list.push(byId[kk]); }
-    merged = list;
-  } else {
-    merged = fbMergeCol("reservations", rows, function () { return state.reservations; });
+  var nowT = Date.now(), GUARD = 20000;
+
+  function newerOf(lRow, cRow) {
+    var tl = Number(lRow && lRow.updatedAt) || 0, tc = Number(cRow && cRow.updatedAt) || 0;
+    if (tl && tc) return tl > tc ? lRow : (tl < tc ? cRow : null);
+    if (tl && !tc) return lRow;      // 本机带时间戳、云端是老格式 → 本机新
+    if (!tl && tc) return cRow;
+    return null;                     // 都没时间戳 → 交给「本机刚改过」保护
   }
-  state.reservations = merged;
+
+  var cById = {}, lById = {}, out = [], seen = {}, i2, r2, idk;
+  var local = Array.isArray(state.reservations) ? state.reservations : [];
+  for (i2 = 0; i2 < rows.length; i2++) { r2 = rows[i2]; if (r2 && r2.id) cById[String(r2.id)] = r2; }
+  for (i2 = 0; i2 < local.length; i2++) { r2 = local[i2]; if (r2 && r2.id) lById[String(r2.id)] = r2; }
+
+  // 云端有的 id：按新旧选一份
+  for (idk in cById) {
+    if (!cById.hasOwnProperty(idk)) continue;
+    var cRow = cById[idk], lRow = lById[idk], keepLocal = false;
+    var dk = "reservations/" + idk;
+    if (fbRecentDel[dk] && nowT - fbRecentDel[dk] < GUARD) continue;     // 本机刚删的 → 别复活
+    if (lRow) {
+      var pick = newerOf(lRow, cRow);
+      if (pick === lRow) keepLocal = true;
+      else if (pick === null && fbRecentWrite[dk] && nowT - fbRecentWrite[dk] < GUARD) keepLocal = true;
+    }
+    seen[idk] = 1;
+    out.push(keepLocal ? lRow : cRow);
+  }
+  // 本机有、云端没有：首次连上全保留（别丢本机预约）；之后只保留本机刚写的
+  for (i2 = 0; i2 < local.length; i2++) {
+    r2 = local[i2];
+    if (!r2 || !r2.id || seen[String(r2.id)]) continue;
+    var dk2 = "reservations/" + r2.id;
+    if (first || (fbRecentWrite[dk2] && nowT - fbRecentWrite[dk2] < GUARD)) {
+      seen[String(r2.id)] = 1;
+      out.push(r2);
+    }
+  }
+
+  state.reservations = out;
   fbResvReady = true;
   fbResvCloud = {};
-  for (var i = 0; i < merged.length; i++) fbResvCloud[merged[i].id] = 1;
+  for (var i = 0; i < out.length; i++) fbResvCloud[out[i].id] = 1;
   save();
   render();
   try { if (typeof renderReservations === "function") renderReservations(); } catch (e) {}
