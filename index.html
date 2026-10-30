@@ -3926,6 +3926,12 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.32.1  2026-10-30
+  //    + 修：结算弹窗【整单收款】和【按人分账】里没有渠道下拉（用户反馈"哪有选择我没看见"）★★
+  //      · 原因：v3.32.0 只加在「高级：按笔改金额」那套 partRowHtml 里；
+  //        主流程的整单收款 / 按人分账是另外两套 UI
+  //      · 整单收款：选人民币 → 多「渠道 微信/支付宝」；选现金 → 多「形式 现金/转账」
+  //      · 按人分账：每个人选人民币/现金后，各自多一个渠道下拉
   //  v3.32.0  2026-10-30
   //    + 收款方式再细分：人民币分【微信 / 支付宝】、现金分【纸币 / 转账】（用户询问后决定做）★★
   //      · 结算弹窗：选「人民币」多一个微信/支付宝下拉；选「现金」多一个现金(纸币)/转账下拉
@@ -4723,7 +4729,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.32.0";
+  var APP_VER = "v3.32.1";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -7015,6 +7021,9 @@
   var spSingleActual = null, spSingleRmb = null;
   var spSingleMemberSearch = "";   // 整单收款的会员搜索框（v3.19.0）
   var spSingleShortActual = null, spSingleShortRmb = null, spSingleSnackActual = null, spSingleSnackRmb = null;
+  // ★ v3.32.1：整单收款的人民币渠道（wx/alipay）/ 现金形式（cash/transfer）
+  var spSingleRmbChannel = "wx", spSingleCashChannel = "cash";
+  var splitRmbChannel = {}, splitCashChannel = {};   // 按人分账：每个人的渠道
   var splitMethods = {}, splitMembers = {}, splitSnackMethods = {}, splitShortMethods = {}, splitActual = {}, splitRmb = {};
   var splitMemberSearch = {};   // 会员搜索框里打的字（按人分账用，v3.18.0）
   var splitShortActual = {}, splitShortRmb = {}, splitSnackActual = {}, splitSnackRmb = {};
@@ -7024,14 +7033,16 @@
     spSingleMemberSearch = "";
     spSingleActual = null; spSingleRmb = null;
     spSingleShortActual = null; spSingleShortRmb = null; spSingleSnackActual = null; spSingleSnackRmb = null;
+    spSingleRmbChannel = "wx"; spSingleCashChannel = "cash";   // ★ v3.32.1
   }
   function spResetMethods() {
     var n = splitCurrentN();
     splitMethods = {}; splitMembers = {}; splitSnackMethods = {}; splitShortMethods = {}; splitActual = {}; splitRmb = {};
     splitMemberSearch = {};
     splitShortActual = {}; splitShortRmb = {}; splitSnackActual = {}; splitSnackRmb = {};
+    splitRmbChannel = {}; splitCashChannel = {};   // ★ v3.32.1
     // ★ v3.18.0：按人分账默认【刷卡】（现金要找零、客人多数刷卡）；差额和零食默认现金
-    for (var p = 1; p <= n; p++) { splitMethods[p] = "card"; splitMembers[p] = ""; splitSnackMethods[p] = "cash"; splitShortMethods[p] = "cash"; }
+    for (var p = 1; p <= n; p++) { splitMethods[p] = "card"; splitMembers[p] = ""; splitSnackMethods[p] = "cash"; splitShortMethods[p] = "cash"; splitRmbChannel[p] = "wx"; splitCashChannel[p] = "cash"; }
   }
   function spSnackHint(amount, method) {
     amount = round2(amount);
@@ -7245,10 +7256,10 @@
         }
       } else if (m === "rmb") {
         var rv = (spSingleRmb != null && spSingleRmb !== "") ? round2(spSingleRmb) : ((Number(state.fxRate) || 0) > 0 ? round2(due * state.fxRate) : null);
-        parts.push({ amount: due, payType: "rmb", rmb: rv, memberId: "", memSearch: "", label: "" });
+        parts.push({ amount: due, payType: "rmb", rmb: rv, rmbChannel: spSingleRmbChannel || "wx", memberId: "", memSearch: "", label: "" });
       } else {
         var ca = (spSingleActual != null && spSingleActual !== "") ? round2(spSingleActual) : due;
-        parts.push({ amount: ca, payType: "cash", rmb: null, memberId: "", memSearch: "", label: "" });
+        parts.push({ amount: ca, payType: "cash", cashChannel: spSingleCashChannel || "cash", rmb: null, memberId: "", memSearch: "", label: "" });
       }
     }
     setSettleParts(parts);
@@ -7321,6 +7332,16 @@
       }
     }
     if (c.unassigned > 0.005) parts.push({ amount: c.unassigned, payType: "cash", rmb: null, memberId: "", memSearch: "", label: "未分完的零食" });
+    // ★ v3.32.1：按人分账时，人民币/现金的每一笔补上"谁选的渠道"（label 里的 N 号决定）
+    for (var pi2 = 0; pi2 < parts.length; pi2++) {
+      var pp2 = parts[pi2];
+      var whoo = 0;
+      var mm2 = String(pp2.label || "").match(/^(\d+)\s*号/);
+      if (mm2) whoo = Number(mm2[1]);
+      if (!whoo) whoo = 1;
+      if (pp2.payType === "rmb") pp2.rmbChannel = splitRmbChannel[whoo] || "wx";
+      else if (pp2.payType === "cash") pp2.cashChannel = splitCashChannel[whoo] || "cash";
+    }
     setSettleParts(parts);
   }
   function spSetupPanelChrome() {
@@ -7400,6 +7421,20 @@
       if (m === "rmb") { def = round2(due * (Number(state.fxRate) || 0)); cur = spSingleRmb; unit = "¥"; }
       else { def = (m === "card" ? round2(due + feeOf(due)) : due); cur = spSingleActual; unit = "$"; }
       var val = (cur != null && cur !== "") ? cur : def;
+      // ★ v3.32.1：人民币→微信/支付宝；现金→纸币/转账（用户要求，群消息里写清渠道）
+      if (m === "rmb") {
+        h += '<div class="sp-payline"><span>渠道</span>' +
+          '<select data-sp-rmbch="1" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
+            '<option value="wx"' + (spSingleRmbChannel !== "alipay" ? " selected" : "") + ">微信</option>" +
+            '<option value="alipay"' + (spSingleRmbChannel === "alipay" ? " selected" : "") + ">支付宝</option>" +
+          "</select></div>";
+      } else if (m === "cash") {
+        h += '<div class="sp-payline"><span>形式</span>' +
+          '<select data-sp-cashch="1" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
+            '<option value="cash"' + (spSingleCashChannel !== "transfer" ? " selected" : "") + ">现金（纸币）</option>" +
+            '<option value="transfer"' + (spSingleCashChannel === "transfer" ? " selected" : "") + ">转账</option>" +
+          "</select></div>";
+      }
       h += '<div class="sp-payline"><span>实收 ' + unit + '</span>' +
         '<input type="number" step="0.01" data-spsingle' + (m === "rmb" ? "rmb" : "actual") + '="1" value="' + Number(val).toFixed(2) + '" ' +
         'style="width:120px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-weight:700;text-align:right;">' +
@@ -7501,6 +7536,20 @@
           if (method === "rmb") { def2 = round2(total * (Number(state.fxRate) || 0)); cur2 = splitRmb[p]; unit2 = "¥"; }
           else { def2 = (method === "card" ? round2(total + feeOf(total)) : total); cur2 = splitActual[p]; unit2 = "$"; }
           var val2 = (cur2 != null && cur2 !== "") ? cur2 : def2;
+          // ★ v3.32.1：每个人的「微信/支付宝」「现金/转账」（用户要求，群消息里写清渠道）
+          if (method === "rmb") {
+            h += '<div class="sp-payline"><span>渠道</span>' +
+              '<select data-sp-rmbch-p="' + p + '" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
+                '<option value="wx"' + ((splitRmbChannel[p] || "wx") !== "alipay" ? " selected" : "") + ">微信</option>" +
+                '<option value="alipay"' + (splitRmbChannel[p] === "alipay" ? " selected" : "") + ">支付宝</option>" +
+              "</select></div>";
+          } else if (method === "cash") {
+            h += '<div class="sp-payline"><span>形式</span>' +
+              '<select data-sp-cashch-p="' + p + '" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
+                '<option value="cash"' + ((splitCashChannel[p] || "cash") !== "transfer" ? " selected" : "") + ">现金（纸币）</option>" +
+                '<option value="transfer"' + (splitCashChannel[p] === "transfer" ? " selected" : "") + ">转账</option>" +
+              "</select></div>";
+          }
           h += '<div class="sp-payline"><span>实收 ' + unit2 + '</span>' +
             '<input type="number" step="0.01" data-spsplit' + (method === "rmb" ? "rmb" : "actual") + '="' + p + '" value="' + Number(val2).toFixed(2) + '" ' +
             'style="width:105px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;text-align:right;">' +
@@ -7638,6 +7687,31 @@
   (function () {
     var panel = document.getElementById("splitPanel");
     if (!panel) return;
+    // ★ v3.32.1：整单/分账里的「微信/支付宝」「现金/转账」下拉（change 事件）
+    panel.addEventListener("change", function (e) {
+      var t = e.target;
+      if (!t || !t.getAttribute) return;
+      if (t.getAttribute("data-sp-rmbch")) {
+        spSingleRmbChannel = t.value || "wx";
+        spBuildSingleParts();
+        return;
+      }
+      if (t.getAttribute("data-sp-cashch")) {
+        spSingleCashChannel = t.value || "cash";
+        spBuildSingleParts();
+        return;
+      }
+      if (t.getAttribute("data-sp-rmbch-p")) {
+        splitRmbChannel[Number(t.getAttribute("data-sp-rmbch-p"))] = t.value || "wx";
+        spBuildSplitParts();
+        return;
+      }
+      if (t.getAttribute("data-sp-cashch-p")) {
+        splitCashChannel[Number(t.getAttribute("data-sp-cashch-p"))] = t.value || "cash";
+        spBuildSplitParts();
+        return;
+      }
+    });
     panel.addEventListener("click", function (e) {
       var t = e.target;
       if (!t || !t.closest) return;
