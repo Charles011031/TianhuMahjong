@@ -1881,6 +1881,11 @@
   #splitPanel .sp-payline { display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px; }
   #splitPanel .sp-pay { font-family:inherit;cursor:pointer;font-size:12px;font-weight:700;border-radius:999px;padding:8px 10px;min-height:36px;border:1px solid #e3e8e5;background:#fff;color:#6b7280; }
   #splitPanel .sp-pay.on { border-color:#1d7a4f;background:#1d7a4f;color:#fff; }
+  /* v3.32.2：渠道按钮配色（微信绿 / 支付宝蓝） */
+  #splitPanel .sp-pay.sp-ch-wx.on { border-color:#07C160;background:#07C160;color:#fff; }
+  #splitPanel .sp-pay.sp-ch-ali.on { border-color:#1677FF;background:#1677FF;color:#fff; }
+  #splitPanel .sp-pay.sp-ch-wx:not(.on) { color:#07a04f;border-color:#a7e3c3; }
+  #splitPanel .sp-pay.sp-ch-ali:not(.on) { color:#1677FF;border-color:#a9c8ff; }
   #splitPanel .sp-note { font-size:11.5px;color:#b45309;margin-top:3px; }
   #splitPanel .sp-sum { font-size:13.5px;margin-top:10px; }
   #splitPanel .sp-sum .ok { color:var(--green-dark);font-weight:700; }
@@ -3926,6 +3931,11 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.32.2  2026-10-30
+  //    + 渠道从下拉改成【按钮】，放在「实收」后面（用户要求）★
+  //      · 人民币：微信（品牌绿）/ 支付宝（品牌蓝）两个胶囊按钮，选中填色
+  //      · 现金：现金 / 转账两个文字按钮
+  //      · 整单收款和按人分账都是同一套按钮样式
   //  v3.32.1  2026-10-30
   //    + 修：结算弹窗【整单收款】和【按人分账】里没有渠道下拉（用户反馈"哪有选择我没看见"）★★
   //      · 原因：v3.32.0 只加在「高级：按笔改金额」那套 partRowHtml 里；
@@ -4729,7 +4739,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.32.1";
+  var APP_VER = "v3.32.2";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -7421,24 +7431,20 @@
       if (m === "rmb") { def = round2(due * (Number(state.fxRate) || 0)); cur = spSingleRmb; unit = "¥"; }
       else { def = (m === "card" ? round2(due + feeOf(due)) : due); cur = spSingleActual; unit = "$"; }
       var val = (cur != null && cur !== "") ? cur : def;
-      // ★ v3.32.1：人民币→微信/支付宝；现金→纸币/转账（用户要求，群消息里写清渠道）
+      // ★ v3.32.2：渠道改成按钮，放在「实收」后面（用户要求：微信/支付宝、现金/转账）
+      var chBtns = "";
       if (m === "rmb") {
-        h += '<div class="sp-payline"><span>渠道</span>' +
-          '<select data-sp-rmbch="1" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
-            '<option value="wx"' + (spSingleRmbChannel !== "alipay" ? " selected" : "") + ">微信</option>" +
-            '<option value="alipay"' + (spSingleRmbChannel === "alipay" ? " selected" : "") + ">支付宝</option>" +
-          "</select></div>";
+        chBtns = '<button type="button" class="sp-pay sp-ch-wx' + (spSingleRmbChannel !== "alipay" ? " on" : "") + '" data-sp-rmbch-btn="wx">微信</button>' +
+                 '<button type="button" class="sp-pay sp-ch-ali' + (spSingleRmbChannel === "alipay" ? " on" : "") + '" data-sp-rmbch-btn="alipay">支付宝</button>';
       } else if (m === "cash") {
-        h += '<div class="sp-payline"><span>形式</span>' +
-          '<select data-sp-cashch="1" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
-            '<option value="cash"' + (spSingleCashChannel !== "transfer" ? " selected" : "") + ">现金（纸币）</option>" +
-            '<option value="transfer"' + (spSingleCashChannel === "transfer" ? " selected" : "") + ">转账</option>" +
-          "</select></div>";
+        chBtns = '<button type="button" class="sp-pay' + (spSingleCashChannel !== "transfer" ? " on" : "") + '" data-sp-cashch-btn="cash">现金</button>' +
+                 '<button type="button" class="sp-pay' + (spSingleCashChannel === "transfer" ? " on" : "") + '" data-sp-cashch-btn="transfer">转账</button>';
       }
       h += '<div class="sp-payline"><span>实收 ' + unit + '</span>' +
         '<input type="number" step="0.01" data-spsingle' + (m === "rmb" ? "rmb" : "actual") + '="1" value="' + Number(val).toFixed(2) + '" ' +
-        'style="width:120px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-weight:700;text-align:right;">' +
-        '<span class="sp-feehint" style="margin:0;">' + (m === "card" ? '含手续费，可改' : (m === "rmb" ? '汇率 ' + state.fxRate : '可改，抹零')) + '</span></div>';
+        'style="width:110px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-weight:700;text-align:right;">' +
+        '<span class="sp-feehint" style="margin:0;">' + (m === "card" ? '含手续费，可改' : (m === "rmb" ? '汇率 ' + state.fxRate : '可改，抹零')) + '</span>' +
+        chBtns + '</div>';
     }
     h += '<div class="sp-payline" style="margin-top:8px;"><button type="button" class="btn-start sm" data-spgosplit="1">👥 按人分账</button>' +
          '<span class="hint" style="margin:0;">要分开付才点这里</span></div></div>';
@@ -7536,24 +7542,20 @@
           if (method === "rmb") { def2 = round2(total * (Number(state.fxRate) || 0)); cur2 = splitRmb[p]; unit2 = "¥"; }
           else { def2 = (method === "card" ? round2(total + feeOf(total)) : total); cur2 = splitActual[p]; unit2 = "$"; }
           var val2 = (cur2 != null && cur2 !== "") ? cur2 : def2;
-          // ★ v3.32.1：每个人的「微信/支付宝」「现金/转账」（用户要求，群消息里写清渠道）
+          // ★ v3.32.2：每个人的渠道改成按钮，放在「实收」后面
+          var chB2 = "";
           if (method === "rmb") {
-            h += '<div class="sp-payline"><span>渠道</span>' +
-              '<select data-sp-rmbch-p="' + p + '" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
-                '<option value="wx"' + ((splitRmbChannel[p] || "wx") !== "alipay" ? " selected" : "") + ">微信</option>" +
-                '<option value="alipay"' + (splitRmbChannel[p] === "alipay" ? " selected" : "") + ">支付宝</option>" +
-              "</select></div>";
+            chB2 = '<button type="button" class="sp-pay sp-ch-wx' + ((splitRmbChannel[p] || "wx") !== "alipay" ? " on" : "") + '" data-sp-rmbch-btnp="' + p + '|wx">微信</button>' +
+                   '<button type="button" class="sp-pay sp-ch-ali' + (splitRmbChannel[p] === "alipay" ? " on" : "") + '" data-sp-rmbch-btnp="' + p + '|alipay">支付宝</button>';
           } else if (method === "cash") {
-            h += '<div class="sp-payline"><span>形式</span>' +
-              '<select data-sp-cashch-p="' + p + '" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
-                '<option value="cash"' + ((splitCashChannel[p] || "cash") !== "transfer" ? " selected" : "") + ">现金（纸币）</option>" +
-                '<option value="transfer"' + (splitCashChannel[p] === "transfer" ? " selected" : "") + ">转账</option>" +
-              "</select></div>";
+            chB2 = '<button type="button" class="sp-pay' + ((splitCashChannel[p] || "cash") !== "transfer" ? " on" : "") + '" data-sp-cashch-btnp="' + p + '|cash">现金</button>' +
+                   '<button type="button" class="sp-pay' + (splitCashChannel[p] === "transfer" ? " on" : "") + '" data-sp-cashch-btnp="' + p + '|transfer">转账</button>';
           }
           h += '<div class="sp-payline"><span>实收 ' + unit2 + '</span>' +
             '<input type="number" step="0.01" data-spsplit' + (method === "rmb" ? "rmb" : "actual") + '="' + p + '" value="' + Number(val2).toFixed(2) + '" ' +
             'style="width:105px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;text-align:right;">' +
-            '<span class="sp-feehint" style="margin:0;">' + (method === "card" ? '含手续费' : (method === "rmb" ? '汇率 ' + state.fxRate : '可改')) + '</span></div>';
+            '<span class="sp-feehint" style="margin:0;">' + (method === "card" ? '含手续费' : (method === "rmb" ? '汇率 ' + state.fxRate : '可改')) + '</span>' +
+            chB2 + '</div>';
         }
         h += '</div>';
       }
@@ -7753,6 +7755,15 @@
         renderSingleUI(); spBuildSingleParts();
         return;
       }
+      // ★ v3.32.2：渠道按钮（整单收款 / 按人分账）
+      var rbc = t.closest("[data-sp-rmbch-btn]");
+      if (rbc) { spSingleRmbChannel = rbc.getAttribute("data-sp-rmbch-btn") || "wx"; renderSingleUI(); spBuildSingleParts(); return; }
+      var cbc = t.closest("[data-sp-cashch-btn]");
+      if (cbc) { spSingleCashChannel = cbc.getAttribute("data-sp-cashch-btn") || "cash"; renderSingleUI(); spBuildSingleParts(); return; }
+      var rbc2 = t.closest("[data-sp-rmbch-btnp]");
+      if (rbc2) { var rbv = rbc2.getAttribute("data-sp-rmbch-btnp").split("|"); splitRmbChannel[Number(rbv[0])] = rbv[1]; renderSplitUI(); spBuildSplitParts(); return; }
+      var cbc2 = t.closest("[data-sp-cashch-btnp]");
+      if (cbc2) { var cbv = cbc2.getAttribute("data-sp-cashch-btnp").split("|"); splitCashChannel[Number(cbv[0])] = cbv[1]; renderSplitUI(); spBuildSplitParts(); return; }
       if (sm1) {
         spSingleMethod = sm1.getAttribute("data-spsinglemethod");
         spSingleActual = null; spSingleRmb = null;
