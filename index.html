@@ -3931,6 +3931,13 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.32.3  2026-10-30
+  //    + 修：选了支付宝/转账，生成的群消息还是写"微信/现金"（用户反馈）★★
+  //      · 根因：云端同步把分账明细压成一段文本（payDetail），文本里没渠道
+  //        → 从云端拉回来后 textToParts 重建的 parts 没有 rmbChannel/cashChannel
+  //      · 现在文本里带上渠道：`人民币 $154.88 (¥726.50)（支付宝）` / `现金 $32.00（转账）`
+  //      · 默认的微信/现金不写括号（保持老文本格式兼容）
+  //      · 注意：修复前已经同步到云端的记录，文本里没渠道，拉回来仍按默认显示
   //  v3.32.2  2026-10-30
   //    + 渠道从下拉改成【按钮】，放在「实收」后面（用户要求）★
   //      · 人民币：微信（品牌绿）/ 支付宝（品牌蓝）两个胶囊按钮，选中填色
@@ -4739,7 +4746,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.32.2";
+  var APP_VER = "v3.32.3";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -16787,6 +16794,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var amt = (p.due != null ? p.due : p.amount) || 0;
       var t = payLabelOf(p.payType) + " $" + round2(amt).toFixed(2);
       if (p.payType === "rmb" && p.rmb != null) t += " (¥" + round2(p.rmb).toFixed(2) + ")";
+      // ★ v3.32.3：渠道也写进文本（全角括号），云端拉回来还能认出来
+      if (p.payType === "rmb" && p.rmbChannel === "alipay") t += "（支付宝）";
+      if (p.payType === "cash" && p.cashChannel === "transfer") t += "（转账）";
       // 会员扣款写上是谁的（全角括号，和人民币的半角括号区分开）
       if (p.payType === "member") {
         var wn = p.memberName || (findMember(p.memberId) || {}).name || "";
@@ -16815,7 +16825,10 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var rmb = (m[3] != null) ? parseFloat(m[3]) : null;
       parts.push({ payType: payType, amount: round2(aud), due: round2(aud),
                    rmb: (rmb != null && !isNaN(rmb)) ? round2(rmb) : null,
-                   memberName: (payType === "member") ? who : "" });
+                   memberName: (payType === "member") ? who : "",
+                   // ★ v3.32.3：从文本里把渠道认回来（没有括号 = 默认微信/现金）
+                   rmbChannel: (payType === "rmb" && who === "支付宝") ? "alipay" : "",
+                   cashChannel: (payType === "cash" && who === "转账") ? "transfer" : "" });
     }
     return parts.length ? parts : null;
   }
