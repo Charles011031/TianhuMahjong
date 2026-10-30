@@ -3926,6 +3926,15 @@
   //  版本号（每次改动功能都要动这里，方便分辨哪台设备跑的是哪版）
   // ------------------------------------------------------------
   // ============================================================
+  //  v3.32.0  2026-10-30
+  //    + 收款方式再细分：人民币分【微信 / 支付宝】、现金分【纸币 / 转账】（用户询问后决定做）★★
+  //      · 结算弹窗：选「人民币」多一个微信/支付宝下拉；选「现金」多一个现金(纸币)/转账下拉
+  //      · 群消息跟着写清：`微信收403.28人民币` / `支付宝收403.28人民币`；`现金32刀` / `转账32刀`
+  //      · 切到人民币/现金时给默认值（微信 / 纸币），用户可以再改
+  //      · 渠道存进 rec.parts（rmbChannel / cashChannel），编辑历史记录时也会带回来
+  //      · 老记录没存渠道 → 人民币按微信、现金按现金显示（保持原样，不报错）
+  //  v3.31.0  2026-10-30
+  //    + 到店开台改成先选桌（另一个窗口做的：弹 6 张桌，空/占用/预约一眼看，选哪张开哪张）
   //  v3.30.4  2026-10-30
   //    + 没有存种类的老记录，群消息里【不再写种类】（用户要求）★
   //      · 原来看的是桌台当前值 → 把 2 号桌从 108 改成 136 后，10-29 那批老记录全跟着变
@@ -4714,7 +4723,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.31.0";
+  var APP_VER = "v3.32.0";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -6158,12 +6167,27 @@
         '<span style="font-size:12px;color:var(--muted);">填了会自动反推上面的本金　留空 = 按 ' + state.feeRate + '% 自动（$' + auto.toFixed(2) + '）</span>' +
         "</div>";
     } else if (p.payType === "rmb") {
+      // ★ v3.31.0：人民币要分【微信 / 支付宝】（用户需求：群消息里要写清哪个渠道收的）
       detail = '<div class="cart-row" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
         '<span style="min-width:18px;"></span>' +
+        '<select data-part="rmbch" data-idx="' + i + '" title="收款的渠道（群消息里会写出来）" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
+          '<option value="wx"' + (p.rmbChannel !== "alipay" ? " selected" : "") + ">微信</option>" +
+          '<option value="alipay"' + (p.rmbChannel === "alipay" ? " selected" : "") + ">支付宝</option>" +
+        "</select>" +
         '<span style="font-size:13px;color:var(--muted);">实收 ¥</span>' +
         '<input type="number" min="0" step="1" value="' + (partRmb(p) != null ? partRmb(p) : "") + '" data-part="rmb" data-idx="' + i + '"' +
           ' style="width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right;font-size:15px;font-weight:700;color:#1d4e89;">' +
         (state.fxRate > 0 ? '<span style="font-size:12px;color:var(--muted);">按汇率 ¥' + state.fxRate + '/澳币，改上面的澳币会自动重算</span>' : "") +
+        "</div>";
+    } else if (p.payType === "cash") {
+      // ★ v3.31.0：现金分【纸币 / 转账】（用户需求）
+      detail = '<div class="cart-row" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
+        '<span style="min-width:18px;"></span>' +
+        '<select data-part="cashch" data-idx="' + i + '" title="收款形式（群消息里会写出来）" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
+          '<option value="cash"' + (p.cashChannel !== "transfer" ? " selected" : "") + ">现金（纸币）</option>" +
+          '<option value="transfer"' + (p.cashChannel === "transfer" ? " selected" : "") + ">转账</option>" +
+        "</select>" +
+        '<span style="font-size:12px;color:var(--muted);">澳币，不收手续费</span>' +
         "</div>";
     } else if (p.payType === "member") {
       var m = findMember(p.memberId);
@@ -6272,6 +6296,14 @@
     } else if (kind === "rmb") {
       parts[idx].rmb = el.value;
       onChange();
+    } else if (kind === "rmbch") {
+      // ★ v3.31.0：人民币渠道（微信 / 支付宝）—— 不重画，选完就记下
+      parts[idx].rmbChannel = el.value;
+      onChange();
+    } else if (kind === "cashch") {
+      // ★ v3.31.0：现金形式（纸币 / 转账）
+      parts[idx].cashChannel = el.value;
+      onChange();
     } else if (kind === "memsearch") {
       parts[idx].memSearch = el.value;
       // 只刷新这一行的会员下拉，不重画整行（搜索框不丢焦点）
@@ -6286,6 +6318,9 @@
       parts[idx].rmb = null;
       if (containerId === "memParts" && el.value === "member") parts[idx].payType = "cash";
       if (parts[idx].payType !== "member") { parts[idx].memberId = ""; parts[idx].memSearch = ""; }
+      // ★ v3.31.0：切到人民币/现金时给个默认渠道（微信 / 纸币），用户可再改
+      if (parts[idx].payType === "rmb" && !parts[idx].rmbChannel) parts[idx].rmbChannel = "wx";
+      if (parts[idx].payType === "cash" && !parts[idx].cashChannel) parts[idx].cashChannel = "cash";
       renderPayRows(containerId, parts);
       onChange();
     }
@@ -6651,7 +6686,10 @@
         fee: f, due: due, rmb: pt.payType === "rmb" ? rv : null,
         memberId: pt.payType === "member" ? (pt.memberId || "") : "",
         memberName: pt.payType === "member" ? ((findMember(pt.memberId) || {}).name || "") : "",
-        balanceAfter: balAfter
+        balanceAfter: balAfter,
+        // ★ v3.31.0：人民币渠道（微信/支付宝）、现金形式（纸币/转账）存进记录
+        rmbChannel: pt.payType === "rmb" ? (pt.rmbChannel || "wx") : "",
+        cashChannel: pt.payType === "cash" ? (pt.cashChannel || "cash") : ""
       });
     }
     var payKeys = [];
@@ -7971,7 +8009,10 @@
           memberId: rp.memberId || "",
           memSearch: rp.memSearch || "",
           label: rp.label || "",
-          dueOverride: rp.dueOverride != null ? rp.dueOverride : null
+          dueOverride: rp.dueOverride != null ? rp.dueOverride : null,
+          // ★ v3.31.0：编辑时把人民币渠道 / 现金形式也带回来
+          rmbChannel: rp.rmbChannel || "",
+          cashChannel: rp.cashChannel || ""
         });
       }
     } else {
@@ -8226,7 +8267,10 @@
       return { amount: round2(pp.amount), payType: pp.payType,
                rmb: pp.payType === "rmb" ? partRmb(pp) : null, due: partPaid(pp),
                label: pp.label || "", dueOverride: pp.dueOverride != null ? pp.dueOverride : null,
-               memberId: pp.memberId || "", memberName: (findMember(pp.memberId) || {}).name || "" };
+               memberId: pp.memberId || "", memberName: (findMember(pp.memberId) || {}).name || "",
+               // ★ v3.31.0：保存人民币渠道 / 现金形式
+               rmbChannel: pp.payType === "rmb" ? (pp.rmbChannel || "wx") : "",
+               cashChannel: pp.payType === "cash" ? (pp.cashChannel || "cash") : "" };
     });
     rec.payType = (t.card > 0.005 && (t.cash > 0.005 || t.rmb > 0.005 || t.member > 0.005)) ? "mixed"
                 : (t.card > 0.005 ? "card" : (t.rmb > 0.005 ? "rmb" : (t.member > 0.005 && t.cash <= 0.005 ? "member" : "cash")));
@@ -17159,7 +17203,7 @@ rows += "<tr>" +
       if (p.payType === "card") cardAmts.push(Number(p.amount) || 0);
       else if (p.payType === "member") mems.push(p);
       else if (p.payType === "rmb") rmbs.push(p);
-      else if (p.payType === "cash") cashes.push(Number(p.amount) || 0);
+      else if (p.payType === "cash") cashes.push(p);
     }
     var out = [];
     if (cardAmts.length) {
@@ -17183,10 +17227,16 @@ rows += "<tr>" +
       p = rmbs[i];
       var rv = (p.rmb != null) ? Number(p.rmb) : rmbOf(Number(p.amount) || 0);
       if (rv == null) continue;
-      if (out.length) out.push("剩下" + wxNum(p.amount) + "刀微信收" + wxNum(rv) + "人民币");
-      else out.push("微信收" + wxNum(rv) + "人民币");
+      // ★ v3.31.0：写清是微信还是支付宝收的（老记录没存渠道 → 按微信）
+      var chName = (p.rmbChannel === "alipay") ? "支付宝收" : "微信收";
+      if (out.length) out.push("剩下" + wxNum(p.amount) + "刀" + chName + wxNum(rv) + "人民币");
+      else out.push(chName + wxNum(rv) + "人民币");
     }
-    for (i = 0; i < cashes.length; i++) out.push("现金" + wxNum(cashes[i]) + "刀");
+    for (i = 0; i < cashes.length; i++) {
+      p = cashes[i];
+      // ★ v3.31.0：现金 / 转账（老记录没存形式 → 按现金）
+      out.push(((p.cashChannel === "transfer") ? "转账" : "现金") + wxNum(p.amount) + "刀");
+    }
     // 老记录没有 parts → 用主字段兜底（优雅降级，不让文案空白）
     if (!out.length) {
       var collected = Number(rec.collected != null ? rec.collected : rec.grand) || 0;
