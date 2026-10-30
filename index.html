@@ -4755,7 +4755,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.32.5";
+  var APP_VER = "v3.33.0";
   var APP_DATE = "2026-10-30";
 
   // ===== 真机测量探针（v3.25.10）=====
@@ -19330,6 +19330,152 @@ try { fbMaybeMigrateTableStates(); } catch (x) {}
     }
     if (hit) save();
   } catch (e) {}
+})();
+
+// ============================================================
+//  ★ v3.33.0：新版本检测 → 其它设备也自动换到新版本
+//
+//  为什么要有它：
+//    以前只有发布工具会刷新「本机 Chrome」，收银台另一台电脑 / 手机 / 平板
+//    一直开着旧版也不会自己变，得手动刷新。现在发布脚本在【线上确认真的
+//    返回新版本】之后，会往 Firebase 写一个 __sysVer = { ver, ts } 节点；
+//    所有开着页面的设备收到后：
+//      · 空闲（没在输入、没开弹窗）→ 静默刷新到新版
+//      · 正在忙（输入框聚焦 / 弹窗开着）→ 顶部提示条，点一下才刷新
+//  刷新一定带 ?v= 时间戳，绕开 GitHub Pages 约 10 分钟的 CDN 缓存，
+//  不然可能"刷新了还是旧版"。
+// ============================================================
+(function fbVersionWatch() {
+  var VER_NODE = "__sysVer";        // 发布脚本写入：{ ver: "v3.33.0", ts: 时间戳 }
+  var CHECK_MS = 60000;             // REST 兜底：实时通道没连上时才用
+  var FIRST_MS = 12000;             // 页面起来 12 秒后查第一次，别和启动抢
+  var ATTACH_MS = 4000;             // 等 Firebase 连上的轮询间隔
+  var SEEN_KEY = "tianhu_ver_reloaded";
+  var barEl = null, dismissed = "", pendingVer = "", attachTimer = null, attached = false;
+
+  function curVer() {
+    try {
+      var m = String(APP_VER || "").match(/v\d+(?:\.\d+)*/);
+      if (m) return m[0];
+    } catch (e) {}
+    return "";
+  }
+  function verNum(v) {
+    var m = String(v || "").match(/\d+(?:\.\d+)*/);
+    if (!m) return -1;
+    var p = m[0].split("."), n = 0, i;
+    for (i = 0; i < p.length && i < 4; i++) n = n * 10000 + (parseInt(p[i], 10) || 0);
+    return n;
+  }
+  // 正在操作吗？（开着弹窗 / 输入框聚焦 / 在编辑内容）
+  // 忙的时候绝不静默刷新，否则正在填的结算金额会没了
+  function isBusy() {
+    try {
+      if (document.querySelector(".overlay.show")) return true;
+      var a = document.activeElement;
+      if (a) {
+        var t = String(a.tagName || "").toUpperCase();
+        if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || a.isContentEditable) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function removeBar() {
+    if (!barEl) return;
+    try { if (barEl.parentNode) barEl.parentNode.removeChild(barEl); } catch (e) {}
+    barEl = null;
+  }
+  function showBar(ver) {
+    if (barEl || dismissed === ver) return;
+    if (!document.body) { setTimeout(function () { showBar(ver); }, 800); return; }
+    var d = document.createElement("div");
+    d.id = "fbVerBar";
+    d.style.cssText = "position:fixed;left:12px;right:12px;top:12px;z-index:99999;background:#1d7a4f;color:#fff;"
+      + "border-radius:12px;padding:10px 12px;box-shadow:0 6px 22px rgba(0,0,0,.3);font-size:14px;"
+      + "line-height:1.45;display:flex;align-items:center;gap:8px;font-family:inherit;";
+    var s = document.createElement("span");
+    s.style.flex = "1";
+    s.textContent = "🚀 新版本 " + ver + " 已上线（本机还是 " + curVer() + "）";
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = "立即刷新";
+    b.style.cssText = "background:#fff;color:#1d7a4f;border:0;border-radius:8px;padding:6px 12px;"
+      + "font-weight:700;cursor:pointer;font-size:14px;font-family:inherit;";
+    b.onclick = function () { go(ver); };
+    var x = document.createElement("button");
+    x.type = "button"; x.textContent = "稍后";
+    x.style.cssText = "background:transparent;color:#fff;border:1px solid rgba(255,255,255,.55);"
+      + "border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;font-family:inherit;";
+    x.onclick = function () { dismissed = ver; removeBar(); };
+    d.appendChild(s); d.appendChild(b); d.appendChild(x);
+    document.body.appendChild(d);
+    barEl = d;
+  }
+  function go(ver) {
+    var u = location.pathname + "?v=" + Date.now() + (location.hash || "");
+    try { sessionStorage.setItem(SEEN_KEY, ver); } catch (e) {}
+    try { location.replace(u); } catch (e) { location.href = u; }
+  }
+  function act(ver) {
+    ver = String(ver || "").trim();
+    if (!ver) return;
+    if (document.hidden) { pendingVer = ver; return; }   // 后台先记着，切回来再处理
+    var mine = curVer();
+    if (!mine) return;
+    if (verNum(ver) <= verNum(mine)) { dismissed = ""; removeBar(); return; }
+    if (dismissed === ver) return;
+    if (isBusy()) { showBar(ver); return; }
+    var seen = "";
+    try { seen = sessionStorage.getItem(SEEN_KEY) || ""; } catch (e) {}
+    if (seen === ver) { showBar(ver); return; }   // 刚刷过还没生效 → 不无限刷新
+    removeBar();
+    go(ver);
+  }
+  function onValue(snap) {
+    try { var d = snap && snap.val(); if (d && d.ver) act(d.ver); } catch (e) {}
+  }
+  // 实时监听：连上 Firebase 后挂上（正常情况 1 秒内就能收到发布脚本写的版本号）
+  function attachLive() {
+    try {
+      if (attached) return true;
+      if (!fbReady) return false;
+      var ref = fbRef(VER_NODE);
+      if (!ref) return false;
+      ref.on("value", onValue);
+      attached = true;
+      return true;
+    } catch (e) { return false; }
+  }
+  // REST 兜底：实时通道不通时，每分钟查一次（后台标签页不查，省流量）
+  function pull() {
+    if (document.hidden || fbOnline === true) return;
+    try {
+      if (!fbCfg()) return;
+      var base = fbRestUrl(VER_NODE);
+      if (!base) return;
+      fetch(base + (base.indexOf("?") >= 0 ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d && d.ver) act(d.ver); })
+        .catch(function () {});
+    } catch (e) {}
+  }
+
+  // ★ 只在线上（https，GitHub Pages）启用自动换版。
+  //   本地 file:// 打开调试时不折腾；但把调试口留着，测试/排查能手动触发。
+  var ONLINE = location.protocol === "https:";
+  if (ONLINE) {
+    attachTimer = setInterval(function () {
+      if (attachLive()) { clearInterval(attachTimer); attachTimer = null; }
+    }, ATTACH_MS);
+    setInterval(function () { if (!attached) attachLive(); }, 30000);
+    setTimeout(pull, FIRST_MS);
+    setInterval(pull, CHECK_MS);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) return;
+      if (pendingVer) { var v = pendingVer; pendingVer = ""; act(v); }
+      setTimeout(pull, 2000);
+    });
+  }
+  try { window.__fbVerWatch = { act: act, isBusy: isBusy, curVer: curVer, pull: pull }; } catch (e) {}
 })();
 
   // 网页版：用部署网址自动填好同步地址
