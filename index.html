@@ -2034,6 +2034,47 @@
   .res-hist-row .n { flex:1 1 150px; min-width:90px; }
   .res-hist-row .sub { display:block; font-size:11.5px; color:var(--muted); margin-top:2px; }
   .res-hist-empty { color:var(--muted); font-size:13px; padding:12px 0; }
+  /* 📋 更新日志弹窗（点顶部 / 底部版本号打开，数据由 工具/生成更新日志.py 注入） */
+  .ver { cursor:pointer; transition:background .15s; }
+  .ver:hover { background:rgba(255,255,255,.36); }
+  .foot-ver { cursor:pointer; }
+  .foot-ver:hover { color:var(--green); }
+  .changelog-modal { width:min(94vw,600px); max-height:86vh; padding:0; overflow:hidden;
+    display:flex; flex-direction:column; text-align:left; }
+  .cl-head { display:flex; align-items:flex-start; gap:10px; padding:16px 20px 12px; border-bottom:1px solid var(--line); }
+  .cl-head h3 { font-size:18px; margin:0; }
+  .cl-head .cl-sub { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.5; }
+  .cl-x { margin:0 !important; padding:2px 8px; background:none; border:none; color:var(--muted);
+    font-size:20px; line-height:1.1; cursor:pointer; border-radius:8px; }
+  .cl-x:hover { background:#f1f5f3; color:var(--ink); }
+  .cl-body { flex:1 1 auto; overflow:auto; padding:2px 20px; -webkit-overflow-scrolling:touch; }
+  .cl-item { padding:11px 0; border-bottom:1px dashed #eef1f0; }
+  .cl-item:last-child { border-bottom:0; }
+  .cl-ver { display:inline-block; font-size:12.5px; font-weight:800; color:#fff;
+    background:var(--green-dark); border-radius:999px; padding:2px 10px; letter-spacing:.3px; }
+  .cl-date { font-size:12px; color:var(--muted); margin-left:7px; font-variant-numeric:tabular-nums; }
+  .cl-item ul { margin:6px 0 0; padding-left:18px; font-size:13.5px; line-height:1.72; color:var(--ink); }
+  .cl-item li { margin:3px 0; }
+  .cl-item li b { color:var(--green-dark); }
+  .cl-item code { background:#eef2ef; border-radius:4px; padding:0 4px; font-size:12px;
+    font-family:ui-monospace,Menlo,monospace; }
+  .cl-foot { display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 20px 14px; border-top:1px solid var(--line); }
+  .cl-more { font-size:13px; color:var(--green-dark); text-decoration:none; font-weight:700; }
+  .cl-more:hover { text-decoration:underline; }
+  .cl-foot .btn-ghost { width:auto !important; margin:0 !important; padding:8px 16px; font-size:13px; }
+  body.dark .changelog-modal { background:#17222c !important; }
+  body.dark .cl-head, body.dark .cl-foot { border-color:#2a3846; }
+  body.dark .cl-item { border-bottom-color:#243140; }
+  body.dark .cl-item code { background:#243140; color:#dbe6ef; }
+  body.dark .cl-item li b { color:#3fbf85; }
+  body.dark .cl-x:hover { background:#243140; color:#fff; }
+  @media (max-width:420px) {
+    .cl-body { padding:0 14px; }
+    .cl-head { padding:14px 14px 10px; }
+    .cl-foot { padding:8px 14px 12px; }
+    .cl-more { font-size:12px; }
+  }
   /* 客服端（#cs） */
   .cs-view { position:fixed; inset:0; z-index:80; background:var(--bg); overflow:auto; padding:calc(14px + env(safe-area-inset-top,0px)) 12px 30px; display:none; }
   .cs-view.show { display:block; }
@@ -2555,7 +2596,26 @@
     <button id="dataBtn" class="btn-ghost">备份/恢复</button>
     <span id="syncStatus" class="sync-status"></span>
   </div>
-  <div class="foot-ver"><span id="footVer"></span></div>
+  <div class="foot-ver" id="footVerWrap"><span id="footVer"></span></div>
+
+  <!-- 📋 更新日志弹窗（点顶部 / 底部的版本号打开；内容由 工具/生成更新日志.py 从 README 生成） -->
+  <div class="overlay" id="changelogOverlay">
+    <div class="modal changelog-modal">
+      <div class="cl-head">
+        <div>
+          <h3>📋 更新日志</h3>
+          <div class="cl-sub" id="clSub"></div>
+        </div>
+        <button type="button" class="cl-x" id="clClose" title="关闭" aria-label="关闭">✕</button>
+      </div>
+      <div class="cl-body" id="clBody"></div>
+      <div class="cl-foot">
+        <a class="cl-more" id="clMore" target="_blank" rel="noopener"
+           href="https://github.com/charles011031/TianhuMahjong/blob/main/%E7%89%88%E6%9C%AC%E8%AE%B0%E5%BD%95.md">在 GitHub 看完整历史 →</a>
+        <button type="button" class="btn-ghost" id="clOk">知道了</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 右下角轻提示（"已同步到表格" 之类）-->
   <div class="toast" id="toast"></div>
@@ -4750,8 +4810,81 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.34.1";
+  var APP_VER = "v3.35.0";
   var APP_DATE = "2026-10-31";
+
+  // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
+  // ============================================================
+  //  📋 更新日志（点顶部 / 底部版本号弹出的那份）
+  //  ⚠️ 这份数据自动生成，别手改：python3 工具/生成更新日志.py
+  //     来源 = README.md「### 最近 15 个版本」表格
+  //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
+  // ============================================================
+  var APP_CHANGELOG = [
+    { ver: "v3.35.0", date: "2026-10-31", items: [
+      "**点版本号看更新日志**：页面左上角标题旁、页面最底部的版本号都能点，弹出「📋 更新日志」——显示当前版本 + 最近 15 个版本的改动（版本徽章 + 日期 + 要点）",
+      "弹窗底部有「在 GitHub 看完整历史」直达 `版本记录.md`",
+      "关闭方式：✕ / 知道了 / 点空白处 / Esc。日志数据由 `工具/生成更新日志.py` 从 README「最近 15 个版本」表自动生成，发版时自动同步，不用手抄"
+    ] },
+    { ver: "v3.34.1", date: "2026-10-31", items: [
+      "修：点了「到店开台」后预约消失一下又重新出现在「今天待来」（另一台设备的旧预约状态把本机的「到店」盖回去了）",
+      "现在预约按 `updatedAt` 合并、到店/取消后立刻推送，谁新用谁"
+    ] },
+    { ver: "v3.34.0", date: "2026-10-31", items: [
+      "客服端预约录入改版：**日期**改成日历、**时间**改成手机自带时间选择器（像定闹钟）、**人数**换成**桌数**（1 / 2 / 3 张，另可选指定先开哪张桌）",
+      "系统里「新增预约」也去掉人数框。预约台账 / 提醒条 / 到店开台 / 确认话术都会显示桌数"
+    ] },
+    { ver: "v3.33.1", date: "2026-10-31", items: [
+      "修：预约「到店 / 取消 / 新增」在切到 REST 轮询的设备上看不到（以前轮询只拉待结算，漏了预约）",
+      "另外计时中改「麻将种类」后打上「刚动过」保护，避免被云端旧快照盖回旧种类"
+    ] },
+    { ver: "v3.33.0", date: "2026-10-30", items: [
+      "发布新版后**其它设备自动换到新版本**（不用再手动刷新）：发布脚本在线上确认新版本后往 Firebase 写 `__sysVer`",
+      "页面收到后——空闲（没输入、没弹窗）→ 静默刷新，正在结算/填金额 → 顶部提示条「立即刷新 / 稍后」",
+      "刷新带 `?v=时间戳` 绕开 GitHub Pages 约 10 分钟的 CDN 缓存",
+      "后台标签页切回前台时补查。**老版本页面第一次要手动刷新一次**，之后才会自动换版"
+    ] },
+    { ver: "v3.32.5", date: "2026-10-30", items: [
+      "老记录补麻将种类：结算记录点「编辑」→ 什么都不改 → 点「保存修改」，会用该桌当前种类补上（只补没存过的，已有的不覆盖）"
+    ] },
+    { ver: "v3.32.4", date: "2026-10-30", items: [
+      "群消息格式：人民币统一写 `30.67刀微信收144.22人民币` / `30.67刀支付宝收144.22人民币`（不再分「剩下」）",
+      "麻将种类存进云端记录（以前云端往返一圈就丢，看不到 `108张`）"
+    ] },
+    { ver: "v3.32.3", date: "2026-10-30", items: [
+      "修：选了支付宝/转账，群消息还写「微信/现金」——云端同步把分账压成文本、文本里没渠道",
+      "现在 `payDetail` 带 `（支付宝）`/`（转账）`，拉回来能认（修复前已同步的记录拉回来仍按默认显示）"
+    ] },
+    { ver: "v3.32.2", date: "2026-10-30", items: [
+      "渠道从下拉改成**按钮**，放在「实收」后面：人民币两个胶囊按钮 微信（品牌绿）/ 支付宝（品牌蓝），现金两个文字按钮 现金 / 转账",
+      "整单和按人分账通用"
+    ] },
+    { ver: "v3.32.1", date: "2026-10-30", items: [
+      "修：渠道下拉只在「高级：按笔改金额」里，**整单收款 / 按人分账没显示**（用户反馈）",
+      "现在整单收人民币多「微信/支付宝」、收现金多「现金/转账」，按人分账里每个人各自有"
+    ] },
+    { ver: "v3.32.0", date: "2026-10-30", items: [
+      "收款方式再细分：人民币分**微信 / 支付宝**、现金分**纸币 / 转账**（结算弹窗各多一个下拉）",
+      "群消息跟着写 `微信收xxx人民币` / `支付宝收xxx人民币`、`现金xx刀` / `转账xx刀`",
+      "渠道存进结算记录，编辑老记录也带回来"
+    ] },
+    { ver: "v3.31.0", date: "2026-10-30", items: [
+      "到店开台改成**先选桌**：点「到店开台」弹出 6 张桌（空闲的可选、在用的灰掉，预约指定的那张高亮），选哪张就直接给哪张开台并开始计时，备注自动写**预约的名字（没名字写电话）**",
+      "也可以「只标到店（先不开台）」"
+    ] },
+    { ver: "v3.30.4", date: "2026-10-30", items: [
+      "没存种类的老记录，群消息里**不再写种类**（改桌台种类后，10-29 那批老记录不会再跟着变）",
+      "桌台/待结算的桌照常显示当前种类"
+    ] },
+    { ver: "v3.30.3", date: "2026-10-30", items: [
+      "群消息里麻将种类后面加「张」：`108张` / `136张` / `144张`（只对纯数字种类加",
+      "v3.29.1 之前的结算记录没存种类，会用桌台当前值兜底）"
+    ] },
+    { ver: "v3.30.2", date: "2026-10-30", items: [
+      "群消息里所有金额都带单位：`刷卡18.15刀×3=54.45刀`、`扣卡selina17.94刀（余额70.63刀）`、`现金32刀`（台费/罚款/零食/微信收本来就有）"
+    ] },
+  ];
+  // <<< APP_CHANGELOG END（自动生成，勿手改）
 
   // ===== 真机测量探针（v3.25.10）=====
   // 打开网址后面加 ?debug=1 → 右上角浮一层黑底绿字，显示真实的安全区/缩放/显示模式。
@@ -4791,6 +4924,73 @@
     var f = document.getElementById("footVer");
     if (f) f.textContent = APP_VER + " · " + APP_DATE;
   }
+
+  // ---------- 📋 更新日志弹窗（点顶部 / 底部版本号打开） ----------
+  //  数据 APP_CHANGELOG 由 工具/生成更新日志.py 从 README 自动生成，别手改；
+  //  想加/改日志 → 改 README「### 最近 15 个版本」→ 重跑那个脚本。
+  function clLine(s) {
+    // 先 esc 再还原 **粗体** 和 `代码`（esc 不动 * 和 `，所以这里安全）
+    return esc(String(s == null ? "" : s))
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>");
+  }
+
+  function renderChangelog() {
+    var body = document.getElementById("clBody");
+    var sub = document.getElementById("clSub");
+    var list = (typeof APP_CHANGELOG !== "undefined" && APP_CHANGELOG) ? APP_CHANGELOG : [];
+    if (sub) {
+      sub.textContent = "当前 " + APP_VER + " · " + APP_DATE +
+        "　·　最近 " + list.length + " 个版本";
+    }
+    if (!body) return;
+    if (!list.length) {
+      body.innerHTML = '<div class="res-hist-empty">暂无更新日志</div>';
+      return;
+    }
+    body.innerHTML = list.map(function (it) {
+      var items = (it && it.items) || [];
+      return '<div class="cl-item"><div><span class="cl-ver">' + esc(it.ver || "") +
+        '</span><span class="cl-date">' + esc(it.date || "") + "</span></div><ul>" +
+        items.map(function (line) { return "<li>" + clLine(line) + "</li>"; }).join("") +
+        "</ul></div>";
+    }).join("");
+  }
+
+  function openChangelog() {
+    renderChangelog();
+    var ov = document.getElementById("changelogOverlay");
+    if (ov) ov.classList.add("show");
+    var body = document.getElementById("clBody");
+    if (body) body.scrollTop = 0;
+  }
+
+  function closeChangelog() {
+    var ov = document.getElementById("changelogOverlay");
+    if (ov) ov.classList.remove("show");
+  }
+
+  (function () {
+    var ov = document.getElementById("changelogOverlay");
+    if (!ov) return;
+    function bindOpen(el) {
+      if (!el) return;
+      el.addEventListener("click", function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        openChangelog();
+      });
+    }
+    bindOpen(document.getElementById("appVer"));
+    bindOpen(document.getElementById("footVerWrap"));
+    var x = document.getElementById("clClose");
+    var ok = document.getElementById("clOk");
+    if (x) x.addEventListener("click", closeChangelog);
+    if (ok) ok.addEventListener("click", closeChangelog);
+    ov.addEventListener("click", function (e) { if (e.target === ov) closeChangelog(); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && ov.classList.contains("show")) closeChangelog();
+    });
+  })();
 
   // ---------- 网页版：自动接上自己的同步接口 ----------
   //   在 Apps Script 里部署时，服务器会把这个占位符换成部署网址；
