@@ -4755,8 +4755,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.33.0";
-  var APP_DATE = "2026-10-30";
+  var APP_VER = "v3.33.1";
+  var APP_DATE = "2026-10-31";
 
   // ===== 真机测量探针（v3.25.10）=====
   // 打开网址后面加 ?debug=1 → 右上角浮一层黑底绿字，显示真实的安全区/缩放/显示模式。
@@ -18382,7 +18382,12 @@ function fbRestPullAll(forceAll) {
       // ★ v3.18.0：REST 兜底模式也要拉【待结算】。
       //   以前 pending 只在 WebSocket 监听里处理 → REST 模式下永远不拉，
       //   于是"本机新建的推不上去、别的设备也看不到"，刷新后还会被空快照吞掉。
-      fbRestPullPending(function () { fbRestBusy = false; save(); fbRenderAll(); });
+      // ★ v3.33.1：预约也要一起拉（用户反馈：一台点了「到店」，另一台还显示没到店）。
+      //   预约以前只有 WebSocket 实时监听 → 切到 REST 轮询的设备永远收不到
+      //   新预约 / 到店 / 取消。
+      fbRestPullPending(function () {
+        fbRestPullReservations(function () { fbRestBusy = false; save(); fbRenderAll(); });
+      });
       return;
     }
     var col = todo[i++];
@@ -18409,6 +18414,21 @@ function fbRestPullPending(done) {
   }).then(function (v) {
     if (v === null || v === undefined) { if (done) done(); return; }
     try { fbApplyPendingSnapshot(v); } catch (e) {}
+    if (done) done();
+  }).catch(function () { if (done) done(); });
+}
+// REST 模式下拉预约（跟实时监听走同一套合并规则）
+// ★ v3.33.1：以前 REST 兜底只拉 pending、不拉预约 → 切到轮询的设备永远看不到
+//   别处点的「到店 / 取消 / 新预约」（用户实测：一台点了到店，另一台还是"没到店"）。
+function fbRestPullReservations(done) {
+  var url = fbRestUrl("reservations");
+  if (!url) { if (done) done(); return; }
+  fetch(url).then(function (r) {
+    if (!r.ok) return null;
+    return r.json();
+  }).then(function (v) {
+    if (v === null || v === undefined) { if (done) done(); return; }
+    try { fbApplyReservationSnapshot(v); } catch (e) {}
     if (done) done();
   }).catch(function () { if (done) done(); });
 }
@@ -18619,6 +18639,26 @@ function applyTableStates(rows) {
     fbTblApplying = false;
   }
   return n;
+}
+
+// ============================================================
+//  ★ v3.33.1：改「麻将种类」时的保护（用户确认的规则：
+//    计时中随时可改、改完群消息要跟着变；结算后改桌台不影响已结算记录）
+//    改种类是下拉框，不像按钮会走 data-act 的点击保护 —— 如果云端旧快照
+//    恰好在这时候回来，本机刚改的种类会被盖回旧值。所以这里也打上
+//    "我刚动过这张桌"的标记（20 秒内不接受远端覆盖）。
+// ============================================================
+function fbMarkTableTouchedByInput(el) {
+  try {
+    if (!el || !el.getAttribute) return;
+    if (el.getAttribute("data-field") !== "mahjongType") return;
+    var id = el.getAttribute("data-id");
+    if (id) fbTblRecent[id] = Date.now();
+  } catch (x) {}
+}
+if (typeof document !== "undefined" && document.addEventListener) {
+  document.addEventListener("input", function (e) { fbMarkTableTouchedByInput(e.target); }, true);
+  document.addEventListener("change", function (e) { fbMarkTableTouchedByInput(e.target); }, true);
 }
 
 // ★ 一次性迁移：云端存的还是"老格式"（缺 endedAt / extras / carry）✗
@@ -19139,46 +19179,51 @@ function fbPushReservations() {
   fbResvCloud = keep;
 }
 
+// 套用一份「预约」云端快照（实时监听 / REST 轮询共用）
+function fbApplyReservationSnapshot(obj) {
+  obj = obj || {};
+  var rows = [], k;
+  for (k in obj) {
+    if (!obj.hasOwnProperty(k) || !obj[k]) continue;
+    var o = obj[k];
+    o.id = o.id || k;
+    rows.push(o);
+  }
+  var first = !fbResvReady;
+  var merged;
+  if (first) {
+    // ★ 第一次连上：云端的和本机已有的【合并】，一条都不能丢。
+    //   （如果直接以云端为准，本机原本存着的预约会被空云端清掉 —— 那是真丢数据）
+    var byId = {}, list = [], i2, r2;
+    var local0 = Array.isArray(state.reservations) ? state.reservations : [];
+    for (i2 = 0; i2 < local0.length; i2++) {
+      r2 = local0[i2];
+      if (r2 && r2.id) { byId[r2.id] = r2; }
+    }
+    for (i2 = 0; i2 < rows.length; i2++) {
+      r2 = rows[i2];
+      if (r2 && r2.id) { byId[r2.id] = r2; }     // 云端优先（同 id 以云端为准）
+    }
+    for (var kk in byId) { if (byId.hasOwnProperty(kk)) list.push(byId[kk]); }
+    merged = list;
+  } else {
+    merged = fbMergeCol("reservations", rows, function () { return state.reservations; });
+  }
+  state.reservations = merged;
+  fbResvReady = true;
+  fbResvCloud = {};
+  for (var i = 0; i < merged.length; i++) fbResvCloud[merged[i].id] = 1;
+  save();
+  render();
+  try { if (typeof renderReservations === "function") renderReservations(); } catch (e) {}
+  if (first) fbPushReservations();     // 把本机那些也推上云端，两边就一致了
+}
+
 function fbAttachReservationListener() {
   var ref = fbRef("reservations");
   if (!ref) return;
   ref.on("value", function (snap) {
-    var obj = snap && snap.val ? (snap.val() || {}) : {};
-    var rows = [], k;
-    for (k in obj) {
-      if (!obj.hasOwnProperty(k) || !obj[k]) continue;
-      var o = obj[k];
-      o.id = o.id || k;
-      rows.push(o);
-    }
-    var first = !fbResvReady;
-    var merged;
-    if (first) {
-      // ★ 第一次连上：云端的和本机已有的【合并】，一条都不能丢。
-      //   （如果直接以云端为准，本机原本存着的预约会被空云端清掉 —— 那是真丢数据）
-      var byId = {}, list = [], i2, r2;
-      var local0 = Array.isArray(state.reservations) ? state.reservations : [];
-      for (i2 = 0; i2 < local0.length; i2++) {
-        r2 = local0[i2];
-        if (r2 && r2.id) { byId[r2.id] = r2; }
-      }
-      for (i2 = 0; i2 < rows.length; i2++) {
-        r2 = rows[i2];
-        if (r2 && r2.id) { byId[r2.id] = r2; }     // 云端优先（同 id 以云端为准）
-      }
-      for (var kk in byId) { if (byId.hasOwnProperty(kk)) list.push(byId[kk]); }
-      merged = list;
-    } else {
-      merged = fbMergeCol("reservations", rows, function () { return state.reservations; });
-    }
-    state.reservations = merged;
-    fbResvReady = true;
-    fbResvCloud = {};
-    for (var i = 0; i < merged.length; i++) fbResvCloud[merged[i].id] = 1;
-    save();
-    render();
-    try { if (typeof renderReservations === "function") renderReservations(); } catch (e) {}
-    if (first) fbPushReservations();     // 把本机那些也推上云端，两边就一致了
+    fbApplyReservationSnapshot(snap && snap.val ? (snap.val() || {}) : {});
   });
 }
 
