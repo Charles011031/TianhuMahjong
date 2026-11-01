@@ -4810,7 +4810,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.36.1";
+  var APP_VER = "v3.36.2";
   var APP_DATE = "2026-11-02";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4821,6 +4821,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.36.2", date: "2026-11-02", items: [
+      "第 3 条按方案 B 处理：**账单完全不动**，让结算跟着账单走——结算弹窗「一次性全付」选人民币时，「应收 ¥」默认取「📄 看人民币账单」上那个合计（账单仍按「台费人均 × 4、零食单价 × 数量」逐项折算）",
+      "顶部大字、整单收款卡片、老的快捷「人民币」按钮、结算记录里存的人民币都是同一个数。账单里没列的罚款 / 合并结算另一桌 / 其它费用 / 上次未付按汇率一次折算加上，保证钱收齐",
+      "实收 ¥ 仍可手动改"
+    ] },
     { ver: "v3.36.1", date: "2026-11-02", items: [
       "按用户要求**撤销 v3.36.0 的第 3 条**：人民币账单恢复成之前的写法——台费按 4 人平摊显示「人均 × 4」、零食按「单价折算人民币 × 数量」、合计为各项相加（界面和金额都跟 v3.35.0 一致）。v3.36.0 的另外两条（备注跟着这一场走、预约按营业日显示）保留"
     ] },
@@ -4879,10 +4884,6 @@
     { ver: "v3.31.0", date: "2026-10-30", items: [
       "到店开台改成**先选桌**：点「到店开台」弹出 6 张桌（空闲的可选、在用的灰掉，预约指定的那张高亮），选哪张就直接给哪张开台并开始计时，备注自动写**预约的名字（没名字写电话）**",
       "也可以「只标到店（先不开台）」"
-    ] },
-    { ver: "v3.30.4", date: "2026-10-30", items: [
-      "没存种类的老记录，群消息里**不再写种类**（改桌台种类后，10-29 那批老记录不会再跟着变）",
-      "桌台/待结算的桌照常显示当前种类"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6259,6 +6260,35 @@
     };
   }
 
+  // ★ v3.36.2：结算弹窗「一次性全付」的人民币默认值 = 「📄 看人民币账单」上那个数（用户选的方案 B）
+  //   账单按「台费人均 ×4、零食单价 ×数量」逐项折算；罚款 / 合并的另一桌 / 其它费用 / 上次未付
+  //   账单里没有列，这部分按汇率一次折算加上，保证钱能收齐。
+  //   这样看账单的 ¥ 和结算实收的 ¥ 就是同一个数。
+  function settleRmbBillDefault(b) {
+    if (!settleData) return 0;
+    if (!b) b = settleBill();
+    var fx = Number(state.fxRate) || 0;
+    if (!(fx > 0)) return 0;
+    var t = state.tables[settleData.id];
+    if (!t) return round2(b.due * fx);
+    var fee = b.tableFee;
+    // 台费：账单写「人均 ¥x × 4 = ¥合计」（人均先四舍五入）
+    var perFee = round2(fee / 4);
+    var feeRmb = round2(round2(perFee * fx) * 4);
+    // 零食：账单写「¥单价 × 数量」（单价先四舍五入）
+    var snackRmb = 0, snackAud = 0;
+    (t.extras || []).forEach(function (ex) {
+      var qty = Number(ex.qty) || 0;
+      if (qty <= 0) return;
+      var price = Number(ex.price) || 0;
+      snackAud = round2(snackAud + round2(price * qty));
+      snackRmb = round2(snackRmb + round2(round2(price * fx) * qty));
+    });
+    // 账单上没有的费用：罚款 / 合并桌 / 其它费用（sOther 超出零食的部分）/ 上次未付
+    var extraAud = round2(b.due - fee - snackAud);
+    return round2(feeRmb + snackRmb + (Math.abs(extraAud) >= 0.005 ? round2(extraAud * fx) : 0));
+  }
+
   // 刷卡收 1.2% 手续费；现金 / 人民币 / 会员扣款不收
   // 从「实收（含手续费）」倒推手续费前的本金
   //   正着算是：实收 = 本金 + 向上取整(本金 × 手续费%)
@@ -7390,7 +7420,9 @@
   //   刷卡 → 显示含手续费的实际要收的钱，并注明含多少手续费
   //   人民币 → 大字人民币 ¥ + 灰色小字 ≈ 澳币（和整单结算 v3.14.6 的规则一致）
   //   现金 → 应收还是账单金额，但实收低时注明抹零
-  function spDueText(total, method, actual, rmb) {
+  //   ★ v3.36.2：整单收人民币时，默认值由外面传进来（= 看人民币账单上那个数），
+  //     不再用「总额 × 汇率」自己算 —— 两边才会一致
+  function spDueText(total, method, actual, rmb, rmbDef) {
     total = round2(total);
     if (method === "card") {
       var act = (actual != null && actual !== "") ? round2(actual) : round2(total + feeOf(total));
@@ -7399,7 +7431,8 @@
     }
     if (method === "rmb") {
       var fx = Number(state.fxRate) || 0;
-      var rmbShow = (rmb != null && rmb !== "") ? round2(rmb) : (fx > 0 ? round2(total * fx) : 0);
+      var rmbShow = (rmb != null && rmb !== "") ? round2(rmb)
+                 : (fx > 0 ? (rmbDef != null ? round2(rmbDef) : round2(total * fx)) : 0);
       if (rmbShow > 0) return '应收 ¥' + rmbShow.toFixed(2) + '<span class="sp-due-sub">（≈ ' + fmtMoney(total) + ' 澳币）</span>';
     }
     if (method === "cash" && actual != null && actual !== "") {
@@ -7429,7 +7462,8 @@
     var b = settleBill(), m = spSingleMethod || "cash";
     el.innerHTML = spDueText(b.due, m,
       (m === "card" || m === "cash") ? spSingleActual : null,
-      m === "rmb" ? spSingleRmb : null);
+      m === "rmb" ? spSingleRmb : null,
+      m === "rmb" ? settleRmbBillDefault(b) : null);
   }
   function spBuildParts() {
     if (!settleData) return;
@@ -7479,7 +7513,8 @@
           parts.push({ amount: due, payType: "card", rmb: null, memberId: "", memSearch: "", label: "" });
         }
       } else if (m === "rmb") {
-        var rv = (spSingleRmb != null && spSingleRmb !== "") ? round2(spSingleRmb) : ((Number(state.fxRate) || 0) > 0 ? round2(due * state.fxRate) : null);
+        // ★ v3.36.2：默认人民币 = 看人民币账单上那个数（方案 B）
+        var rv = (spSingleRmb != null && spSingleRmb !== "") ? round2(spSingleRmb) : ((Number(state.fxRate) || 0) > 0 ? settleRmbBillDefault(b) : null);
         parts.push({ amount: due, payType: "rmb", rmb: rv, rmbChannel: spSingleRmbChannel || "wx", memberId: "", memSearch: "", label: "" });
       } else {
         var ca = (spSingleActual != null && spSingleActual !== "") ? round2(spSingleActual) : due;
@@ -7601,7 +7636,8 @@
     if (!box) return;
     var b = settleBill(), due = b.due, m = spSingleMethod || "cash";
     var h = '<div class="sp-person"><div class="sp-person-top"><b>整单收款</b><b class="sp-due" id="spSingleDue">' +
-      spDueText(due, m, (m === "card" || m === "cash") ? spSingleActual : null, m === "rmb" ? spSingleRmb : null) + '</b></div>' +
+      spDueText(due, m, (m === "card" || m === "cash") ? spSingleActual : null, m === "rmb" ? spSingleRmb : null,
+                m === "rmb" ? settleRmbBillDefault(b) : null) + '</b></div>' +
       '<div class="sp-line">台费 ' + fmtMoney(b.tableAll) +
       (b.other > 0.005 ? '　·　零食 ' + fmtMoney(b.other) : '') +
       (b.carry > 0.005 ? '　·　上次未付 ' + fmtMoney(b.carry) : '') + '</div>' +
@@ -7642,7 +7678,7 @@
       }
     } else {
       var def, cur, unit;
-      if (m === "rmb") { def = round2(due * (Number(state.fxRate) || 0)); cur = spSingleRmb; unit = "¥"; }
+      if (m === "rmb") { def = settleRmbBillDefault(b); cur = spSingleRmb; unit = "¥"; }
       else { def = (m === "card" ? round2(due + feeOf(due)) : due); cur = spSingleActual; unit = "$"; }
       var val = (cur != null && cur !== "") ? cur : def;
       // ★ v3.32.2：渠道改成按钮，放在「实收」后面（用户要求：微信/支付宝、现金/转账）
@@ -8095,7 +8131,8 @@
         settleParts = [{ amount: 0, payType: "member", rmb: null, memberId: "", memSearch: "", label: "台费" }];
       }
     } else {
-      settleParts = [{ amount: b.due, payType: type, rmb: null, memberId: "", memSearch: "", label: "" }];
+      // ★ v3.36.2：快捷「人民币」也走账单上的数（和整单收款卡片一致）
+      settleParts = [{ amount: b.due, payType: type, rmb: type === "rmb" ? settleRmbBillDefault(b) : null, memberId: "", memSearch: "", label: "" }];
     }
     refreshSettle();
     // 会员余额要选人 → 自动把明细展开
