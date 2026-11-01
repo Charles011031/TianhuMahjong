@@ -4810,7 +4810,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.36.0";
+  var APP_VER = "v3.36.1";
   var APP_DATE = "2026-11-02";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4821,6 +4821,9 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.36.1", date: "2026-11-02", items: [
+      "按用户要求**撤销 v3.36.0 的第 3 条**：人民币账单恢复成之前的写法——台费按 4 人平摊显示「人均 × 4」、零食按「单价折算人民币 × 数量」、合计为各项相加（界面和金额都跟 v3.35.0 一致）。v3.36.0 的另外两条（备注跟着这一场走、预约按营业日显示）保留"
+    ] },
     { ver: "v3.36.0", date: "2026-11-02", items: [
       "用户反馈三条一起修：**备注跟着这一场走**——结算完成 / 收进待结算后桌卡备注自动清空（待结算账单里仍保留，搬回桌台时带回来）",
       "**预约按营业日显示**——凌晨场算前一个营业日，提醒条 / 台账分组 / 已到计数 / 收工判定 / 桌卡角标全部按营业日，「还有多久 / 超时」按真实日期时间算（跨夜不再算错），上一营业日已到店的不再显示、没到店的留在「过期待处理」",
@@ -4880,10 +4883,6 @@
     { ver: "v3.30.4", date: "2026-10-30", items: [
       "没存种类的老记录，群消息里**不再写种类**（改桌台种类后，10-29 那批老记录不会再跟着变）",
       "桌台/待结算的桌照常显示当前种类"
-    ] },
-    { ver: "v3.30.3", date: "2026-10-30", items: [
-      "群消息里麻将种类后面加「张」：`108张` / `136张` / `144张`（只对纯数字种类加",
-      "v3.29.1 之前的结算记录没存种类，会用桌台当前值兜底）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -18049,16 +18048,9 @@ document.addEventListener("mousedown", function (e) {
 
   // ============================================================
   //  🧾 人民币账单（只看，不发送）
-  //  ★ v3.36.0：人民币合计 = 整单澳币 × 汇率（一次性折算），
-  //    与结算弹窗「一次性全付」的人民币数额【完全一致】（用户反馈差几分钱）
-  //    · 以前：台费按 4 人平摊 → 四舍五入 → ×4；零食按单价折算 → ×数量；再逐项相加
-  //      每条路径都各自进位，和「总额 × 汇率」差 1～12 分钱
-  //    · 现在：台费行的人均只作参考，合计用真实台费；每行人民币按该行澳币一次折算；
-  //      合计用整单澳币 × 汇率；逐项相加与合计差 1 分时加「汇率折算差额」行做平
-  //  opts（从结算弹窗打开时传入，可选）：{ fine, mergedSum, carry, otherExtra }
+  //  每一行同时显示澳币和人民币；零食按「单价 × 数量」两栏都乘
   // ============================================================
-  function rmbBillInfo(id, startOverride, endOverride, opts) {
-    opts = opts || {};
+  function rmbBillInfo(id, startOverride, endOverride) {
     var t = state.tables[id];
     if (!t) return null;
     var now = Date.now();
@@ -18071,54 +18063,41 @@ document.addEventListener("mousedown", function (e) {
       ms = endOverride - startOverride; startTs = startOverride; endTs = endOverride; forced = true;
     }
     var fee = tableFeeOf(ms), fx = Number(state.fxRate) || 0;
-    var lines = [], totalAud = 0;
-    function addLine(name, qty, audTxt, aud) {
-      var rmb = fx > 0 ? round2(aud * fx) : 0;
-      lines.push({ name: name, qty: qty, audTxt: audTxt, rmbTxt: fx > 0 ? "¥" + rmb.toFixed(2) : "—", aud: aud, rmb: rmb });
-      totalAud = round2(totalAud + aud);
-    }
-    // 台费：人均只作参考，合计用真实台费（4 等分四舍五入再 ×4 会多出 1～2 分）
+    var lines = [], totalAud = 0, totalRmb = 0;
+    // 台费：按 4 人平摊，显示「一个人的台费 × 4 = 总台费」
     var PERSON_N = 4;
     var perFee = round2(fee / PERSON_N);
-    var perRmb = fx > 0 ? round2(fee * fx / PERSON_N) : 0;
-    var feeRmb = fx > 0 ? round2(fee * fx) : 0;
+    var feeTotal = round2(perFee * PERSON_N);
+    var perRmb = fx > 0 ? round2(perFee * fx) : 0;
+    var feeRmbTotal = fx > 0 ? round2(perRmb * PERSON_N) : 0;
     lines.push({
       name: "台费", qty: PERSON_N + " 人",
-      audTxt: "人均 " + fmtMoney(perFee) + " · 合计 " + fmtMoney(fee),
-      rmbTxt: fx > 0 ? ("人均 ¥" + perRmb.toFixed(2) + " · 合计 ¥" + feeRmb.toFixed(2)) : "—",
-      aud: round2(fee), rmb: feeRmb
+      audTxt: fmtMoney(perFee) + " × " + PERSON_N + " = " + fmtMoney(feeTotal),
+      rmbTxt: fx > 0 ? ("¥" + perRmb.toFixed(2) + " × " + PERSON_N + " = ¥" + feeRmbTotal.toFixed(2)) : "—",
+      aud: feeTotal, rmb: feeRmbTotal
     });
-    totalAud = round2(fee);
-    // 零食：人民币按「这一行的澳币小计」一次折算（不再按单价折算再乘数量）
+    totalAud = feeTotal; totalRmb = feeRmbTotal;
+    // 零食：单价 × 数量，两栏都按数量乘
     (t.extras || []).forEach(function (ex) {
       var qty = Number(ex.qty) || 0;
       if (qty <= 0) return;
       var price = Number(ex.price) || 0;
       var audLine = round2(price * qty);
-      addLine(ex.name, String(qty), fmtMoney(price) + " × " + qty + " = " + fmtMoney(audLine), audLine);
+      var rmbUnit = fx > 0 ? round2(price * fx) : 0;
+      var rmbLine = fx > 0 ? round2(rmbUnit * qty) : 0;
+      lines.push({
+        name: ex.name, qty: String(qty),
+        audTxt: fmtMoney(price) + " × " + qty + " = " + fmtMoney(audLine),
+        rmbTxt: fx > 0 ? ("¥" + rmbUnit.toFixed(2) + " × " + qty + " = ¥" + rmbLine.toFixed(2)) : "—",
+        aud: audLine, rmb: rmbLine
+      });
+      totalAud = round2(totalAud + audLine);
+      totalRmb = round2(totalRmb + rmbLine);
     });
-    var mergedSum = round2(Number(opts.mergedSum) || 0);
-    if (mergedSum > 0.005) addLine("合并结算另一桌", "", fmtMoney(mergedSum), mergedSum);
-    var fine = round2(Number(opts.fine) || 0);
-    if (fine > 0.005) addLine("罚款", "", fmtMoney(fine), fine);
-    var otherExtra = round2(Number(opts.otherExtra) || 0);
-    if (Math.abs(otherExtra) >= 0.005) addLine("其它费用", "", (otherExtra < 0 ? "−" : "") + fmtMoney(Math.abs(otherExtra)), otherExtra);
-    var carry = (opts.carry != null) ? round2(Number(opts.carry) || 0) : round2(Number(t.carry) || 0);
-    if (carry > 0.005) addLine("上次未付", "", fmtMoney(carry), carry);
-    totalAud = round2(totalAud);
-    var totalRmb = fx > 0 ? round2(totalAud * fx) : 0;     // ★ 和结算「一次性全付」同一算法
-    if (fx > 0) {
-      var sumRmb = 0;
-      for (var li = 0; li < lines.length; li++) sumRmb = round2(sumRmb + (Number(lines[li].rmb) || 0));
-      var diff = round2(totalRmb - sumRmb);
-      if (Math.abs(diff) >= 0.005) {
-        lines.push({ name: "汇率折算差额", qty: "", audTxt: "—", rmbTxt: "¥" + diff.toFixed(2), aud: 0, rmb: diff });
-      }
-    }
     return { t: t, ms: ms, startTs: startTs, endTs: endTs, forced: forced, fee: fee, fx: fx, lines: lines, totalAud: totalAud, totalRmb: totalRmb };
   }
-  function openRmbBill(id, startOverride, endOverride, opts) {
-    var info = rmbBillInfo(id, startOverride, endOverride, opts);
+  function openRmbBill(id, startOverride, endOverride) {
+    var info = rmbBillInfo(id, startOverride, endOverride);
     if (!info) return;
     var t = info.t, now = Date.now();
     var h = '<div class="rb-store">🀄 天胡麻将馆</div>' +
@@ -18138,8 +18117,6 @@ document.addEventListener("mousedown", function (e) {
       '<td class="num">' + fmtMoney(info.totalAud) + '</td>' +
       '<td class="num">' + (info.fx > 0 ? "¥" + info.totalRmb.toFixed(2) : "—") + '</td></tr></tfoot></table>' +
       '<div class="rb-rate">汇率：1 澳币 = ' + (info.fx || "—") + ' 人民币' +
-      '　·　人民币按整单澳币 × 汇率一次性折算（和结算时一次性全付的数额一致）' +
-      '　·　台费行的人均金额是四舍五入参考，合计以整单为准' +
       '　·　报价时间：' + new Date().toLocaleString("zh-CN") + '</div>' +
       '<div class="rb-totals">' +
       '<div class="rb-total-box"><div class="lab">合计（澳币）</div><div class="amt">A$' + info.totalAud.toFixed(2) + '</div></div>' +
@@ -18154,26 +18131,7 @@ document.addEventListener("mousedown", function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
     if (t.closest("#rmbBillClose")) { closeRmbBill(); return; }
-    if (t.closest("#sRmbBillBtn")) {
-      // ★ v3.36.0：从结算弹窗打开时，把弹窗里当前的起止时间 / 罚款 / 合并桌 / 其它费用 / 上次未付
-      //   一起算进去 → 账单上的「应付人民币」和弹窗里一次性全付的 ¥ 完全一样
-      if (settleData) {
-        var opt = null;
-        try {
-          var sb = settleBill();
-          var exSum = 0, stb = state.tables[settleData.id];
-          ((stb && stb.extras) || []).forEach(function (x) { exSum += (Number(x.price) || 0) * (Number(x.qty) || 0); });
-          opt = {
-            fine: sb.fine || 0,
-            mergedSum: sb.mgSum || 0,
-            carry: sb.carry || 0,
-            otherExtra: round2((Number(sb.other) || 0) - round2(exSum))
-          };
-        } catch (err) { opt = null; }
-        openRmbBill(settleData.id, settleData.startTs, settleData.endTs, opt);
-      }
-      return;
-    }
+    if (t.closest("#sRmbBillBtn")) { if (settleData) openRmbBill(settleData.id); return; }
     var ov = document.getElementById("rmbBillOverlay");
     if (ov && t === ov) closeRmbBill();
   });
