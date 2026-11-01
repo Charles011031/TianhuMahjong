@@ -1879,8 +1879,9 @@
   #splitPanel .sp-due { margin-left:auto;color:var(--green-dark); }
   #splitPanel .sp-line { font-size:12.5px;color:var(--muted);margin-top:3px; }
   #splitPanel .sp-payline { display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px; }
-  #splitPanel .sp-pay { font-family:inherit;cursor:pointer;font-size:12px;font-weight:700;border-radius:999px;padding:8px 10px;min-height:36px;border:1px solid #e3e8e5;background:#fff;color:#6b7280; }
-  #splitPanel .sp-pay.on { border-color:#1d7a4f;background:#1d7a4f;color:#fff; }
+  /* v3.36.3：结算弹窗顶部「怎么收」也套用同一套胶囊按钮（只在按人分账模式显示） */
+  #splitPanel .sp-pay, #sQuickPay .sp-pay { font-family:inherit;cursor:pointer;font-size:12px;font-weight:700;border-radius:999px;padding:8px 10px;min-height:36px;border:1px solid #e3e8e5;background:#fff;color:#6b7280; }
+  #splitPanel .sp-pay.on, #sQuickPay .sp-pay.on { border-color:#1d7a4f;background:#1d7a4f;color:#fff; }
   /* v3.32.2：渠道按钮配色（微信绿 / 支付宝蓝） */
   #splitPanel .sp-pay.sp-ch-wx.on { border-color:#07C160;background:#07C160;color:#fff; }
   #splitPanel .sp-pay.sp-ch-ali.on { border-color:#1677FF;background:#1677FF;color:#fff; }
@@ -1893,9 +1894,9 @@
   #splitPanel .sp-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center; }
   #splitPanel .sp-adv { margin-top:8px; }
   body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person { background:#1f2933; }
-  body.dark #splitPanel .sp-chip, body.dark #splitPanel .sp-pay, body.dark #splitPanel .sp-mini { background:#111827;color:#d1d5db;border-color:#374151; }
+  body.dark #splitPanel .sp-chip, body.dark #splitPanel .sp-pay, body.dark #splitPanel .sp-mini, body.dark #sQuickPay .sp-pay { background:#111827;color:#d1d5db;border-color:#374151; }
   body.dark #splitPanel .sp-chip.on { background:#145a3a;color:#fff;border-color:#1d7a4f; }
-  body.dark #splitPanel .sp-pay.on { background:#1d7a4f;color:#fff; }
+  body.dark #splitPanel .sp-pay.on, body.dark #sQuickPay .sp-pay.on { background:#1d7a4f;color:#fff; }
   /* 应收旁边的小字说明：刷卡含手续费 / 人民币折澳币（v3.18.0） */
   #splitPanel .sp-due-sub { margin-left:5px;font-size:11.5px;color:var(--muted);font-weight:400; }
   /* 会员搜索选择（v3.18.0）：会员多时下拉太难找，改成打字筛选 + 点选 */
@@ -2776,15 +2777,19 @@
       <button type="button" class="btn-ghost sm" id="sRmbBillBtn" style="margin-top:6px;">📄 看人民币账单</button>
       <div class="divider"></div>
       <div class="field">
-        <label>怎么收？</label>
-        <div id="sQuickPay" style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button type="button" class="btn-ghost" data-quickpay="cash">💵 现金</button>
-          <button type="button" class="btn-ghost" data-quickpay="card">💳 刷卡</button>
-          <button type="button" class="btn-ghost" data-quickpay="rmb">🇨🇳 人民币</button>
-          <button type="button" class="btn-ghost" data-quickpay="member">🎫 会员余额</button>
+        <!-- ★ v3.36.3：这排「怎么收」只在【按人分账】模式下显示（整单模式下面「整单收款」卡片里已经有一模一样的按钮）
+             按钮样式和卡片里的一致（sp-pay 胶囊）；点一下 = 所有人按这个方式收 -->
+        <div id="sQuickBlock">
+          <label>怎么收？<span class="hint" style="margin:0 0 0 6px;font-weight:400;">点一下 = 所有人按这个方式收</span></label>
+          <div id="sQuickPay" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="sp-pay" data-quickpay="cash">💵 现金</button>
+            <button type="button" class="sp-pay" data-quickpay="card">💳 刷卡</button>
+            <button type="button" class="sp-pay" data-quickpay="rmb">🇨🇳 人民币</button>
+            <button type="button" class="sp-pay" data-quickpay="member">🎫 会员余额</button>
+          </div>
+          <div class="hint" style="margin:6px 0 0;" id="sQuickInfo">下面每个人还能单独改<br>
+            <span style="color:#b45309;">注意：会员余额只能抵台费 ✗ 有零食饮料的话，那部分要另付（刷卡/现金/人民币）✓</span></div>
         </div>
-        <div class="hint" style="margin:6px 0 0;" id="sQuickInfo">点一下 → 整桌都按这个方式收；要每个人不同方式，直接点下面每张卡的「怎么付」<br>
-          <span style="color:#b45309;">注意：会员余额只能抵台费 ✗ 有零食饮料的话，那部分要另付（刷卡/现金/人民币）✓</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;">
           <button type="button" class="btn-ghost sm" id="sSplitToggle">▸ 分开付 / 多人各付各的</button>
           <button type="button" class="btn-start sm" id="sShareFee4">👥 台费 4 人分</button>
@@ -4810,7 +4815,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.36.2";
+  var APP_VER = "v3.36.3";
   var APP_DATE = "2026-11-02";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4821,6 +4826,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.36.3", date: "2026-11-02", items: [
+      "结算弹窗顶部那排「怎么收」不再重复显示：**整单收款**模式下隐藏（下面「整单收款」卡片里已有同样的按钮），只在**按人分账**模式下出现",
+      "按钮样式改成和卡片里一样的胶囊按钮（sp-pay），点一下 = 所有人按这个方式收，所有人方式一致时对应按钮高亮。顺手把旧提示文案「点下面每张卡的怎么付」换成准确的说明"
+    ] },
     { ver: "v3.36.2", date: "2026-11-02", items: [
       "第 3 条按方案 B 处理：**账单完全不动**，让结算跟着账单走——结算弹窗「一次性全付」选人民币时，「应收 ¥」默认取「📄 看人民币账单」上那个合计（账单仍按「台费人均 × 4、零食单价 × 数量」逐项折算）",
       "顶部大字、整单收款卡片、老的快捷「人民币」按钮、结算记录里存的人民币都是同一个数。账单里没列的罚款 / 合并结算另一桌 / 其它费用 / 上次未付按汇率一次折算加上，保证钱收齐",
@@ -4880,10 +4889,6 @@
       "收款方式再细分：人民币分**微信 / 支付宝**、现金分**纸币 / 转账**（结算弹窗各多一个下拉）",
       "群消息跟着写 `微信收xxx人民币` / `支付宝收xxx人民币`、`现金xx刀` / `转账xx刀`",
       "渠道存进结算记录，编辑老记录也带回来"
-    ] },
-    { ver: "v3.31.0", date: "2026-10-30", items: [
-      "到店开台改成**先选桌**：点「到店开台」弹出 6 张桌（空闲的可选、在用的灰掉，预约指定的那张高亮），选哪张就直接给哪张开台并开始计时，备注自动写**预约的名字（没名字写电话）**",
-      "也可以「只标到店（先不开台）」"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -7602,6 +7607,8 @@
       else if (pp2.payType === "cash") pp2.cashChannel = splitCashChannel[whoo] || "cash";
     }
     setSettleParts(parts);
+    // ★ v3.36.3：顶部「怎么收」跟着高亮（所有人方式一致时）
+    if (typeof spQuickRowSync === "function") spQuickRowSync();
   }
   function spSetupPanelChrome() {
     var mb = document.getElementById("sMoreBtn"), mw = document.getElementById("sMoreWrap");
@@ -7625,8 +7632,27 @@
     var s1 = document.getElementById("spSingle"), s2 = document.getElementById("spSplit");
     if (s1) s1.style.display = (mode === "single" ? "block" : "none");
     if (s2) s2.style.display = (mode === "split" ? "block" : "none");
+    // ★ v3.36.3：顶部「怎么收」只在按人分账模式显示（整单模式下面卡片已有同样的按钮）
+    var qb = document.getElementById("sQuickBlock");
+    if (qb) qb.style.display = (mode === "single" ? "none" : "");
     if (mode === "single") { renderSingleUI(); spBuildSingleParts(); }
     else { renderSplitAll(); spBuildSplitParts(); }
+  }
+  // ★ v3.36.3：顶部「怎么收」当所有人方式一致时高亮那个按钮（样式跟卡片里的一致）
+  function spQuickRowSync() {
+    var row = document.getElementById("sQuickPay");
+    if (!row) return;
+    var btns = row.querySelectorAll("[data-quickpay]");
+    var n = splitCurrentN(), same = null, allSame = true, p;
+    for (p = 1; p <= n; p++) {
+      var m = splitMethods[p] || "card";
+      if (same == null) same = m; else if (same !== m) allSame = false;
+    }
+    for (var i = 0; i < btns.length; i++) {
+      var m2 = btns[i].getAttribute("data-quickpay");
+      if (allSame && m2 === same) btns[i].classList.add("on");
+      else btns[i].classList.remove("on");
+    }
   }
   function spRenderCurrent() {
     if (spMode === "single") renderSingleUI(); else renderSplitUI();
