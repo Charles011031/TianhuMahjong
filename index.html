@@ -4810,8 +4810,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.35.0";
-  var APP_DATE = "2026-10-31";
+  var APP_VER = "v3.36.0";
+  var APP_DATE = "2026-11-02";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -4821,6 +4821,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.36.0", date: "2026-11-02", items: [
+      "用户反馈三条一起修：**备注跟着这一场走**——结算完成 / 收进待结算后桌卡备注自动清空（待结算账单里仍保留，搬回桌台时带回来）",
+      "**预约按营业日显示**——凌晨场算前一个营业日，提醒条 / 台账分组 / 已到计数 / 收工判定 / 桌卡角标全部按营业日，「还有多久 / 超时」按真实日期时间算（跨夜不再算错），上一营业日已到店的不再显示、没到店的留在「过期待处理」",
+      "**人民币账单与结算对齐**——账单「应付人民币」= 整单澳币 × 汇率（一次折算，与结算「一次性全付」完全一致，不再差几分钱），台费行改「人均参考 + 真实合计」、去掉会多算 1～2 分的「人均 × 4」竖式，罚款 / 合并桌 / 其它费用 / 上次未付也一起列进账单"
+    ] },
     { ver: "v3.35.0", date: "2026-10-31", items: [
       "**点版本号看更新日志**：页面左上角标题旁、页面最底部的版本号都能点，弹出「📋 更新日志」——显示当前版本 + 最近 15 个版本的改动（版本徽章 + 日期 + 要点）",
       "弹窗底部有「在 GitHub 看完整历史」直达 `版本记录.md`",
@@ -4879,9 +4884,6 @@
     { ver: "v3.30.3", date: "2026-10-30", items: [
       "群消息里麻将种类后面加「张」：`108张` / `136张` / `144张`（只对纯数字种类加",
       "v3.29.1 之前的结算记录没存种类，会用桌台当前值兜底）"
-    ] },
-    { ver: "v3.30.2", date: "2026-10-30", items: [
-      "群消息里所有金额都带单位：`刷卡18.15刀×3=54.45刀`、`扣卡selina17.94刀（余额70.63刀）`、`现金32刀`（台费/罚款/零食/微信收本来就有）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -7023,6 +7025,7 @@
     t.sessionStart = null;
     t.elapsedAtPause = 0;
     t.extras = [];
+    t.note = "";                // ★ v3.36.0：这一场已经结清 → 桌卡上的备注一起清掉（用户要求）
     var waived = shortBy > 0.005 && settleData.shortChoice === "waive";
     t.carry = (shortBy > 0.005 && !waived) ? shortBy : 0;   // 没收到的：记在桌上 或 直接免除
     rec.waived = waived ? shortBy : 0;
@@ -7034,6 +7037,7 @@
       mt.elapsedAtPause = 0;
       mt.endedAt = null;
       mt.extras = [];
+      mt.note = "";             // ★ v3.36.0：合并结算的另一桌也清掉备注
       mt.carry = 0;              // 已经并进这张单一起收了
     }
     save();
@@ -15741,6 +15745,25 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   function resDateTime(r) { return (r.date || "") + " " + (r.time || ""); }
   function resTimeMin(t) { var p = parseTimeStr(t); return p ? p.h * 60 + p.min : -1; }
   function resTodayStr() { return fmtDate(Date.now()); }
+  // ★ v3.36.0：预约按【营业日】显示，不是自然日（用户要求）
+  //   · 营业日按「营业日起算」（默认 08:00）切分：凌晨 01:00 的预约算前一个营业日
+  //   · 提醒条 / 台账分组 / 已到计数 / 收工判定 / 桌卡预约角标 全部用 resBizDayOf()
+  //   · 08:00 换营业日后，上一营业日已经到店的预约不再出现在「今天」
+  function resBizToday() { return bizDate(Date.now()); }
+  function resBizDateOf(dateStr, timeStr) {
+    var d = String(dateStr || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    var m = parseTimeStr(timeStr);
+    if (!m) return d;                                      // 没填时间就按填的日期
+    var b = parseTimeStr(state.bizStart) || { h: 8, min: 0 };
+    if (m.h * 60 + m.min >= b.h * 60 + b.min) return d;    // 营业日内的正常时段 → 当天
+    var x = new Date(d + "T12:00:00");
+    x.setDate(x.getDate() - 1);                            // 凌晨 → 算前一个营业日
+    return fmtDate(x.getTime());
+  }
+  function resBizDayOf(r) { return r ? resBizDateOf(r.date, r.time) : ""; }
+  // 预约的真实时刻：算「还有多久 / 超时」、排顺序都用它（跨夜不会算错）
+  function resTs(r) { return r ? combineToTs(r.date, r.time) : null; }
   function resTableName(no) { var t = no && state.tables[no]; return t ? t.name : "未指定桌"; }
   // ★ v3.34.0：预约「桌数」（新）优先显示；老数据没有桌数就退回显示「人数」
   function resCountLabel(r) {
@@ -15772,11 +15795,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (d < 31) return d + " 天前";
     return fmtDate(ts);
   }
-  function resLeftTxt(timeStr) {
-    var m = resTimeMin(timeStr);
-    if (m < 0) return "";
-    var d = new Date(), nowMin = d.getHours() * 60 + d.getMinutes();
-    var diff = m - nowMin;
+  // ★ v3.36.0：改成传【真实时刻 ts】（以前只比时分，跨夜会算成「已超时 22 小时」）
+  function resLeftTxt(ts) {
+    ts = Number(ts) || 0;
+    if (!ts) return "";
+    var diff = Math.round((ts - Date.now()) / 60000);
     if (diff >= 0) {
       if (diff < 60) return "还有 " + diff + " 分钟";
       return "还有 " + Math.floor(diff / 60) + " 小时" + (diff % 60 ? " " + (diff % 60) + " 分" : "");
@@ -15794,14 +15817,17 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   }
 
   // ---------- 牌桌卡片上的预约徽章（今天优先，没有就取最近的一场） ----------
+  //   ★ v3.36.0：按营业日比（凌晨的预约算前一个营业日）
   function resForTable(no) {
-    var today = resTodayStr(), best = null;
+    var today = resBizToday(), best = null, bestTs = 0;
     for (var i = 0; i < state.reservations.length; i++) {
       var r = state.reservations[i];
       if (!r || r.status !== "booked") continue;
       if (String(r.tableNo) !== String(no)) continue;
-      if (!r.date || r.date < today) continue;
-      if (!best || resDateTime(r) < resDateTime(best)) best = r;
+      if (!r.date) continue;
+      if (resBizDayOf(r) < today) continue;            // 上一营业日的不再挂在新场次上
+      var rt = resTs(r) || 0;
+      if (!best || rt < bestTs) { best = r; bestTs = rt; }
     }
     return best;
   }
@@ -15902,28 +15928,30 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   }
 
   // ---------- 顶部「今天待来」提醒条 ----------
+  //   ★ v3.36.0：按【营业日】筛选；时间比较用真实时刻（凌晨场、跨夜都不会错）
   function resBarRender() {
     var bar = document.getElementById("resBar");
     if (!bar) return;
-    var today = resTodayStr();
+    var today = resBizToday();
     var booked = state.reservations.filter(function (r) {
-      return r && r.status === "booked" && r.date === today;
-    }).sort(function (a, b) { return resTimeMin(a.time) - resTimeMin(b.time); });
+      return r && r.status === "booked" && resBizDayOf(r) === today;
+    }).sort(function (a, b) { return (resTs(a) || 0) - (resTs(b) || 0); });
     if (!booked.length) { bar.hidden = true; return; }
     bar.hidden = false;
 
-    var nowMin = (function () { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); })();
+    var now = Date.now();
     var next = null, late = 0;
     for (var i = 0; i < booked.length; i++) {
-      var m = resTimeMin(booked[i].time);
-      if (m >= 0 && m < nowMin) { late++; continue; }
+      var ts = resTs(booked[i]) || 0;
+      if (ts && ts < now) { late++; continue; }
       if (!next) next = booked[i];
     }
-    bar.className = "res-bar" + (late ? " rb-late" : (next && (resTimeMin(next.time) - nowMin) <= 30 ? " rb-soon" : ""));
+    var nextTs = next ? (resTs(next) || 0) : 0;
+    bar.className = "res-bar" + (late ? " rb-late" : (next && nextTs && nextTs - now <= 30 * 60000 ? " rb-soon" : ""));
 
     var arrived = 0, cancelled = 0;
     state.reservations.forEach(function (r) {
-      if (!r || r.date !== today) return;
+      if (!r || resBizDayOf(r) !== today) return;
       if (r.status === "arrived") arrived++;
       else if (r.status === "cancelled") cancelled++;
     });
@@ -15931,7 +15959,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (next) {
       h += '<span class="rb-next">下一场 <b>' + esc(next.time) + "</b> " + esc(next.name || next.phone || "客人") +
            ' <span class="rb-chip">' + esc(resTableName(next.tableNo)) + "</span></span>";
-      h += '<span class="rb-left">' + resLeftTxt(next.time) + "</span>";
+      h += '<span class="rb-left">' + resLeftTxt(nextTs) + "</span>";
     }
     if (late) h += '<span class="rb-left late">⚠️ ' + late + " 场没到（超时）</span>";
     if (arrived) h += '<span class="rb-chip">已到 ' + arrived + "</span>";
@@ -15940,14 +15968,14 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
 
     var rows = "";
     for (var j = 0; j < booked.length; j++) {
-      var r = booked[j], rm = resTimeMin(r.time), isLate = rm >= 0 && rm < nowMin;
+      var r = booked[j], rt = resTs(r) || 0, isLate = !!rt && rt < now;
       rows += '<div class="rb-row' + (isLate ? " late" : "") + '">' +
         '<span class="t">' + esc(r.time) + "</span>" +
         '<span class="who">' + esc(r.name || r.phone || "客人") + (resCountLabel(r) ? " · " + esc(resCountLabel(r)) : "") + "</span>" +
         (r.phone ? '<span class="meta">' + esc(r.phone) + "</span>" : "") +
         '<span class="rb-chip">' + esc(resTableName(r.tableNo)) + "</span>" +
         (r.note ? '<span class="meta">📝 ' + esc(r.note) + "</span>" : "") +
-        (isLate ? '<span class="chip-sm red">超时 ' + resLeftTxt(r.time).replace("已超时 ", "") + "</span>"
+        (isLate ? '<span class="chip-sm red">超时 ' + resLeftTxt(rt).replace("已超时 ", "") + "</span>"
                 : '<span class="chip-sm amber">待来</span>') +
         '<span class="acts">' +
           '<button type="button" class="btn-start sm" data-resarrive="' + esc(r.id) + '">到店开台</button>' +
@@ -15956,13 +15984,13 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         "</div>";
     }
     document.getElementById("rbList").innerHTML = rows +
-      '<div class="rb-foot">这里只显示<b>今天还没到店</b>的预约；录入、全部预约、已到店/已取消记录在下面的「📅 预约台账」。</div>';
+      '<div class="rb-foot">这里只显示<b>本营业日还没到店</b>的预约（营业日按「营业日起算」切分，凌晨场算前一天）；上一营业日已到店的自动收起，没到店的留在台账「过期待处理」。</div>';
   }
 
   // ---------- 今日收工判定 ----------
   function resClosedToday() {
-    var today = resTodayStr();
-    var todays = state.reservations.filter(function (r) { return r && r.date === today; });
+    var today = resBizToday();
+    var todays = state.reservations.filter(function (r) { return r && resBizDayOf(r) === today; });
     if (!todays.length) return false;
     for (var i = 0; i < todays.length; i++) if (todays[i].status === "booked") return false;
     for (var k = 1; k <= TABLE_COUNT; k++) if (state.tables[k].status !== "idle") return false;
@@ -16011,18 +16039,18 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       if (cur) sel.value = cur;
     }
 
-    var today = resTodayStr();
+    var today = resBizToday();
     var todayRows = [], futureRows = [], staleRows = [];
     state.reservations.forEach(function (r) {
       if (!r) return;
-      if (!r.date) { if (r.status === "booked") staleRows.push(r); return; }
-      if (r.date === today) todayRows.push(r);
-      else if (r.date > today) futureRows.push(r);
-      else if (r.status === "booked" && r.date >= fmtDate(Date.now() - 30 * 86400000)) staleRows.push(r);   // 近 30 天过期还没处理的
+      var bd = resBizDayOf(r);
+      if (!r.date || !bd) { if (r.status === "booked") staleRows.push(r); return; }
+      if (bd === today) todayRows.push(r);
+      else if (bd > today) futureRows.push(r);
+      else if (r.status === "booked" && bd >= fmtDate(Date.now() - 30 * 86400000)) staleRows.push(r);   // 上一营业日及更早、还没处理的
     });
-    function byTime(a, b) { return resTimeMin(a.time) - resTimeMin(b.time); }
-    function byDateTime(a, b) { return resDateTime(a) < resDateTime(b) ? -1 : 1; }
-    todayRows.sort(byTime); futureRows.sort(byDateTime); staleRows.sort(byDateTime);
+    function byTs(a, b) { return (resTs(a) || 0) - (resTs(b) || 0); }
+    todayRows.sort(byTs); futureRows.sort(byTs); staleRows.sort(byTs);
 
     function groupHead(title, sub, rows) {
       return '<div class="res-group">' + title + " · " + rows.length + ' 条<span>' + sub + "</span></div>";
@@ -16038,15 +16066,15 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var n = todayRows.length;
       html += '<div class="res-done">✅ 今天已收工（' + n + ' 场预约全部处理完 · 台费已结清），当日预约不再显示</div>';
     } else if (todayRows.length) {
-      html += groupHead("今天", "（上面的提醒条只显示今天还没到店的）", todayRows) + rowsHtml(todayRows);
+      html += groupHead("今天", "（按营业日 · 上面的提醒条只显示还没到店的）", todayRows) + rowsHtml(todayRows);
     }
     if (futureRows.length) html += groupHead("明天以后", "（含未指定桌的）", futureRows) + rowsHtml(futureRows);
-    if (staleRows.length) html += groupHead("过期待处理", "（日期已过但还没标到店/取消）", staleRows) + rowsHtml(staleRows);
+    if (staleRows.length) html += groupHead("过期待处理", "（上一营业日及更早、还没标到店/取消）", staleRows) + rowsHtml(staleRows);
     if (!html) html = '<div class="empty-mini">暂无预约</div>';
 
     wrap.innerHTML = html;
     var hint = document.getElementById("resHint");
-    if (hint) hint.textContent = "今天待来 " + state.reservations.filter(function (r) { return r && r.status === "booked" && r.date === today; }).length + " · 明天以后 " + futureRows.length + " · 收工后自动隐藏当天";
+    if (hint) hint.textContent = "今天待来 " + state.reservations.filter(function (r) { return r && r.status === "booked" && resBizDayOf(r) === today; }).length + " · 明天以后 " + futureRows.length + " · 收工后自动隐藏当天";
   }
 
   // ---------- 顶部红点（别的设备新录、还没人确认） ----------
@@ -16232,18 +16260,19 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     save(); renderReservations(); render();
     return r;
   }
+  // ★ v3.36.0：改成按【真实时刻】比较 ±90 分钟（跨夜、跨营业日都算得对）
   function resConflictOf(date, time, tableNo) {
     tableNo = parseInt(tableNo, 10) || 0;
     if (!tableNo) return null;
-    var m = resTimeMin(time);
-    if (m < 0) return null;
+    var ts = combineToTs(date, time);
+    if (ts == null) return null;
     var hit = null;
     state.reservations.forEach(function (r) {
-      if (!r || r.status !== "booked" || r.date !== date) return;
+      if (!r || r.status !== "booked") return;
       if ((parseInt(r.tableNo, 10) || 0) !== tableNo) return;
-      var rm = resTimeMin(r.time);
-      if (rm < 0) return;
-      if (Math.abs(rm - m) < 90) hit = r;
+      var rts = resTs(r);
+      if (rts == null) return;
+      if (Math.abs(rts - ts) < 90 * 60000) hit = r;
     });
     return hit;
   }
@@ -16276,16 +16305,19 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var wrap = document.getElementById("csSeats");
     if (!wrap) return;
     var date = csDateStr(), time = csTimeStr(), h = "";
+    // ★ v3.36.0：这张桌「现在是否在用」按营业日判断（凌晨录明天的场不会把正在用的桌标错）
+    var pickBiz = resBizDateOf(date, time), nowBiz = resBizToday();
     for (var no = 1; no <= TABLE_COUNT; no++) {
       var state2 = { kind: "free", txt: "空着" };
       var t = state.tables[no];
-      if (date === resTodayStr() && t.status !== "idle") state2 = { kind: "busy", txt: "正在使用" };
-      var clash = null;
+      if (pickBiz === nowBiz && t.status !== "idle") state2 = { kind: "busy", txt: "正在使用" };
+      var clash = null, pickTs = combineToTs(date, time);
       state.reservations.forEach(function (r) {
-        if (!r || r.status !== "booked" || r.date !== date) return;
+        if (!r || r.status !== "booked") return;
         if ((parseInt(r.tableNo, 10) || 0) !== no) return;
-        var rm = resTimeMin(r.time), cm = resTimeMin(time);
-        if (rm >= 0 && cm >= 0 && Math.abs(rm - cm) < 90) clash = r;
+        var rts = resTs(r);
+        if (rts == null || pickTs == null) return;
+        if (Math.abs(rts - pickTs) < 90 * 60000) clash = r;
       });
       if (clash) state2 = { kind: "booked", txt: clash.time + " " + (clash.name || "预约") };
       var on = resCS.table === no ? " on" : "";
@@ -18017,9 +18049,16 @@ document.addEventListener("mousedown", function (e) {
 
   // ============================================================
   //  🧾 人民币账单（只看，不发送）
-  //  每一行同时显示澳币和人民币；零食按「单价 × 数量」两栏都乘
+  //  ★ v3.36.0：人民币合计 = 整单澳币 × 汇率（一次性折算），
+  //    与结算弹窗「一次性全付」的人民币数额【完全一致】（用户反馈差几分钱）
+  //    · 以前：台费按 4 人平摊 → 四舍五入 → ×4；零食按单价折算 → ×数量；再逐项相加
+  //      每条路径都各自进位，和「总额 × 汇率」差 1～12 分钱
+  //    · 现在：台费行的人均只作参考，合计用真实台费；每行人民币按该行澳币一次折算；
+  //      合计用整单澳币 × 汇率；逐项相加与合计差 1 分时加「汇率折算差额」行做平
+  //  opts（从结算弹窗打开时传入，可选）：{ fine, mergedSum, carry, otherExtra }
   // ============================================================
-  function rmbBillInfo(id, startOverride, endOverride) {
+  function rmbBillInfo(id, startOverride, endOverride, opts) {
+    opts = opts || {};
     var t = state.tables[id];
     if (!t) return null;
     var now = Date.now();
@@ -18032,41 +18071,54 @@ document.addEventListener("mousedown", function (e) {
       ms = endOverride - startOverride; startTs = startOverride; endTs = endOverride; forced = true;
     }
     var fee = tableFeeOf(ms), fx = Number(state.fxRate) || 0;
-    var lines = [], totalAud = 0, totalRmb = 0;
-    // 台费：按 4 人平摊，显示「一个人的台费 × 4 = 总台费」
+    var lines = [], totalAud = 0;
+    function addLine(name, qty, audTxt, aud) {
+      var rmb = fx > 0 ? round2(aud * fx) : 0;
+      lines.push({ name: name, qty: qty, audTxt: audTxt, rmbTxt: fx > 0 ? "¥" + rmb.toFixed(2) : "—", aud: aud, rmb: rmb });
+      totalAud = round2(totalAud + aud);
+    }
+    // 台费：人均只作参考，合计用真实台费（4 等分四舍五入再 ×4 会多出 1～2 分）
     var PERSON_N = 4;
     var perFee = round2(fee / PERSON_N);
-    var feeTotal = round2(perFee * PERSON_N);
-    var perRmb = fx > 0 ? round2(perFee * fx) : 0;
-    var feeRmbTotal = fx > 0 ? round2(perRmb * PERSON_N) : 0;
+    var perRmb = fx > 0 ? round2(fee * fx / PERSON_N) : 0;
+    var feeRmb = fx > 0 ? round2(fee * fx) : 0;
     lines.push({
       name: "台费", qty: PERSON_N + " 人",
-      audTxt: fmtMoney(perFee) + " × " + PERSON_N + " = " + fmtMoney(feeTotal),
-      rmbTxt: fx > 0 ? ("¥" + perRmb.toFixed(2) + " × " + PERSON_N + " = ¥" + feeRmbTotal.toFixed(2)) : "—",
-      aud: feeTotal, rmb: feeRmbTotal
+      audTxt: "人均 " + fmtMoney(perFee) + " · 合计 " + fmtMoney(fee),
+      rmbTxt: fx > 0 ? ("人均 ¥" + perRmb.toFixed(2) + " · 合计 ¥" + feeRmb.toFixed(2)) : "—",
+      aud: round2(fee), rmb: feeRmb
     });
-    totalAud = feeTotal; totalRmb = feeRmbTotal;
-    // 零食：单价 × 数量，两栏都按数量乘
+    totalAud = round2(fee);
+    // 零食：人民币按「这一行的澳币小计」一次折算（不再按单价折算再乘数量）
     (t.extras || []).forEach(function (ex) {
       var qty = Number(ex.qty) || 0;
       if (qty <= 0) return;
       var price = Number(ex.price) || 0;
       var audLine = round2(price * qty);
-      var rmbUnit = fx > 0 ? round2(price * fx) : 0;
-      var rmbLine = fx > 0 ? round2(rmbUnit * qty) : 0;
-      lines.push({
-        name: ex.name, qty: String(qty),
-        audTxt: fmtMoney(price) + " × " + qty + " = " + fmtMoney(audLine),
-        rmbTxt: fx > 0 ? ("¥" + rmbUnit.toFixed(2) + " × " + qty + " = ¥" + rmbLine.toFixed(2)) : "—",
-        aud: audLine, rmb: rmbLine
-      });
-      totalAud = round2(totalAud + audLine);
-      totalRmb = round2(totalRmb + rmbLine);
+      addLine(ex.name, String(qty), fmtMoney(price) + " × " + qty + " = " + fmtMoney(audLine), audLine);
     });
+    var mergedSum = round2(Number(opts.mergedSum) || 0);
+    if (mergedSum > 0.005) addLine("合并结算另一桌", "", fmtMoney(mergedSum), mergedSum);
+    var fine = round2(Number(opts.fine) || 0);
+    if (fine > 0.005) addLine("罚款", "", fmtMoney(fine), fine);
+    var otherExtra = round2(Number(opts.otherExtra) || 0);
+    if (Math.abs(otherExtra) >= 0.005) addLine("其它费用", "", (otherExtra < 0 ? "−" : "") + fmtMoney(Math.abs(otherExtra)), otherExtra);
+    var carry = (opts.carry != null) ? round2(Number(opts.carry) || 0) : round2(Number(t.carry) || 0);
+    if (carry > 0.005) addLine("上次未付", "", fmtMoney(carry), carry);
+    totalAud = round2(totalAud);
+    var totalRmb = fx > 0 ? round2(totalAud * fx) : 0;     // ★ 和结算「一次性全付」同一算法
+    if (fx > 0) {
+      var sumRmb = 0;
+      for (var li = 0; li < lines.length; li++) sumRmb = round2(sumRmb + (Number(lines[li].rmb) || 0));
+      var diff = round2(totalRmb - sumRmb);
+      if (Math.abs(diff) >= 0.005) {
+        lines.push({ name: "汇率折算差额", qty: "", audTxt: "—", rmbTxt: "¥" + diff.toFixed(2), aud: 0, rmb: diff });
+      }
+    }
     return { t: t, ms: ms, startTs: startTs, endTs: endTs, forced: forced, fee: fee, fx: fx, lines: lines, totalAud: totalAud, totalRmb: totalRmb };
   }
-  function openRmbBill(id, startOverride, endOverride) {
-    var info = rmbBillInfo(id, startOverride, endOverride);
+  function openRmbBill(id, startOverride, endOverride, opts) {
+    var info = rmbBillInfo(id, startOverride, endOverride, opts);
     if (!info) return;
     var t = info.t, now = Date.now();
     var h = '<div class="rb-store">🀄 天胡麻将馆</div>' +
@@ -18086,6 +18138,8 @@ document.addEventListener("mousedown", function (e) {
       '<td class="num">' + fmtMoney(info.totalAud) + '</td>' +
       '<td class="num">' + (info.fx > 0 ? "¥" + info.totalRmb.toFixed(2) : "—") + '</td></tr></tfoot></table>' +
       '<div class="rb-rate">汇率：1 澳币 = ' + (info.fx || "—") + ' 人民币' +
+      '　·　人民币按整单澳币 × 汇率一次性折算（和结算时一次性全付的数额一致）' +
+      '　·　台费行的人均金额是四舍五入参考，合计以整单为准' +
       '　·　报价时间：' + new Date().toLocaleString("zh-CN") + '</div>' +
       '<div class="rb-totals">' +
       '<div class="rb-total-box"><div class="lab">合计（澳币）</div><div class="amt">A$' + info.totalAud.toFixed(2) + '</div></div>' +
@@ -18100,7 +18154,26 @@ document.addEventListener("mousedown", function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
     if (t.closest("#rmbBillClose")) { closeRmbBill(); return; }
-    if (t.closest("#sRmbBillBtn")) { if (settleData) openRmbBill(settleData.id); return; }
+    if (t.closest("#sRmbBillBtn")) {
+      // ★ v3.36.0：从结算弹窗打开时，把弹窗里当前的起止时间 / 罚款 / 合并桌 / 其它费用 / 上次未付
+      //   一起算进去 → 账单上的「应付人民币」和弹窗里一次性全付的 ¥ 完全一样
+      if (settleData) {
+        var opt = null;
+        try {
+          var sb = settleBill();
+          var exSum = 0, stb = state.tables[settleData.id];
+          ((stb && stb.extras) || []).forEach(function (x) { exSum += (Number(x.price) || 0) * (Number(x.qty) || 0); });
+          opt = {
+            fine: sb.fine || 0,
+            mergedSum: sb.mgSum || 0,
+            carry: sb.carry || 0,
+            otherExtra: round2((Number(sb.other) || 0) - round2(exSum))
+          };
+        } catch (err) { opt = null; }
+        openRmbBill(settleData.id, settleData.startTs, settleData.endTs, opt);
+      }
+      return;
+    }
     var ov = document.getElementById("rmbBillOverlay");
     if (ov && t === ov) closeRmbBill();
   });
@@ -19028,6 +19101,7 @@ function fbPendTakeFromTable(no) {
   t.elapsedAtPause = 0;
   t.endedAt = null;
   t.extras = [];
+  t.note = "";               // ★ v3.36.0：备注已经带进待结算条目 → 桌卡上清掉（用户要求）
   t.lastResult = null;
   // ★ v3.22.0：刚动过这张桌 → 20 秒内不让云端旧快照把它改回"待结算"
   //   （以前这里不标 fbTblRecent，云端旧状态一回来桌面又显示待结算，
@@ -19056,6 +19130,7 @@ function fbPendTakeQuiet(no) {
   });
   t.status = "idle"; t.sessionStart = null; t.elapsedAtPause = 0;
   t.endedAt = null; t.extras = []; t.lastResult = null;
+  t.note = "";               // ★ v3.36.0：备注已经带进待结算条目 → 桌卡上清掉（用户要求）
   try { fbTblRecent[no] = Date.now(); } catch (e) {}
   try { toast("上一场已自动收进待结算区 ✓", "#b45309"); } catch (e) {}
   return true;
@@ -19090,6 +19165,7 @@ function fbPendRestore(id) {
   t.endedAt = p.endTs;
   t.extras = (p.extras || []).slice();
   t.mahjongType = p.mahjongType || "108";
+  t.note = p.note || "";     // ★ v3.36.0：搬回桌台时，备注跟着回到卡片上
   fbPendMarkGone(id);
   state.pending = state.pending.filter(function (x) { return x.id !== id; });
   try { fbTblRecent[p.tableNo] = Date.now(); } catch (e) {}
