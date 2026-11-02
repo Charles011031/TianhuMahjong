@@ -1130,7 +1130,9 @@
     .est-band .est-v { font-size: 24px; }
   }
   .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-  .toolbar input[type=date], .toolbar input[type=month], .toolbar select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
+  .toolbar input[type=date], .toolbar input[type=week], .toolbar input[type=month], .toolbar select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
+  /* v3.37.0：统计页 按日 / 按周 / 按月 三档 */
+  .st-scope { display: inline-flex; gap: 6px; }
 
   /* ===== 预约 ===== */
   .res-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
@@ -2544,11 +2546,18 @@
   <!-- ===== 统计 ===== -->
   <div class="panel" id="panel-stats" hidden>
     <div class="toolbar">
-      <button class="btn-ghost sm" id="stPrev" title="前一天">◀ 前一天</button>
+      <!-- ★ v3.37.0：统计不只看「当天 / 本月」—— 可以看【任意一周 / 任意一月】 -->
+      <button class="btn-ghost sm" id="stPrev" title="往前（按当前档位：一天 / 一周 / 一月）">◀</button>
       <input type="date" id="stDate">
-      <button class="btn-ghost sm" id="stNext" title="后一天">后一天 ▶</button>
+      <input type="week" id="stWeek" data-ds="1" style="display:none;" title="选哪一周（周一到周日）">
+      <input type="month" id="stMonth" data-ds="1" style="display:none;" title="选哪个月">
+      <button class="btn-ghost sm" id="stNext" title="往后（按当前档位：一天 / 一周 / 一月）">▶</button>
+      <span class="st-scope" id="stScope">
+        <button type="button" class="btn-start sm" id="stByDay">按日</button>
+        <button type="button" class="btn-ghost sm" id="stByWeek">按周</button>
+        <button type="button" class="btn-ghost sm" id="stByMonth">按月</button>
+      </span>
       <button class="btn-ghost sm" id="stToday">今天</button>
-      <button class="btn-ghost sm" id="stMonthBtn">查看本月合计</button>
       <button class="btn-ghost sm" id="stCopyBtn" title="按当前统计生成一段文字，方便发群里">📋 生成文案</button>
       <button class="btn-ghost sm" id="stPull" style="margin-left:auto;">🔄 从表格刷新</button>
       <span class="hint" id="stPullMsg" style="margin:0;"></span>
@@ -4815,8 +4824,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.36.3";
-  var APP_DATE = "2026-11-02";
+  var APP_VER = "v3.37.0";
+  var APP_DATE = "2026-11-03";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -4826,6 +4835,13 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.37.0", date: "2026-11-03", items: [
+      "统计页可以看**任意一周 / 任意一个月**：工具条加了「按日 / 按周 / 按月」三档，中间的日期框跟着换成周选择器 / 月选择器，◀ ▶ 按当前档位翻（键盘 ← → 也行）",
+      "「查看本月合计」换成三档按钮，「今天」跟着变成「本周 / 本月」",
+      "7 张卡、明细、合计都按整段汇总，明细每行前面带日期（如 `10/26 19:38`）并按日期倒序",
+      "预估营业额仍只在「按日」显示",
+      "生成文案前缀跟着范围走（本周 / 10月26日–11月1日 / 本月 / 10月）"
+    ] },
     { ver: "v3.36.3", date: "2026-11-02", items: [
       "结算弹窗顶部那排「怎么收」不再重复显示：**整单收款**模式下隐藏（下面「整单收款」卡片里已有同样的按钮），只在**按人分账**模式下出现",
       "按钮样式改成和卡片里一样的胶囊按钮（sp-pay），点一下 = 所有人按这个方式收，所有人方式一致时对应按钮高亮。顺手把旧提示文案「点下面每张卡的怎么付」换成准确的说明"
@@ -4884,11 +4900,6 @@
     { ver: "v3.32.1", date: "2026-10-30", items: [
       "修：渠道下拉只在「高级：按笔改金额」里，**整单收款 / 按人分账没显示**（用户反馈）",
       "现在整单收人民币多「微信/支付宝」、收现金多「现金/转账」，按人分账里每个人各自有"
-    ] },
-    { ver: "v3.32.0", date: "2026-10-30", items: [
-      "收款方式再细分：人民币分**微信 / 支付宝**、现金分**纸币 / 转账**（结算弹窗各多一个下拉）",
-      "群消息跟着写 `微信收xxx人民币` / `支付宝收xxx人民币`、`现金xx刀` / `转账xx刀`",
-      "渠道存进结算记录，编辑老记录也带回来"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -11296,7 +11307,7 @@ function pullTableStates() {
         var hasCur = allDates.indexOf(cur) >= 0;
         if (!hasCur) {
           stEl.value = latest;
-          statsScope = "day";
+          setStatsScope("day");     // ★ v3.37.0：别直接改 statsScope，否则周 / 月选择器还亮着
           renderStats();
           msg += "　已把统计日期跳到最近有数据的一天：" + latest;
         } else {
@@ -17195,10 +17206,57 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     return out + "（" + real.slice(5).replace("-", "/") + "）";
   }
 
+  // ★ v3.37.0：统计范围 —— 按日 / 按周（周一到周日）/ 按月，周和月都能翻到任意一段
+  //   · 三档共用一套「锚点日期」：日期框 / 周选择器 / 月选择器各自显示自己那一段
+  //   · 统计一律按【营业日】的日期字段比大小（"2026-11-02" 这种字符串直接比就行）
+  function statsToday() { return bizDate(Date.now()); }
+  function monthRangeOf(mth) {
+    var m = /^(\d{4})-(\d{2})$/.exec(String(mth || ""));
+    var y, mo;
+    if (m) { y = parseInt(m[1], 10); mo = parseInt(m[2], 10); }
+    else { var t = statsToday(); y = parseInt(t.slice(0, 4), 10); mo = parseInt(t.slice(5, 7), 10); }
+    if (!(mo >= 1 && mo <= 12)) mo = 1;
+    var last = new Date(y, mo, 0).getDate();
+    var mm = ("0" + mo).slice(-2);
+    return { from: y + "-" + mm + "-01",
+             to: y + "-" + mm + "-" + (last < 10 ? "0" + last : last) };
+  }
+  function statsRange() {
+    var today = statsToday();
+    if (statsScope === "week") {
+      var wr = weekRange(document.getElementById("stWeek").value || thisWeekVal()) ||
+               weekRange(thisWeekVal());
+      if (wr) return { from: wr.from, to: wr.to, scope: "week" };
+    } else if (statsScope === "month") {
+      var mr = monthRangeOf(document.getElementById("stMonth").value || today.slice(0, 7));
+      return { from: mr.from, to: mr.to, scope: "month" };
+    }
+    var day = document.getElementById("stDate").value || today;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) day = today;
+    return { from: day, to: day, scope: "day" };
+  }
+  // 范围文字：2026/11/03 营业日 ｜ 本周 11/02（周一）–11/08（周日） ｜ 2026年10月
+  function statsRangeLabel(per) {
+    var today = statsToday();
+    if (per.scope === "week") {
+      var cur = (today >= per.from && today <= per.to);
+      return (cur ? "本周 " : "") + per.from.slice(5).replace("-", "/") + "（周一）–" +
+             per.to.slice(5).replace("-", "/") + "（周日）（按营业日）";
+    }
+    if (per.scope === "month") {
+      var curM = (today.slice(0, 7) === per.from.slice(0, 7));
+      return (curM ? "本月 " : "") + per.from.slice(0, 4) + "年" +
+             Number(per.from.slice(5, 7)) + "月（按营业日）";
+    }
+    return per.from.replace(/-/g, "/") + " 营业日";
+  }
+  // 这一档用哪个词：「这天 / 这周 / 这个月」
+  function statsScopeWord() {
+    return statsScope === "week" ? "这周" : (statsScope === "month" ? "这个月" : "这天");
+  }
+
   function statsCalc() {
-    var day = document.getElementById("stDate").value || fmtDate(Date.now());
-    var mth = day.slice(0, 7);
-    var useMonth = (statsScope === "month");
+    var per = statsRange();
     var r = {
       tableFee: 0, tableOther: 0, tableTotal: 0, tableFeeCharge: 0, tableGrand: 0,
       snackSub: 0, snackFee: 0, snackGrand: 0,
@@ -17209,7 +17267,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       txns: []
     };
     var i;
-    function match(d) { return useMonth ? (d || "").slice(0, 7) === mth : d === day; }
+    // ★ v3.37.0：按区间匹配（按日 from=to；按周 / 按月就是整段）
+    function match(d) { return !!d && d >= per.from && d <= per.to; }
 
     for (i = 0; i < state.history.length; i++) {
       var h = state.history[i];
@@ -17297,7 +17356,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var tableOnlyT = round2(collectedT - snackPartT - finePartT);
       if (tableOnlyT < -0.005) tableOnlyT = collectedT;   // 兜底：老数据对不上就别减
       r.txns.push({
-        kind: "table", t: tTxt,
+        kind: "table", dt: h.date, t: tTxt,
         d: (h.name || "") + "（" + (h.hours || "") + " 小时）" + (h.mergedTable ? " + 并" + h.mergedTable + "号桌" : ""),
         a: tableOnlyT,
         chips: chips,
@@ -17307,7 +17366,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       if (ot > 0.005) {
         var exT = (h.extras || []).map(function (x) { return x.name + "×" + x.qty; }).join("、");
         r.txns.push({
-          kind: "snack", t: tTxt,
+          kind: "snack", dt: h.date, t: tTxt,
           d: "🀄 " + (h.name || (h.tableNo + " 号桌")) + " 挂桌　" + (exT || "（挂桌零食）"),
           a: snackPartT,
           chips: [], info: "随桌费一起收"
@@ -17316,7 +17375,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       // ★ 罚款：也单独一行 ✓
       if (fine > 0.005) {
         r.txns.push({
-          kind: "fine", t: tTxt,
+          kind: "fine", dt: h.date, t: tTxt,
           d: "⚖️ 罚款（" + (h.name || (h.tableNo + " 号桌")) + "）",
           a: finePartT, chips: [], info: ""
         });
@@ -17335,7 +17394,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var items = "";
       for (var q = 0; q < s.items.length; q++) { if (q) items += "、"; items += s.items[q].name + "×" + s.items[q].qty; }
       r.txns.push({
-        kind: "snack", t: txnTimeWithReal(s, s.time), d: items, a: Number(s.grand) || 0,
+        kind: "snack", dt: s.date, t: txnTimeWithReal(s, s.time), d: items, a: Number(s.grand) || 0,
         chips: [payChip(chipCls(s.payType), payLabelOf(s.payType), s.grand, s.payType === "rmb" ? s.rmb : null)],
         info: (s.payType === "cash" && Number(s.discount) > 0.005 ? "抹零 -$" + Number(s.discount).toFixed(2) : "")
       });
@@ -17354,7 +17413,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         vitems += (vh.items[vi].gen === 2 ? "二代" : "一代") + vh.items[vi].name + "×" + vh.items[vi].qty;
       }
       r.txns.push({
-        kind: "vape", t: txnTimeWithReal(vh, vh.time), d: vitems, a: Number(vh.grand) || 0,
+        kind: "vape", dt: vh.date, t: txnTimeWithReal(vh, vh.time), d: vitems, a: Number(vh.grand) || 0,
         chips: [payChip(chipCls(vh.payType), payLabelOf(vh.payType), vh.grand, vh.payType === "rmb" ? vh.rmb : null)],
         info: (Number(vh.cardAdd) > 0.005 ? "刷卡加价 $" + Number(vh.cardAdd).toFixed(2) : "")
       });
@@ -17379,14 +17438,14 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
           if (ms > 0.005) rchips.push(payChip("rmb", "人民币", ms, x.rmbActual));
           if (!rchips.length) rchips.push(payChip(chipCls(x.payType), payLabelOf(x.payType), got, x.rmbActual));
           r.txns.push({
-            kind: "recharge", t: x.time || "", d: m2.name, a: got,
+            kind: "recharge", dt: x.date, t: x.time || "", d: m2.name, a: got,
             chips: rchips,
             info: "实付 $" + faced.toFixed(2) + "　到账 $" + (Number(x.amount) || 0).toFixed(2)
           });
         } else if (x.type === "adjust") {
           var adj = Number(x.adjust) || 0;
           r.txns.push({
-            kind: "adjust", t: x.time || "", d: m2.name + (x.note ? "（" + x.note + "）" : ""),
+            kind: "adjust", dt: x.date, t: x.time || "", d: m2.name + (x.note ? "（" + x.note + "）" : ""),
             a: Math.abs(adj),
             chips: [payChip("member", (adj >= 0 ? "余额 +" : "余额 −"), Math.abs(adj), null, m2.name)],
             info: "不计营业额"
@@ -17394,7 +17453,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         } else if ((x.note || "").indexOf("台费抵扣") !== 0) {
           r.manualDeduct += Number(x.amount) || 0;
           r.txns.push({
-            kind: "balance", t: x.time || "", d: m2.name + (x.note ? "（" + x.note + "）" : ""),
+            kind: "balance", dt: x.date, t: x.time || "", d: m2.name + (x.note ? "（" + x.note + "）" : ""),
             a: Number(x.amount) || 0,
             chips: [payChip("member", "会员余额", Number(x.amount) || 0, null, m2.name)],
             info: ""
@@ -17455,13 +17514,14 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   }
 
   function renderStats() {
+    var per = statsRange();
     var r = statsCalc();
     // 这里选的是【营业日】：显示成 2026/10/9 营业日，
     // 意思是"9 号这一天的生意"，包含 10 号凌晨（6 点前）那几笔。
+    // ★ v3.37.0：也可以按周（周一到周日）/ 按月，翻任意一周 / 任意一个月
     var stDay = document.getElementById("stDate").value || bizDate(Date.now());
-    var scopeTxt = statsScope === "month"
-      ? ("本月 " + stDay.slice(0, 7) + "（按营业日）")
-      : (stDay.replace(/-/g, "/") + " 营业日");
+    var scopeTxt = statsRangeLabel(per);
+    var scopeWord = statsScopeWord();
     document.getElementById("stRange").textContent = scopeTxt;
     document.getElementById("stTxnTitle").textContent = scopeTxt + " · 明细";
 
@@ -17512,7 +17572,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     // ---- 明细：按类型分组，每组带小计 ----
     renderTxnFilter();
 
+    // ★ v3.37.0：按周 / 按月时明细跨好几天 → 每行前面带上日期，先按日期倒序再按时间倒序
+    var multiDay = (statsScope !== "day");
     var list = r.txns.slice().sort(function (a, b) {
+      var ad = String(a.dt || ""), bd = String(b.dt || "");
+      if (ad !== bd) return (ad < bd) ? 1 : -1;
       // ★ 台费行的时间是 "16:57–19:38" → 按【后半段＝结束时间】排（用户要求）
       //   没有后半段（比如零食单只有开始时间）→ 退回用开始时间
       // ★ 用 timeMinutes 比 ✗ 不用字符串比 —— 它认识"次日"前缀 ✓
@@ -17523,7 +17587,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       return bt - at;
     });
     var wrap = document.getElementById("stTxnWrap");
-    if (!list.length) { wrap.innerHTML = '<div class="empty">这天没有记录</div>'; return; }
+    if (!list.length) { wrap.innerHTML = '<div class="empty">' + scopeWord + '没有记录</div>'; return; }
 
     var rows = "", cards = "";
     var shownCount = 0;
@@ -17552,14 +17616,18 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         for (var cj = 0; cj < (x2.chips || []).length; cj++) {
           chips += '<span class="chip ' + esc((x2.chips[cj] || {}).cls || "mix") + '">' + esc((x2.chips[cj] || {}).txt || "") + "</span>";
         }
+        // ★ v3.37.0：按周 / 按月时时间前面补上日期（10/26 19:38），不然分不清是哪天
+        var tShow = (multiDay && x2.dt)
+          ? (String(x2.dt).slice(5).replace("-", "/") + " " + (x2.t || ""))
+          : (x2.t || "—");
                 cards += '<div class="rec-card">' +
           '<div class="rec-top"><b class="rec-t1">' + esc(x2.d || "—") + "</b>" +
-          '<span class="rec-t2">' + esc(x2.t || "—") + "</span>" +
+          '<span class="rec-t2">' + esc(tShow) + "</span>" +
           '<b class="rec-amt">$' + (Number(x2.a) || 0).toFixed(2) + "</b></div>" +
           (x2.info ? '<div class="rec-sub">' + esc(x2.info) + "</div>" : "") +
           '<div class="rec-bottom"><span class="rec-pays">' + chips + "</span></div></div>";
 rows += "<tr>" +
-          '<td style="color:var(--muted);font-size:13px;white-space:nowrap;">' + esc(x2.t || "—") + "</td>" +
+          '<td style="color:var(--muted);font-size:13px;white-space:nowrap;">' + esc(tShow) + "</td>" +
           "<td>" + esc(x2.d || "") + "</td>" +
           '<td class="money">$' + (Number(x2.a) || 0).toFixed(2) + "</td>" +
           '<td style="white-space:nowrap;">' + chips +
@@ -17569,7 +17637,7 @@ rows += "<tr>" +
     }
     wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
       '<table><thead><tr><th>时间</th><th>说明</th><th class="num">金额</th><th>收款</th></tr></thead><tbody>' +
-      (shownCount ? rows : '<tr><td colspan="4" class="empty">这一类当天没有记录</td></tr>') + "</tbody></table>";
+      (shownCount ? rows : '<tr><td colspan="4" class="empty">这一类' + scopeWord + '没有记录</td></tr>') + "</tbody></table>";
 
     // ---- 底部合计条 ----
     var biz = round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand);
@@ -17822,11 +17890,20 @@ rows += "<tr>" +
   // ============================================================
   function statsCopyText() {
     var r = statsCalc();
-    var day = document.getElementById("stDate").value || bizDate(Date.now());
+    var per = statsRange();
+    var today = statsToday();
+    var md = function (s) { return Number(s.slice(5, 7)) + "月" + Number(s.slice(8, 10)) + "日"; };
     var head;
-    if (statsScope === "month") head = "本月";
-    else if (day === bizDate(Date.now())) head = "今日";
-    else head = (Number(day.slice(5, 7)) + "月" + Number(day.slice(8, 10)) + "日");
+    // ★ v3.37.0：按周 / 按月也能生成文案，前缀跟着范围走
+    if (per.scope === "month") {
+      head = (today.slice(0, 7) === per.from.slice(0, 7)) ? "本月" : (Number(per.from.slice(5, 7)) + "月");
+    } else if (per.scope === "week") {
+      head = (today >= per.from && today <= per.to) ? "本周" : (md(per.from) + "–" + md(per.to));
+    } else if (per.from === today) {
+      head = "今日";
+    } else {
+      head = md(per.from);
+    }
 
     var fee = round2(r.tableGrand);
     var snack = round2(r.snackGrand + r.snackFromTable);
@@ -17873,9 +17950,14 @@ rows += "<tr>" +
     var hint = document.getElementById("copyHint");
     var bar = document.getElementById("wxDayBar");
     if (bar) bar.hidden = true;      // v3.30.0：统计页文案不显示营业日切换
-    var day = document.getElementById("stDate").value || "";
+    var per = statsRange();
+    var today = statsToday();
     ta.value = txt;
-    if (title) title.textContent = (statsScope === "month" ? "本月文案" : (day === bizDate(Date.now()) ? "今日文案" : "当日文案"));
+    var titleTxt;
+    if (per.scope === "month") titleTxt = ((today.slice(0, 7) === per.from.slice(0, 7)) ? "本月" : (Number(per.from.slice(5, 7)) + "月")) + "文案";
+    else if (per.scope === "week") titleTxt = ((today >= per.from && today <= per.to) ? "本周" : "那一周") + "文案";
+    else titleTxt = (per.from === today) ? "今日文案" : "当日文案";
+    if (title) title.textContent = titleTxt;
     if (hint) hint.textContent = "正在复制…";
     ov.classList.add("show");
     setTimeout(function () { try { ta.focus(); ta.select(); } catch (e) {} }, 60);
@@ -17906,23 +17988,76 @@ rows += "<tr>" +
     renderStats();
   });
 
-  document.getElementById("stDate").addEventListener("change", function () { statsScope = "day"; renderStats(); });
-  // 日期前后挪一天（用本地日期算，避免时区把它挪歪）
-  function shiftStatsDay(delta) {
-    var el = document.getElementById("stDate");
-    var base = el.value || bizDate(Date.now());
-    var p = base.split("-");
-    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
-    if (isNaN(d.getTime())) d = new Date();
-    d.setDate(d.getDate() + delta);
-    var out = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
-    el.value = out;
-    statsScope = "day";
-    renderStats();
+  // ★ v3.37.0：统计三档（按日 / 按周 / 按月）
+  //   · 三档共用 stDate 当「锚点」：切到周 / 月时按锚点所在的周 / 月算
+  //   · 周选择器 / 月选择器是原生 input，点 ◀ ▶ 按当前档位翻
+  function statsActiveInput() {
+    return statsScope === "week" ? document.getElementById("stWeek")
+         : (statsScope === "month" ? document.getElementById("stMonth") : document.getElementById("stDate"));
   }
-  document.getElementById("stPrev").addEventListener("click", function () { shiftStatsDay(-1); });
-  document.getElementById("stNext").addEventListener("click", function () { shiftStatsDay(1); });
-  document.getElementById("stToday").addEventListener("click", function () { document.getElementById("stDate").value = bizDate(Date.now()); statsScope = "day"; renderStats(); });
+  function updateStatsScopeUI() {
+    var isDay = statsScope === "day", isWeek = statsScope === "week", isMonth = statsScope === "month";
+    document.getElementById("stDate").style.display = isDay ? "" : "none";
+    document.getElementById("stWeek").style.display = isWeek ? "" : "none";
+    document.getElementById("stMonth").style.display = isMonth ? "" : "none";
+    document.getElementById("stByDay").className = isDay ? "btn-start sm" : "btn-ghost sm";
+    document.getElementById("stByWeek").className = isWeek ? "btn-start sm" : "btn-ghost sm";
+    document.getElementById("stByMonth").className = isMonth ? "btn-start sm" : "btn-ghost sm";
+    document.getElementById("stToday").textContent = isWeek ? "本周" : (isMonth ? "本月" : "今天");
+  }
+  // 切换档位：用当前锚点日期换算出那一周 / 那个月
+  function setStatsScope(mode) {
+    statsScope = (mode === "week" || mode === "month") ? mode : "day";
+    var anchor = document.getElementById("stDate").value || bizDate(Date.now());
+    if (statsScope === "week") document.getElementById("stWeek").value = isoWeekOf(anchor);
+    if (statsScope === "month") document.getElementById("stMonth").value = anchor.slice(0, 7);
+    updateStatsScopeUI();
+  }
+  // 选了周 / 月之后把锚点日期挪进这一段（今天在段内就是今天，否则用段首），
+  // 这样再切回「按日」时正好落在这一段里
+  function syncStatsAnchor() {
+    var today = bizDate(Date.now());
+    if (statsScope === "week") {
+      var wr = weekRange(document.getElementById("stWeek").value || "");
+      if (wr) document.getElementById("stDate").value = (today >= wr.from && today <= wr.to) ? today : wr.from;
+    } else if (statsScope === "month") {
+      var mth = document.getElementById("stMonth").value || "";
+      if (/^\d{4}-\d{2}$/.test(mth)) {
+        document.getElementById("stDate").value = (today.slice(0, 7) === mth) ? today : (mth + "-01");
+      }
+    }
+  }
+  document.getElementById("stDate").addEventListener("change", function () { setStatsScope("day"); renderStats(); });
+  document.getElementById("stWeek").addEventListener("change", function () {
+    if (!document.getElementById("stWeek").value) return;
+    statsScope = "week";
+    updateStatsScopeUI();
+    syncStatsAnchor();
+    renderStats();
+  });
+  document.getElementById("stMonth").addEventListener("change", function () {
+    if (!document.getElementById("stMonth").value) return;
+    statsScope = "month";
+    updateStatsScopeUI();
+    syncStatsAnchor();
+    renderStats();
+  });
+  // ◀ ▶ 按当前档位翻一天 / 一周 / 一个月（shiftDateValue 会自动派发 change → 上面各自刷新）
+  function shiftStatsUnit(delta) {
+    shiftDateValue(statsActiveInput(), delta);
+  }
+  document.getElementById("stPrev").addEventListener("click", function () { shiftStatsUnit(-1); });
+  document.getElementById("stNext").addEventListener("click", function () { shiftStatsUnit(1); });
+  document.getElementById("stToday").addEventListener("click", function () {
+    // 保持当前档位，跳回「现在」：按日=今天、按周=本周、按月=本月
+    document.getElementById("stDate").value = bizDate(Date.now());
+    setStatsScope(statsScope);
+    renderStats();
+  });
+  document.getElementById("stByDay").addEventListener("click", function () { setStatsScope("day"); renderStats(); });
+  document.getElementById("stByWeek").addEventListener("click", function () { setStatsScope("week"); renderStats(); });
+  document.getElementById("stByMonth").addEventListener("click", function () { setStatsScope("month"); renderStats(); });
+  setStatsScope("day");       // 初始化：默认按日
   document.getElementById("stPull").addEventListener("click", function () {
     var el = document.getElementById("stPullMsg");
     el.textContent = "正在拉取…";
@@ -17933,7 +18068,6 @@ rows += "<tr>" +
       setTimeout(function () { el.textContent = ""; }, 5000);
     });
   });
-  document.getElementById("stMonthBtn").addEventListener("click", function () { statsScope = "month"; renderStats(); });
   // 一键生成文案（v3.23.0）
   document.getElementById("stCopyBtn").addEventListener("click", openStatsCopy);
   document.getElementById("copyDo").addEventListener("click", function () {
@@ -17946,14 +18080,14 @@ rows += "<tr>" +
   document.getElementById("copyOverlay").addEventListener("click", function (e) {
     if (e.target === this) closeStatsCopy();
   });
-  // 在统计页按 ← / → 也能翻前后一天（输入框里打字时不拦截）
+  // 在统计页按 ← / → 也能翻前后一天 / 一周 / 一个月（输入框里打字时不拦截）
   document.addEventListener("keydown", function (e) {
     if (state.currentTab !== "stats") return;
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     var t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
     e.preventDefault();
-    shiftStatsDay(e.key === "ArrowLeft" ? -1 : 1);
+    shiftStatsUnit(e.key === "ArrowLeft" ? -1 : 1);
   });
 
   // ============================================================
