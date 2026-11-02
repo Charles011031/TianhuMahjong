@@ -2488,17 +2488,15 @@
       <div class="box-head">
         <h2>💰 工资汇总</h2>
         <button id="wageClose" class="btn-ghost sm" style="margin-left:auto;">收起 ✕</button>
+        <!-- ★ v3.37.1：和「统计」页统一 —— 一个选择器 + 一对 ◀ ▶（通用组件自动加）+ 按月/按周 + 本月/本周
+             以前 周 / 月 各有两套箭头、还多一排「上一周 / 本周 / 下一周」，太挤了 -->
         <input type="month" id="wageMonth" style="margin-left:12px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;">
+        <input type="week" id="wageWeek" style="margin-left:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;">
         <span id="wageModeWrap" style="display:inline-flex;gap:6px;margin-left:8px;">
           <button type="button" id="wageByMonth" class="btn-start sm">按月</button>
           <button type="button" id="wageByWeek" class="btn-ghost sm">按周</button>
         </span>
-        <input type="week" id="wageWeek" style="display:none;margin-left:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;">
-        <span id="wageWeekNav" style="display:none;margin-left:6px;">
-          <button type="button" id="wageWeekPrev" class="btn-ghost sm">◀ 上一周</button>
-          <button type="button" id="wageWeekThis" class="btn-ghost sm">本周</button>
-          <button type="button" id="wageWeekNext" class="btn-ghost sm">下一周 ▶</button>
-        </span>
+        <button type="button" id="wagePeriodNow" class="btn-ghost sm">本月</button>
         <span class="hint" id="wageRange" style="margin:0 0 0 10px;"></span>
       </div>
       <div class="res-form" style="margin-bottom:12px;">
@@ -4824,7 +4822,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.37.0";
+  var APP_VER = "v3.37.1";
   var APP_DATE = "2026-11-03";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4835,6 +4833,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.37.1", date: "2026-11-03", items: [
+      "工资汇总的「按月 / 按周」和统计页统一：中间只留一个选择器（月 / 周）和一套 ◀ ▶，去掉重复那套箭头和「上一周 / 本周 / 下一周」三个按钮，换成一个「本月 / 本周」",
+      "顺手修掉隐藏那一档后箭头还露在外面的问题"
+    ] },
     { ver: "v3.37.0", date: "2026-11-03", items: [
       "统计页可以看**任意一周 / 任意一个月**：工具条加了「按日 / 按周 / 按月」三档，中间的日期框跟着换成周选择器 / 月选择器，◀ ▶ 按当前档位翻（键盘 ← → 也行）",
       "「查看本月合计」换成三档按钮，「今天」跟着变成「本周 / 本月」",
@@ -4896,10 +4898,6 @@
     { ver: "v3.32.2", date: "2026-10-30", items: [
       "渠道从下拉改成**按钮**，放在「实收」后面：人民币两个胶囊按钮 微信（品牌绿）/ 支付宝（品牌蓝），现金两个文字按钮 现金 / 转账",
       "整单和按人分账通用"
-    ] },
-    { ver: "v3.32.1", date: "2026-10-30", items: [
-      "修：渠道下拉只在「高级：按笔改金额」里，**整单收款 / 按人分账没显示**（用户反馈）",
-      "现在整单收人民币多「微信/支付宝」、收现金多「现金/转账」，按人分账里每个人各自有"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -17057,40 +17055,38 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   document.getElementById("wageWeek").addEventListener("change", renderWages);
 
   // 按月 / 按周 切换
+  // ★ v3.37.1：显示 / 隐藏改在【外层 ds-wrap】上 —— 以前只藏输入框，自动加的 ◀ ▶ 还留在外面，
+  //   于是界面上出现两套箭头（用户反馈）；「上一周 / 本周 / 下一周」那排也去掉了，统一成一个「本月 / 本周」
+  function wagePickerBox(el) {
+    var p = el && el.parentNode;
+    return (p && p.classList && p.classList.contains("ds-wrap")) ? p : el;
+  }
+  function applyWageModeUI() {
+    var isWeek = (wageMode === "week");
+    wagePickerBox(document.getElementById("wageMonth")).style.display = isWeek ? "none" : "";
+    wagePickerBox(document.getElementById("wageWeek")).style.display = isWeek ? "" : "none";
+    document.getElementById("wageByMonth").className = isWeek ? "btn-ghost sm" : "btn-start sm";
+    document.getElementById("wageByWeek").className = isWeek ? "btn-start sm" : "btn-ghost sm";
+    document.getElementById("wagePeriodNow").textContent = isWeek ? "本周" : "本月";
+  }
   function setWageMode(mode) {
     wageMode = (mode === "week") ? "week" : "month";
-    document.getElementById("wageMonth").style.display = (wageMode === "month") ? "" : "none";
-    document.getElementById("wageWeek").style.display = (wageMode === "week") ? "" : "none";
-    document.getElementById("wageWeekNav").style.display = (wageMode === "week") ? "" : "none";
-    document.getElementById("wageByMonth").className = (wageMode === "month") ? "btn-start sm" : "btn-ghost sm";
-    document.getElementById("wageByWeek").className = (wageMode === "week") ? "btn-start sm" : "btn-ghost sm";
     if (wageMode === "week" && !document.getElementById("wageWeek").value) {
       document.getElementById("wageWeek").value = thisWeekVal();
     }
+    applyWageModeUI();
     state.wageMode = wageMode;
     save();
     renderWages();
   }
   document.getElementById("wageByMonth").addEventListener("click", function () { setWageMode("month"); });
   document.getElementById("wageByWeek").addEventListener("click", function () { setWageMode("week"); });
-
-  // 上一周 / 本周 / 下一周
-  function shiftWeek(delta) {
-    var el = document.getElementById("wageWeek");
-    var wr = weekRange(el.value || thisWeekVal());
-    if (!wr) return;
-    if (delta === 0) { el.value = thisWeekVal(); renderWages(); return; }
-    var d = new Date(wr.mon.getFullYear(), wr.mon.getMonth(), wr.mon.getDate() + delta * 7);
-    // 用 ISO 周号反推
-    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 3);
-    var wk1 = new Date(t.getFullYear(), 0, 4);
-    var n = 1 + Math.round(((t - wk1) / 86400000 - 3 + ((wk1.getDay() + 6) % 7)) / 7);
-    el.value = t.getFullYear() + "-W" + (n < 10 ? "0" + n : n);
+  // 「本月 / 本周」= 跳回现在（翻周 / 翻月用选择器两边的 ◀ ▶，和统计页一致）
+  document.getElementById("wagePeriodNow").addEventListener("click", function () {
+    if (wageMode === "week") document.getElementById("wageWeek").value = thisWeekVal();
+    else document.getElementById("wageMonth").value = dstrOf(Date.now()).slice(0, 7);
     renderWages();
-  }
-  document.getElementById("wageWeekPrev").addEventListener("click", function () { shiftWeek(-1); });
-  document.getElementById("wageWeekNext").addEventListener("click", function () { shiftWeek(1); });
-  document.getElementById("wageWeekThis").addEventListener("click", function () { shiftWeek(0); });
+  });
   document.getElementById("dayRate").addEventListener("input", function () {
     state.dayRate = parseFloat(this.value) || 0; save(); renderWages();
   });
@@ -18350,6 +18346,8 @@ document.addEventListener("mousedown", function (e) {
   renderVapes();
   document.getElementById("seFeePct").textContent = state.feeRate;
   document.getElementById("wageMonth").value = fmtDate(Date.now()).slice(0, 7);
+  // ★ v3.37.1：这里要等通用组件把 ◀ ▶ 包好之后再执行，否则藏的是输入框、箭头还露在外面
+  applyWageModeUI();
   document.getElementById("resDate").value = fmtDate(Date.now());
   renderReservations();
   renderWages();
