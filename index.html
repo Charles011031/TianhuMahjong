@@ -4824,7 +4824,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.38.0";
+  var APP_VER = "v3.38.1";
   var APP_DATE = "2026-11-03";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4835,6 +4835,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.38.1", date: "2026-11-03", items: [
+      "🦆 鸭嘴兽现货文案改成**每个口味单独一行、数字对齐成一列**（用户要求：口味和数量一行一个、每行对齐）：按最长的口味名补空格，一代 / 二代各自分组、组名单独一行，发到群里一眼看清每样还剩几根",
+      "售罄不出现、阶梯价读设置等行为不变",
+      "界面测试同步改成断言「逐行 + 同列对齐」"
+    ] },
     { ver: "v3.38.0", date: "2026-11-03", items: [
       "🦆 鸭嘴兽「口味与库存」加**一键生成文案**：点按钮就把当前口味＋库存拼成一段现货文案（一代 / 二代分组、写「口味 N」），**售罄的口味自动不出现**",
       "末尾自动带**阶梯价提示**（零售 / 满3根 / 满5根，读当前价格设置，改价后文案跟着变）",
@@ -4897,10 +4902,6 @@
     { ver: "v3.32.4", date: "2026-10-30", items: [
       "群消息格式：人民币统一写 `30.67刀微信收144.22人民币` / `30.67刀支付宝收144.22人民币`（不再分「剩下」）",
       "麻将种类存进云端记录（以前云端往返一圈就丢，看不到 `108张`）"
-    ] },
-    { ver: "v3.32.3", date: "2026-10-30", items: [
-      "修：选了支付宝/转账，群消息还写「微信/现金」——云端同步把分账压成文本、文本里没渠道",
-      "现在 `payDetail` 带 `（支付宝）`/`（转账）`，拉回来能认（修复前已同步的记录拉回来仍按默认显示）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -13843,6 +13844,17 @@ rows += "<tr>" +
     if (!isFinite(n) || n <= 0) return "";
     return "$" + n.toFixed(2).replace(/\.00$/, "");
   }
+  // 显示宽度（中文 / 全角 / emoji 算 2，英文数字算 1）—— 用来把每行数字对齐成一列
+  function vapeTextWidth(s) {
+    var w = 0, i = 0, str = String(s || ""), n = str.length;
+    while (i < n) {
+      var c = str.charCodeAt(i);
+      if (c >= 0xD800 && c <= 0xDBFF) { w += 2; i += 2; continue; }   // emoji（代理对）
+      w += (c > 0x2E7F) ? 2 : 1;
+      i++;
+    }
+    return w;
+  }
   function vapeStockCopyText() {
     var today = bizDate(Date.now());
     var md = Number(today.slice(5, 7)) + "/" + today.slice(8, 10);
@@ -13852,15 +13864,26 @@ rows += "<tr>" +
       var st = Number(v.stock) || 0;
       if (st <= 0) continue;                    // 售罄的不写进文案
       var gen = Number(v.gen) === 2 ? 2 : 1;
-      lists[gen].push(String(v.name || "") + " " + st);
+      lists[gen].push({ name: String(v.name || ""), stock: st });
     }
     var lines = ["🦆 鸭嘴兽现货（" + md + "）"];
     if (!lists[1].length && !lists[2].length) {
       lines.push("暂无现货");
       return lines.join("\n");
     }
-    if (lists[1].length) lines.push("🟢 一代：" + lists[1].join("｜"));
-    if (lists[2].length) lines.push("🟣 二代：" + lists[2].join("｜"));
+    // 名字列按最长的那个补空格 → 每个口味单独一行，数字全部对齐在同一列
+    var maxW = 0;
+    [1, 2].forEach(function (g) {
+      lists[g].forEach(function (it) { maxW = Math.max(maxW, vapeTextWidth(it.name)); });
+    });
+    [1, 2].forEach(function (gen) {
+      if (!lists[gen].length) return;
+      lines.push(gen === 2 ? "🟣 二代" : "🟢 一代");
+      lists[gen].forEach(function (it) {
+        // 补到同一列宽，再空 2 格分隔数字（new Array(k).join 生成 k-1 个空格）
+        lines.push(it.name + new Array(maxW - vapeTextWidth(it.name) + 3).join(" ") + it.stock);
+      });
+    });
     // 阶梯价提示：只写给有货的那一代
     var vp = state.vapePrice || {};
     [1, 2].forEach(function (gen) {
