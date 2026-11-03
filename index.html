@@ -414,6 +414,9 @@
   .modal-btns button { width: 100%; }
   /* v3.30.0：微信群消息弹窗的营业日切换（日期框外面那对 ◀ ▶ 是页面通用组件自动加的） */
   .wx-daybar { display: flex; gap: 6px; align-items: center; margin: 0 0 10px; }
+  /* v3.39.1 修 bug：上面这条 display:flex 会盖掉 hidden 属性的默认 display:none，
+     导致「现货文案 / 统计文案」弹窗里日期条照样露出来（用户截图反馈）→ 显式补一条 */
+  .wx-daybar[hidden] { display: none !important; }
   .wx-daybar .ds-wrap { flex: 1 1 auto; min-width: 0; }
   .wx-daybar .ds-wrap .ds-btn { flex: 0 0 auto; margin: 0; }
   .wx-daybar .ds-wrap input[type=date] {
@@ -4830,7 +4833,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.39.0";
+  var APP_VER = "v3.39.1";
   var APP_DATE = "2026-11-03";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4841,6 +4844,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.39.1", date: "2026-11-03", items: [
+      "🐛 修：**鸭嘴兽现货文案弹窗里冒出营业日切换条**（用户反馈：不需要看别的日期，而且点日期会把文案变成桌台结算文案）：根因是日期条那行 CSS 写了 `display:flex`，把 `hidden` 的 `display:none` 盖掉了，JS 里设 hidden 形同虚设，露出来的日期事件又把共用的文本框改写成营业日结算文案",
+      "修法 ① CSS 补 `.wx-daybar[hidden]{display:none !important}`（统计页文案弹窗同样露着，一起修好）② 弹窗加 `copyMode`（营业日 / 统计 / 现货），日期切换只对营业日文案生效",
+      "界面测试改成查计算样式，并新增「现货文案开着时触发日期切换、内容不变」回归断言"
+    ] },
     { ver: "v3.39.0", date: "2026-11-03", items: [
       "🦆 鸭嘴兽阶梯价加**满10根**这一档，价格可以自己填（用户要求：阶梯价加一个满10根的价格）：价格设置里一代 / 二代各多一个「满10根 $」输入框，算法和满3 / 满5 一样按一二代合计总根数分档",
       "**老数据没填的按零售价八折自动补上，和以前的「满10根八折」完全一致**",
@@ -4907,12 +4915,6 @@
     { ver: "v3.33.1", date: "2026-10-31", items: [
       "修：预约「到店 / 取消 / 新增」在切到 REST 轮询的设备上看不到（以前轮询只拉待结算，漏了预约）",
       "另外计时中改「麻将种类」后打上「刚动过」保护，避免被云端旧快照盖回旧种类"
-    ] },
-    { ver: "v3.33.0", date: "2026-10-30", items: [
-      "发布新版后**其它设备自动换到新版本**（不用再手动刷新）：发布脚本在线上确认新版本后往 Firebase 写 `__sysVer`",
-      "页面收到后——空闲（没输入、没弹窗）→ 静默刷新，正在结算/填金额 → 顶部提示条「立即刷新 / 稍后」",
-      "刷新带 `?v=时间戳` 绕开 GitHub Pages 约 10 分钟的 CDN 缓存",
-      "后台标签页切回前台时补查。**老版本页面第一次要手动刷新一次**，之后才会自动换版"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -13912,6 +13914,7 @@ rows += "<tr>" +
     return lines.join("\n");
   }
   function openVapeCopy() {
+    copyMode = "vape";                         // v3.39.1：现货文案不带营业日切换
     var txt = vapeStockCopyText();
     var ov = document.getElementById("copyOverlay");
     var ta = document.getElementById("copyText");
@@ -17940,8 +17943,12 @@ rows += "<tr>" +
     return lines.join("\n");
   }
   // 弹窗：显示某个营业日的整段文案（v3.30.0 带日期切换）
+  // v3.39.1：加 copyMode 区分这个弹窗被谁打开的（wxday 营业日 / stats 统计 / vape 现货），
+  //          免得「现货文案」开着时被日期切换事件改写成桌台结算文案（用户反馈的 bug）。
   var wxDayCur = "";
+  var copyMode = "";
   function renderWxDay(autoCopy) {
+    if (copyMode && copyMode !== "wxday") return;    // 不是营业日文案弹窗，别改内容
     var today = bizDate(Date.now());
     if (!wxDayCur) wxDayCur = today;
     var pick = document.getElementById("wxDayPick");
@@ -17965,6 +17972,7 @@ rows += "<tr>" +
     }
   }
   function openWxDay(day) {
+    copyMode = "wxday";
     wxDayCur = day || bizDate(Date.now());
     var bar = document.getElementById("wxDayBar");
     if (bar) bar.hidden = false;
@@ -17979,9 +17987,10 @@ rows += "<tr>" +
   var wxAllBtn = document.getElementById("wxAllBtn");
   if (wxAllBtn) wxAllBtn.addEventListener("click", function () { openWxDay(bizDate(Date.now())); });
   var wxDayTodayEl = document.getElementById("wxDayToday");
-  if (wxDayTodayEl) wxDayTodayEl.addEventListener("click", function () { wxDayCur = bizDate(Date.now()); renderWxDay(true); });
+  if (wxDayTodayEl) wxDayTodayEl.addEventListener("click", function () { if (copyMode !== "wxday") return; wxDayCur = bizDate(Date.now()); renderWxDay(true); });
   var wxDayPickEl = document.getElementById("wxDayPick");
   if (wxDayPickEl) wxDayPickEl.addEventListener("change", function () {
+    if (copyMode !== "wxday") return;
     if (wxDayPickEl.value) { wxDayCur = wxDayPickEl.value; renderWxDay(true); }
   });
 
@@ -18045,6 +18054,7 @@ rows += "<tr>" +
     fallback();
   }
   function openStatsCopy() {
+    copyMode = "stats";
     var txt = statsCopyText();
     var ov = document.getElementById("copyOverlay");
     var ta = document.getElementById("copyText");
@@ -18069,7 +18079,7 @@ rows += "<tr>" +
         : "浏览器拦住了自动复制，请点下面的「📋 复制」或手动选中文字复制";
     });
   }
-  function closeStatsCopy() { document.getElementById("copyOverlay").classList.remove("show"); }
+  function closeStatsCopy() { copyMode = ""; document.getElementById("copyOverlay").classList.remove("show"); }
 
   // 明细上方的筛选按钮
   function renderTxnFilter() {
