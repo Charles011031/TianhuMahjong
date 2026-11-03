@@ -679,11 +679,12 @@
   .menu-head span { text-align: center; }
   /* 电子烟价格设置：左右两栏，把整页宽度用起来，不然右半边空一片 */
   /* 左栏只占内容需要的宽度，右栏吃掉剩下的 —— 这样左边不会空一片、右边也不会被挤出去 */
-  .vp-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 32px; align-items: start; }
+  /* 左栏按内容宽度（v3.39.0 加了「满10根」这一格，写死 1fr 会跟右栏挤在一起），右栏吃掉剩下的 */
+  .vp-wrap { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 28px; align-items: start; }
   .vp-title { font-size: 13px; font-weight: 700; color: var(--green-dark); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   .vp-title .hint { font-weight: 400; margin-left: 6px; }
-  /* 阶梯价：三组紧挨着排，不再被 1fr 拉开 */
-  .vp-grid { display: grid; grid-template-columns: 76px repeat(3, max-content); gap: 13px 26px; align-items: center; justify-content: start; }
+  /* 阶梯价：四组（零售 / 满3 / 满5 / 满10）紧挨着排，不再被 1fr 拉开 */
+  .vp-grid { display: grid; grid-template-columns: 76px repeat(4, max-content); gap: 13px 20px; align-items: center; justify-content: start; }
   /* 员工价/刷卡：三列，右侧两组平分剩余宽度 */
   .vp-grid2 { display: grid; grid-template-columns: 62px minmax(0, 1fr) minmax(0, 1fr); gap: 13px 16px; align-items: center; }
   .vp-gen { font-size: 15px; font-weight: 700; }
@@ -814,7 +815,7 @@
   .snack-col.c-g2 h3 { color: #6b21a8; }
   .snack-card .snack-tag.t-g1 { background: #eef7f1; color: var(--green-dark); border-color: #b6dcc8; }
   .snack-card .snack-tag.t-g2 { background: #f3e8ff; color: #6b21a8; border-color: #ddd6fe; }
-  /* 阶梯价档位小字（满3根 / 满5根 / 满10根八折 / 员工价） */
+  /* 阶梯价档位小字（满3根 / 满5根 / 满10根 / 员工价） */
   .snack-card .vape-tier { font-size: 10px; font-weight: 700; color: #b45309; margin-left: 3px; }
   .snack-col h3 .cnt { font-size: 11px; font-weight: 400; opacity: .7; }
   /* 卡片区：限高 + 框内滚动（和原来一样，页面不会被 30 个商品撑长） */
@@ -2335,11 +2336,13 @@
             <span class="vp-cell">零售 $<input type="number" id="vp1r" min="0" step="1"></span>
             <span class="vp-cell">满3根 $<input type="number" id="vp1t3" min="0" step="1"></span>
             <span class="vp-cell">满5根 $<input type="number" id="vp1t5" min="0" step="1"></span>
+            <span class="vp-cell">满10根 $<input type="number" id="vp1t10" min="0" step="1"></span>
 
             <span class="vp-gen" style="color:#7c3aed;">🟣 二代</span>
             <span class="vp-cell">零售 $<input type="number" id="vp2r" min="0" step="1"></span>
             <span class="vp-cell">满3根 $<input type="number" id="vp2t3" min="0" step="1"></span>
             <span class="vp-cell">满5根 $<input type="number" id="vp2t5" min="0" step="1"></span>
+            <span class="vp-cell">满10根 $<input type="number" id="vp2t10" min="0" step="1"></span>
           </div>
         </div>
 
@@ -3565,7 +3568,7 @@
       tables: tables, history: [],
       snackMenu: [], snackCart: [], snackHistory: [],
       vapes: [], vapeCart: [], vapeHistory: [],
-      vapePrice: { g1: { retail: 40, t3: 38, t5: 36 }, g2: { retail: 45, t3: 43, t5: 40 }, staff1: 35, staff2: 35 },
+      vapePrice: { g1: { retail: 40, t3: 38, t5: 36, t10: 32 }, g2: { retail: 45, t3: 43, t5: 40, t10: 36 }, staff1: 35, staff2: 35 },
       vapeStaffOn: false, vapeCardAdd: 5, vapeCardPer: "stick",
       members: [], employees: [], attendance: [], memberDetailId: "",
       memSort: "",                   // 会员列表排序：""=默认（按名字）／balance／paid／used
@@ -3638,9 +3641,12 @@
     if (!Array.isArray(s.vapes)) s.vapes = [];
     if (!Array.isArray(s.vapeCart)) s.vapeCart = [];
     if (!Array.isArray(s.vapeHistory)) s.vapeHistory = [];
-    if (!s.vapePrice || typeof s.vapePrice !== "object") s.vapePrice = { g1: { retail: 40, t3: 38, t5: 36 }, g2: { retail: 45, t3: 43, t5: 40 } };
-    if (!s.vapePrice.g1) s.vapePrice.g1 = { retail: 40, t3: 38, t5: 36 };
-    if (!s.vapePrice.g2) s.vapePrice.g2 = { retail: 45, t3: 43, t5: 40 };
+    if (!s.vapePrice || typeof s.vapePrice !== "object") s.vapePrice = { g1: { retail: 40, t3: 38, t5: 36, t10: 32 }, g2: { retail: 45, t3: 43, t5: 40, t10: 36 } };
+    if (!s.vapePrice.g1) s.vapePrice.g1 = { retail: 40, t3: 38, t5: 36, t10: 32 };
+    if (!s.vapePrice.g2) s.vapePrice.g2 = { retail: 45, t3: 43, t5: 40, t10: 36 };
+    // v3.39.0：满10根改成可以自己填（以前写死按零售价八折）—— 老数据没有 t10 就按八折补上，行为不变
+    if (typeof s.vapePrice.g1.t10 !== "number") s.vapePrice.g1.t10 = round2((Number(s.vapePrice.g1.retail) || 40) * 0.8);
+    if (typeof s.vapePrice.g2.t10 !== "number") s.vapePrice.g2.t10 = round2((Number(s.vapePrice.g2.retail) || 45) * 0.8);
     if (typeof s.vapePrice.staff1 !== "number") s.vapePrice.staff1 = (typeof s.vapePrice.staff === "number") ? s.vapePrice.staff : 35;
     if (typeof s.vapePrice.staff2 !== "number") s.vapePrice.staff2 = (typeof s.vapePrice.staff === "number") ? s.vapePrice.staff : 35;
     if (typeof s.vapeStaffOn !== "boolean") s.vapeStaffOn = false;
@@ -4824,7 +4830,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.38.2";
+  var APP_VER = "v3.39.0";
   var APP_DATE = "2026-11-03";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4835,6 +4841,13 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.39.0", date: "2026-11-03", items: [
+      "🦆 鸭嘴兽阶梯价加**满10根**这一档，价格可以自己填（用户要求：阶梯价加一个满10根的价格）：价格设置里一代 / 二代各多一个「满10根 $」输入框，算法和满3 / 满5 一样按一二代合计总根数分档",
+      "**老数据没填的按零售价八折自动补上，和以前的「满10根八折」完全一致**",
+      "档位小字从「满10根八折」改成「满10根」（因为不再是写死的八折）",
+      "现货文案末尾自动多一段「满10根 $X」",
+      "设置导出 / 导入、同步都带上这一项"
+    ] },
     { ver: "v3.38.2", date: "2026-11-03", items: [
       "🦆 鸭嘴兽现货文案排版再改一版（用户反馈：v3.38.1 那种拉空格的对齐不好看）：每个口味一行写 **`口味名 ×剩余根数`**，数字紧跟名字、不再补空格（微信是比例字体，空格对齐会飘）",
       "组名改成带款数的 **`🟢 一代（15 款）`**，不再单独空一行",
@@ -4900,9 +4913,6 @@
       "页面收到后——空闲（没输入、没弹窗）→ 静默刷新，正在结算/填金额 → 顶部提示条「立即刷新 / 稍后」",
       "刷新带 `?v=时间戳` 绕开 GitHub Pages 约 10 分钟的 CDN 缓存",
       "后台标签页切回前台时补查。**老版本页面第一次要手动刷新一次**，之后才会自动换版"
-    ] },
-    { ver: "v3.32.5", date: "2026-10-30", items: [
-      "老记录补麻将种类：结算记录点「编辑」→ 什么都不改 → 点「保存修改」，会用该桌当前种类补上（只补没存过的，已有的不覆盖）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -9492,9 +9502,11 @@ function inventoryPayloads() {
     out.push({ id: "set_vp1r", key: "一代零售价", value: String(g1.retail || 0) });
     out.push({ id: "set_vp1t3", key: "一代满3根", value: String(g1.t3 || 0) });
     out.push({ id: "set_vp1t5", key: "一代满5根", value: String(g1.t5 || 0) });
+    out.push({ id: "set_vp1t10", key: "一代满10根", value: String(g1.t10 || 0) });
     out.push({ id: "set_vp2r", key: "二代零售价", value: String(g2.retail || 0) });
     out.push({ id: "set_vp2t3", key: "二代满3根", value: String(g2.t3 || 0) });
     out.push({ id: "set_vp2t5", key: "二代满5根", value: String(g2.t5 || 0) });
+    out.push({ id: "set_vp2t10", key: "二代满10根", value: String(g2.t10 || 0) });
     out.push({ id: "set_vpStaff1", key: "一代员工价", value: String(state.vapePrice.staff1 || 0) });
     out.push({ id: "set_vpStaff2", key: "二代员工价", value: String(state.vapePrice.staff2 || 0) });
     // 充值档位（JSON）
@@ -9735,9 +9747,11 @@ function verifyConfigPush(done) {
     state.vapePrice.g1.retail = num("一代零售价", state.vapePrice.g1.retail);
     state.vapePrice.g1.t3 = num("一代满3根", state.vapePrice.g1.t3);
     state.vapePrice.g1.t5 = num("一代满5根", state.vapePrice.g1.t5);
+    state.vapePrice.g1.t10 = num("一代满10根", state.vapePrice.g1.t10);
     state.vapePrice.g2.retail = num("二代零售价", state.vapePrice.g2.retail);
     state.vapePrice.g2.t3 = num("二代满3根", state.vapePrice.g2.t3);
     state.vapePrice.g2.t5 = num("二代满5根", state.vapePrice.g2.t5);
+    state.vapePrice.g2.t10 = num("二代满10根", state.vapePrice.g2.t10);
     state.vapePrice.staff1 = num("一代员工价", state.vapePrice.staff1);
     state.vapePrice.staff2 = num("二代员工价", state.vapePrice.staff2);
     if (byLabel["充值档位"]) {
@@ -13461,12 +13475,18 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
   // 按这一代的总根数决定每根单价
   // ⚠️ qty 传的是【一代＋二代的总根数】（不是单代）：
   //    买 2 根一代 + 1 根二代 = 3 根 → 两代都按「满3根」的价算（38×2 + 43×1）。
-  //    满 10 根 → 再打八折（按零售价八折）。
+  //    满 10 根 → 按设置里的「满10根」价（v3.39.0 起可自己填，老数据默认 = 零售价八折）。
+  function vapeT10(gen) {
+    var p = vapePriceOf(gen);
+    var v = Number(p.t10);
+    if (isFinite(v) && v > 0) return round2(v);
+    return round2((Number(p.retail) || 0) * 0.8);      // 没填（0 / 空）就退回老的八折
+  }
   function vapeUnitPrice(gen, totalQty) {
     if (state.vapeStaffOn) return Number(gen === 2 ? state.vapePrice.staff2 : state.vapePrice.staff1) || 0;
     var p = vapePriceOf(gen);
     var q = Number(totalQty) || 0;
-    if (q >= 10) return round2((Number(p.retail) || 0) * 0.8);
+    if (q >= 10) return vapeT10(gen);
     if (q >= 5) return Number(p.t5) || 0;
     if (q >= 3) return Number(p.t3) || 0;
     return Number(p.retail) || 0;
@@ -13474,7 +13494,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
   function vapeTierLabel(gen, totalQty) {
     if (state.vapeStaffOn) return "员工价";
     var q = Number(totalQty) || 0;
-    if (q >= 10) return "满10根八折";
+    if (q >= 10) return "满10根";
     if (q >= 5) return "满5根";
     if (q >= 3) return "满3根";
     return "零售";
@@ -13484,7 +13504,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
   function vapeTierByTotal(totalQty) {
     if (state.vapeStaffOn) return "员工价";
     var q = Number(totalQty) || 0;
-    if (q >= 10) return "满10根八折";
+    if (q >= 10) return "满10根";
     if (q >= 5) return "满5根";
     if (q >= 3) return "满3根";
     return "零售";
@@ -13599,7 +13619,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
         (ph.length > 40 ? '<img src="' + ph + '" alt="">' : '<span class="em">' + vapeEmojiOf(v) + "</span>") +
       "</div>" +
       '<div class="snack-nm">' + esc(v.name) + "</div>" +
-      // ★ 阶梯价：按点单里【一二代合计的总根数】自动换档（满3/满5/满10八折/员工价）
+      // ★ 阶梯价：按点单里【一二代合计的总根数】自动换档（满3/满5/满10/员工价）
       '<div class="snack-pr">' + price +
         (tier !== "零售" ? '<span class="vape-tier">' + tier + "</span>" : "") + "</div>" +
       (n
@@ -13787,9 +13807,11 @@ rows += "<tr>" +
     document.getElementById("vp1r").value = state.vapePrice.g1.retail;
     document.getElementById("vp1t3").value = state.vapePrice.g1.t3;
     document.getElementById("vp1t5").value = state.vapePrice.g1.t5;
+    document.getElementById("vp1t10").value = state.vapePrice.g1.t10;
     document.getElementById("vp2r").value = state.vapePrice.g2.retail;
     document.getElementById("vp2t3").value = state.vapePrice.g2.t3;
     document.getElementById("vp2t5").value = state.vapePrice.g2.t5;
+    document.getElementById("vp2t10").value = state.vapePrice.g2.t10;
     document.getElementById("vpStaff1").value = state.vapePrice.staff1;
     document.getElementById("vpStaff2").value = state.vapePrice.staff2;
     document.getElementById("vapeStaff").checked = !!state.vapeStaffOn;
@@ -13883,6 +13905,8 @@ rows += "<tr>" +
       if (t3) segs.push("满3根 " + t3);
       var t5 = vapePriceMoney(p.t5);
       if (t5) segs.push("满5根 " + t5);
+      var t10 = vapePriceMoney(vapeT10(gen));
+      if (t10) segs.push("满10根 " + t10);
       if (segs.length) lines.push("💰 " + (gen === 2 ? "二代" : "一代") + "：" + segs.join("　"));
     });
     return lines.join("\n");
@@ -13911,8 +13935,8 @@ rows += "<tr>" +
   }
 
   // 价格设置
-  [["vp1r", "g1", "retail"], ["vp1t3", "g1", "t3"], ["vp1t5", "g1", "t5"],
-   ["vp2r", "g2", "retail"], ["vp2t3", "g2", "t3"], ["vp2t5", "g2", "t5"]].forEach(function (m) {
+  [["vp1r", "g1", "retail"], ["vp1t3", "g1", "t3"], ["vp1t5", "g1", "t5"], ["vp1t10", "g1", "t10"],
+   ["vp2r", "g2", "retail"], ["vp2t3", "g2", "t3"], ["vp2t5", "g2", "t5"], ["vp2t10", "g2", "t10"]].forEach(function (m) {
     document.getElementById(m[0]).addEventListener("input", function () {
       var v = parseFloat(this.value);
       state.vapePrice[m[1]][m[2]] = (isNaN(v) || v < 0) ? 0 : round2(v);
