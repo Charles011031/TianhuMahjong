@@ -2370,7 +2370,9 @@
     <div>
       <section class="card-box">
         <div class="box-head"><h2>口味与库存</h2>
-          <button class="btn-ghost sm" id="vapeLogBtn" style="margin-left:auto;">📋 盘点记录</button>
+          <!-- ★ v3.38.0：一键把当前口味+库存拼成现货文案（发群里 / 朋友圈） -->
+          <button class="btn-ghost sm" id="vapeCopyBtn" style="margin-left:auto;" title="按当前口味和库存生成一段现货文案，方便发群里">📋 生成文案</button>
+          <button class="btn-ghost sm" id="vapeLogBtn" style="margin-left:6px;">📋 盘点记录</button>
           <button class="btn-ghost sm" id="vapeEditBtn" style="margin-left:6px;" title="改代别 / 口味名称 / 库存（弹窗里改，平时改不动）">✎ 编辑</button>
         </div>
                 <div class="error" id="vapeMsg" style="display:none;"></div>
@@ -4822,7 +4824,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.37.1";
+  var APP_VER = "v3.38.0";
   var APP_DATE = "2026-11-03";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4833,6 +4835,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.38.0", date: "2026-11-03", items: [
+      "🦆 鸭嘴兽「口味与库存」加**一键生成文案**：点按钮就把当前口味＋库存拼成一段现货文案（一代 / 二代分组、写「口味 N」），**售罄的口味自动不出现**",
+      "末尾自动带**阶梯价提示**（零售 / 满3根 / 满5根，读当前价格设置，改价后文案跟着变）",
+      "弹窗里显示并自动复制，直接粘到群里 / 朋友圈"
+    ] },
     { ver: "v3.37.1", date: "2026-11-03", items: [
       "工资汇总的「按月 / 按周」和统计页统一：中间只留一个选择器（月 / 周）和一套 ◀ ▶，去掉重复那套箭头和「上一周 / 本周 / 下一周」三个按钮，换成一个「本月 / 本周」",
       "顺手修掉隐藏那一档后箭头还露在外面的问题"
@@ -4894,10 +4901,6 @@
     { ver: "v3.32.3", date: "2026-10-30", items: [
       "修：选了支付宝/转账，群消息还写「微信/现金」——云端同步把分账压成文本、文本里没渠道",
       "现在 `payDetail` 带 `（支付宝）`/`（转账）`，拉回来能认（修复前已同步的记录拉回来仍按默认显示）"
-    ] },
-    { ver: "v3.32.2", date: "2026-10-30", items: [
-      "渠道从下拉改成**按钮**，放在「实收」后面：人民币两个胶囊按钮 微信（品牌绿）/ 支付宝（品牌蓝），现金两个文字按钮 现金 / 转账",
-      "整单和按人分账通用"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -11937,6 +11940,7 @@ jsonpGet(t, onRes);
     toast(meKind === "vape" ? "口味已保存" : "商品菜单已保存", "var(--green-dark)");
   }
   document.getElementById("vapeEditBtn").addEventListener("click", function () { openMenuEdit("vape"); });
+  document.getElementById("vapeCopyBtn").addEventListener("click", openVapeCopy);
   // 快速添加：填上面的条 → 点「＋ 添加」→ 插到自己那一组的最前面
   function meQuickAdd() {
     meRead();
@@ -13826,6 +13830,74 @@ rows += "<tr>" +
       (sold1 + sold2 > 0
         ? '<div class="vs">今日已售<span>一代 ' + sold1 + ' · 二代 ' + sold2 + '</span><b>' + (sold1 + sold2) + ' 支</b></div>'
         : '');
+  }
+
+  // ============================================================
+  //  ★ v3.38.0：鸭嘴兽现货文案（一键生成，发群里 / 朋友圈用）
+  //  · 按「口味与库存」输出：一代一组、二代一组，写「口味 N」
+  //  · 库存 0（售罄）的口味不出现；某一代全部售罄就整行不写
+  //  · 末尾带阶梯价提示，价格实时读设置（不写死，改价后文案自动跟着变）
+  // ============================================================
+  function vapePriceMoney(n) {
+    n = Number(n);
+    if (!isFinite(n) || n <= 0) return "";
+    return "$" + n.toFixed(2).replace(/\.00$/, "");
+  }
+  function vapeStockCopyText() {
+    var today = bizDate(Date.now());
+    var md = Number(today.slice(5, 7)) + "/" + today.slice(8, 10);
+    var lists = { 1: [], 2: [] };
+    for (var i = 0; i < state.vapes.length; i++) {
+      var v = state.vapes[i];
+      var st = Number(v.stock) || 0;
+      if (st <= 0) continue;                    // 售罄的不写进文案
+      var gen = Number(v.gen) === 2 ? 2 : 1;
+      lists[gen].push(String(v.name || "") + " " + st);
+    }
+    var lines = ["🦆 鸭嘴兽现货（" + md + "）"];
+    if (!lists[1].length && !lists[2].length) {
+      lines.push("暂无现货");
+      return lines.join("\n");
+    }
+    if (lists[1].length) lines.push("🟢 一代：" + lists[1].join("｜"));
+    if (lists[2].length) lines.push("🟣 二代：" + lists[2].join("｜"));
+    // 阶梯价提示：只写给有货的那一代
+    var vp = state.vapePrice || {};
+    [1, 2].forEach(function (gen) {
+      if (!lists[gen].length) return;
+      var p = vp["g" + gen] || {};
+      var segs = [];
+      var retail = vapePriceMoney(p.retail);
+      if (retail) segs.push(retail + "／根");
+      var t3 = vapePriceMoney(p.t3);
+      if (t3) segs.push("满3根 " + t3);
+      var t5 = vapePriceMoney(p.t5);
+      if (t5) segs.push("满5根 " + t5);
+      if (segs.length) lines.push("💰 " + (gen === 2 ? "二代" : "一代") + "：" + segs.join("　"));
+    });
+    return lines.join("\n");
+  }
+  function openVapeCopy() {
+    var txt = vapeStockCopyText();
+    var ov = document.getElementById("copyOverlay");
+    var ta = document.getElementById("copyText");
+    var title = document.getElementById("copyTitle");
+    var hint = document.getElementById("copyHint");
+    var bar = document.getElementById("wxDayBar");
+    if (bar) bar.hidden = true;                  // 现货文案没有营业日切换
+    if (title) title.textContent = "鸭嘴兽现货文案";
+    if (ta) {
+      ta.value = txt;
+      try { ta.rows = Math.min(14, Math.max(3, txt.split("\n").length)); } catch (e) {}
+    }
+    if (hint) hint.textContent = "正在复制…";
+    if (ov) ov.classList.add("show");
+    setTimeout(function () { try { ta.focus(); ta.select(); } catch (e) {} }, 60);
+    copyToClipboard(txt, function (ok) {
+      if (hint) hint.textContent = ok
+        ? "已复制到剪贴板 ✓（去微信粘贴发送就行）"
+        : "浏览器拦住了自动复制，请点下面的「📋 复制」或手动选中文字复制";
+    });
   }
 
   // 价格设置
