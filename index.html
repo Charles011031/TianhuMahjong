@@ -2011,6 +2011,16 @@
   .res-done { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#f1f8f4; border:1px solid #cfe0d6; color:var(--green-dark); border-radius:10px; padding:10px 13px; font-size:13px; font-weight:700; margin:2px 0 11px; }
   .res-conflict { display:none; background:#fff5f5; border:1px solid #fecaca; color:#b91c1c; border-radius:10px; padding:9px 12px; font-size:13px; margin:0 0 10px; }
   .res-conflict.show { display:block; }
+  /* ✎ 修改预约弹窗（v3.40.0） */
+  .res-edit-modal { width:min(94vw,520px); max-height:90vh; overflow:auto; text-align:left; }
+  .res-edit-modal .field { margin-bottom:12px; }
+  .res-edit-modal .row { display:flex; gap:8px; }
+  .res-edit-modal .row input { flex:1 1 0; min-width:0; }
+  .res-edit-modal input[type=text], .res-edit-modal input[type=date], .res-edit-modal select {
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px; font-size:14px; background:#fff;
+  }
+  .res-edit-modal #reCountSeg button { min-width:0; }
+  .res-hist-row .btn-ghost.sm { padding:4px 9px; font-size:12px; }
   .res-row .unread-dot { width:7px; height:7px; border-radius:50%; background:#ef4444; flex:0 0 auto; }
   .res-row .sub { display:block; font-size:11.5px; color:var(--muted); margin-top:2px; }
   /* 新预约弹窗 */
@@ -2664,6 +2674,49 @@
         <button type="button" class="btn-ghost" id="resHistClose">关闭</button>
       </div>
       <div id="resHistList"></div>
+    </div>
+  </div>
+
+  <!-- ✎ 修改预约（v3.40.0：台账 / 历史里点「✎ 改」打开，待来 / 已到店 / 已取消 都能改） -->
+  <div class="overlay" id="resEditOverlay">
+    <div class="modal res-edit-modal">
+      <h3>✎ 修改预约</h3>
+      <div class="field">
+        <label>日期</label>
+        <input type="date" id="reDate">
+      </div>
+      <div class="field">
+        <label>时间（24 小时制）</label>
+        <input type="text" id="reTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>姓名 / 电话（至少填一个）</label>
+        <div class="row">
+          <input type="text" id="reName" placeholder="姓名">
+          <input type="text" id="rePhone" placeholder="电话">
+        </div>
+      </div>
+      <div class="field">
+        <label>桌数</label>
+        <div class="cs-seg" id="reCountSeg">
+          <button type="button" data-recount="1">1 张</button>
+          <button type="button" data-recount="2">2 张</button>
+          <button type="button" data-recount="3">3 张</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>指定桌（可选）</label>
+        <select id="reTable"></select>
+      </div>
+      <div class="field">
+        <label>备注</label>
+        <input type="text" id="reNote" placeholder="备注">
+      </div>
+      <div class="res-conflict" id="reConflict"></div>
+      <div class="modal-btns">
+        <button type="button" class="btn-start" id="reSave">保存修改</button>
+        <button type="button" class="btn-ghost" id="reCancel">取消</button>
+      </div>
     </div>
   </div>
 
@@ -4833,8 +4886,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.39.1";
-  var APP_DATE = "2026-11-03";
+  var APP_VER = "v3.40.0";
+  var APP_DATE = "2026-11-05";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -4844,6 +4897,17 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.40.0", date: "2026-11-05", items: [
+      "✎ 预约可以**编辑**（用户要求）：台账 / 预约历史每条多一个「✎ 改」，弹窗能改**日期 / 时间 / 姓名 / 电话 / 桌数（1~3 张）/ 指定桌 / 备注**",
+      "**待来 / 已到店 / 已取消都能改**，状态不会被改掉",
+      "保存时更新 `updatedAt` 并立刻推送，其他设备按「谁新用谁」跟上",
+      "改预约时会排除自己那条，不会自己跟自己冲突",
+      "同一张桌时段太近仍会提示，再点一次「仍要保存」才落盘。💬 结算群文案改版（用户要求）：**台费只出现一次**、后面直接跟付款方式（`台费刷卡18.37刀×4=73.48刀`）",
+      "**刷卡写实际到账（含手续费），不再写手续费前的价格**",
+      "每一笔都列出来，同一方式金额相同合并成 `×4=73.48刀`、金额不同写成 `18.37刀+18.35刀=36.72刀`",
+      "混着付 `台费刷卡18.37刀×2=36.74刀 现金18.15刀×2=36.30刀`",
+      "会员扣款 / 人民币 / 零食 / 罚款 / 上次未付的写法保持并补全"
+    ] },
     { ver: "v3.39.1", date: "2026-11-03", items: [
       "🐛 修：**鸭嘴兽现货文案弹窗里冒出营业日切换条**（用户反馈：不需要看别的日期，而且点日期会把文案变成桌台结算文案）：根因是日期条那行 CSS 写了 `display:flex`，把 `hidden` 的 `display:none` 盖掉了，JS 里设 hidden 形同虚设，露出来的日期事件又把共用的文本框改写成营业日结算文案",
       "修法 ① CSS 补 `.wx-daybar[hidden]{display:none !important}`（统计页文案弹窗同样露着，一起修好）② 弹窗加 `copyMode`（营业日 / 统计 / 现货），日期切换只对营业日文案生效",
@@ -4911,10 +4975,6 @@
     { ver: "v3.34.0", date: "2026-10-31", items: [
       "客服端预约录入改版：**日期**改成日历、**时间**改成手机自带时间选择器（像定闹钟）、**人数**换成**桌数**（1 / 2 / 3 张，另可选指定先开哪张桌）",
       "系统里「新增预约」也去掉人数框。预约台账 / 提醒条 / 到店开台 / 确认话术都会显示桌数"
-    ] },
-    { ver: "v3.33.1", date: "2026-10-31", items: [
-      "修：预约「到店 / 取消 / 新增」在切到 REST 轮询的设备上看不到（以前轮询只拉待结算，漏了预约）",
-      "另外计时中改「麻将种类」后打上「刚动过」保护，避免被云端旧快照盖回旧种类"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6970,7 +7030,7 @@
           memBalRun[mmb.id] = balAfter;
         }
       }
-      partsRec.push({
+      var pr = {
         amount: round2(pt.amount), payType: pt.payType,
         fee: f, due: due, rmb: pt.payType === "rmb" ? rv : null,
         memberId: pt.payType === "member" ? (pt.memberId || "") : "",
@@ -6978,8 +7038,12 @@
         balanceAfter: balAfter,
         // ★ v3.31.0：人民币渠道（微信/支付宝）、现金形式（纸币/转账）存进记录
         rmbChannel: pt.payType === "rmb" ? (pt.rmbChannel || "wx") : "",
-        cashChannel: pt.payType === "cash" ? (pt.cashChannel || "cash") : ""
-      });
+        cashChannel: pt.payType === "cash" ? (pt.cashChannel || "cash") : "",
+        // ★ v3.40.0：名目（台费 / 零食 / 台费+零食）存进记录 —— 群文案按名目分组、每一笔都写出来
+        //   注意不存 label：结算完成弹窗里那段「分账收款」保持原样（label 是给人看的，item 只给文案用）
+        item: wxPartItem(pt, { other: other })
+      };
+      partsRec.push(pr);
     }
     var payKeys = [];
     for (var pk in paySet) if (paySet.hasOwnProperty(pk)) payKeys.push(pk);
@@ -8397,6 +8461,7 @@
           memberId: rp.memberId || "",
           memSearch: rp.memSearch || "",
           label: rp.label || "",
+          item: rp.item || "",                                 // ★ v3.40.0：编辑后群文案还能分清台费/零食
           dueOverride: rp.dueOverride != null ? rp.dueOverride : null,
           // ★ v3.31.0：编辑时把人民币渠道 / 现金形式也带回来
           rmbChannel: rp.rmbChannel || "",
@@ -8658,13 +8723,16 @@
     rec.range = fmtHM(s) + " – " + fmtHM(e);
     // 收款明细
     rec.parts = editParts.map(function (pp) {
-      return { amount: round2(pp.amount), payType: pp.payType,
+      var pr = { amount: round2(pp.amount), payType: pp.payType,
                rmb: pp.payType === "rmb" ? partRmb(pp) : null, due: partPaid(pp),
                label: pp.label || "", dueOverride: pp.dueOverride != null ? pp.dueOverride : null,
                memberId: pp.memberId || "", memberName: (findMember(pp.memberId) || {}).name || "",
                // ★ v3.31.0：保存人民币渠道 / 现金形式
                rmbChannel: pp.payType === "rmb" ? (pp.rmbChannel || "wx") : "",
-               cashChannel: pp.payType === "cash" ? (pp.cashChannel || "cash") : "" };
+               cashChannel: pp.payType === "cash" ? (pp.cashChannel || "cash") : "",
+               // ★ v3.40.0：名目留着，改完记录再发群文案还能分清台费 / 零食
+               item: pp.item || "" };
+      return pr;
     });
     rec.payType = (t.card > 0.005 && (t.cash > 0.005 || t.rmb > 0.005 || t.member > 0.005)) ? "mixed"
                 : (t.card > 0.005 ? "card" : (t.rmb > 0.005 ? "rmb" : (t.member > 0.005 && t.cash <= 0.005 ? "member" : "cash")));
@@ -16202,6 +16270,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         ? '<button type="button" class="btn-start sm" data-res="arrived" data-resarrive="' + esc(r.id) + '">到店</button>' +
           '<button type="button" class="btn-ghost sm" data-res="cancel" data-rescancel="' + esc(r.id) + '">取消</button>'
         : "") +
+      '<button type="button" class="btn-ghost sm" data-res="edit" data-resedit="' + esc(r.id) + '">✎ 改</button>' +
       '<button type="button" class="btn-ghost sm" data-res="del" data-resdel="' + esc(r.id) + '" data-armkey="res-del"' +
         (del ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
         (del ? "再点一次" : "删除") + "</button>" +
@@ -16303,6 +16372,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
           (r.note ? '<span class="sub">📝 ' + esc(r.note) + "</span>" : "") +
           (meta.length ? '<span class="sub">' + meta.join(" · ") + "</span>" : "") + "</span>" +
         '<span class="tbl">' + esc(resTableName(r.tableNo)) + "</span>" + resStatusChip(r) +
+        '<button type="button" class="btn-ghost sm" data-resedit="' + esc(r.id) + '">✎ 改</button>' +
         "</div>";
     }
     wrap.innerHTML = h;
@@ -16413,6 +16483,101 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     try { toast("已删除"); } catch (e) {}
   }
 
+  // ---------- ✎ 修改预约（v3.40.0：用户要求，待来 / 已到店 / 已取消 都能改） ----------
+  //   台账和历史里点「✎ 改」打开；保存后 updatedAt 变新 → 别的设备按「谁新用谁」合并过去
+  var resEditId = null;
+  var resEditCount = 1;
+  var resEditForce = false;          // 同一张桌同一时段有冲突时，点第二下「仍要保存」才落盘
+  function resEditCountSet(n) {
+    resEditCount = Math.max(1, Math.min(3, Number(n) || 1));
+    var seg = document.getElementById("reCountSeg");
+    if (!seg) return;
+    var bs = seg.querySelectorAll("button[data-recount]");
+    for (var i = 0; i < bs.length; i++) {
+      var on = Number(bs[i].getAttribute("data-recount")) === resEditCount;
+      if (on) bs[i].classList.add("on"); else bs[i].classList.remove("on");
+    }
+  }
+  function resEditResetForce() {
+    resEditForce = false;
+    var btn = document.getElementById("reSave");
+    if (btn) btn.textContent = "保存修改";
+    var c = document.getElementById("reConflict");
+    if (c) { c.className = "res-conflict"; c.innerHTML = ""; }
+  }
+  function resEditOpen(id) {
+    var r = resFind(id);
+    if (!r) return;
+    resEditId = id;
+    var d = document.getElementById("reDate");
+    var t = document.getElementById("reTime");
+    var sel = document.getElementById("reTable");
+    if (!d || !t || !sel) return;
+    d.value = r.date || resTodayStr();
+    t.value = r.time || "";
+    document.getElementById("reName").value = r.name || "";
+    document.getElementById("rePhone").value = r.phone || "";
+    document.getElementById("reNote").value = r.note || "";
+    var opts = '<option value="">不指定桌</option>';
+    for (var i = 1; i <= TABLE_COUNT; i++) opts += '<option value="' + i + '">' + esc(state.tables[i].name) + "</option>";
+    sel.innerHTML = opts;
+    sel.value = (r.tableNo != null && r.tableNo !== "") ? String(parseInt(r.tableNo, 10) || "") : "";
+    resEditCountSet(r.tableCount || 1);
+    resEditResetForce();
+    var ov = document.getElementById("resEditOverlay");
+    if (ov) ov.classList.add("show");
+    setTimeout(function () { try { document.getElementById("reName").focus(); } catch (e) {} }, 60);
+  }
+  function resEditClose() {
+    var ov = document.getElementById("resEditOverlay");
+    if (ov) ov.classList.remove("show");
+    resEditId = null;
+    resEditForce = false;
+  }
+  function resEditSave() {
+    var r = resEditId ? resFind(resEditId) : null;
+    if (!r) { resEditClose(); return; }
+    var date = document.getElementById("reDate").value || resTodayStr();
+    var time = String(document.getElementById("reTime").value || "").trim();
+    var name = String(document.getElementById("reName").value || "").trim();
+    var phone = String(document.getElementById("rePhone").value || "").trim();
+    var note = String(document.getElementById("reNote").value || "").trim();
+    var tableNo = document.getElementById("reTable").value;
+    var tip = document.getElementById("reConflict");
+    var btn = document.getElementById("reSave");
+    if (!parseTimeStr(time)) { document.getElementById("reTime").focus(); return; }
+    if (!name && !phone) {
+      try { toast("姓名和电话至少填一个 ✓", "#b45309"); } catch (e) {}
+      document.getElementById("reName").focus();
+      return;
+    }
+    var clash = resConflictOf(date, time, tableNo, r.id);
+    if (clash && !resEditForce) {
+      resEditForce = true;
+      tip.className = "res-conflict show";
+      tip.innerHTML = "⚠️ <b>冲突提示：</b>" + esc(resTableName(tableNo)) + " " + esc(date) + " " + esc(time) +
+        " 已有另一条预约（" + esc(clash.name || clash.phone || "客人") +
+        "）—— 确认没问题就再点一次「仍要保存」";
+      btn.textContent = "仍要保存（冲突）";
+      return;
+    }
+    r.date = date;
+    r.time = time;
+    r.name = name;
+    r.phone = phone;
+    r.note = note;
+    r.tableCount = resEditCount;
+    r.tableNo = tableNo ? parseInt(tableNo, 10) : "";
+    r.updatedAt = Date.now();          // ★ 合并时按这个判断谁新
+    r.editAt = Date.now();
+    r.editBy = resActor();
+    resMarkWrite(r.id);
+    save(); renderReservations(); render();
+    try { if (typeof fbPushReservations === "function") fbPushReservations(); } catch (e) {}
+    resEditClose();
+    try { toast("已保存修改 ✓", "var(--green-dark)"); } catch (e) {}
+  }
+
   // ---------- 新增预约（台账 + 客服端共用） ----------
   function resAddOne(data) {
     var r = {
@@ -16441,7 +16606,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     return r;
   }
   // ★ v3.36.0：改成按【真实时刻】比较 ±90 分钟（跨夜、跨营业日都算得对）
-  function resConflictOf(date, time, tableNo) {
+  //   v3.40.0：ignoreId = 改预约时排除自己那条，不然「改完还是自己跟自己冲突」
+  function resConflictOf(date, time, tableNo, ignoreId) {
     tableNo = parseInt(tableNo, 10) || 0;
     if (!tableNo) return null;
     var ts = combineToTs(date, time);
@@ -16449,6 +16615,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var hit = null;
     state.reservations.forEach(function (r) {
       if (!r || r.status !== "booked") return;
+      if (ignoreId && r.id === ignoreId) return;
       if ((parseInt(r.tableNo, 10) || 0) !== tableNo) return;
       var rts = resTs(r);
       if (rts == null) return;
@@ -16580,6 +16747,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     resLedgerRender();
     resDotRender();
     if (resCSMode) csRender();
+    // 预约历史开着的时候（在里面改过一条）跟着刷新
+    try {
+      var ho = document.getElementById("resHistOverlay");
+      if (ho && ho.classList && ho.classList.contains("show")) resHistRender();
+    } catch (e) {}
     if (resPopCur) {
       var cur = resFind(resPopCur);
       if (!cur || cur.ack || cur.status !== "booked") {
@@ -16610,6 +16782,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (a) { resArrive(a.getAttribute("data-resarrive")); return; }
     var c = e.target.closest("[data-rescancel]");
     if (c) { resCancel(c.getAttribute("data-rescancel")); return; }
+    var ed = e.target.closest("[data-resedit]");
+    if (ed) { resEditOpen(ed.getAttribute("data-resedit")); return; }
     var d = e.target.closest("[data-resdel]");
     if (!d) return;
     var id = d.getAttribute("data-resdel");
@@ -16625,12 +16799,37 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var sec = document.getElementById("resSection");
     if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+  // 预约历史里也能直接改（已到店 / 已取消的老预约只有这里看得到）
+  document.getElementById("resHistList").addEventListener("click", function (e) {
+    var ed = e.target.closest("[data-resedit]");
+    if (ed) resEditOpen(ed.getAttribute("data-resedit"));
+  });
   document.getElementById("resHistBtn").addEventListener("click", resHistOpen);
   document.getElementById("resHistClose").addEventListener("click", resHistClose);
   document.getElementById("resHistOverlay").addEventListener("click", function (e) {
     if (e.target === this) resHistClose();
   });
   document.getElementById("resHistSearch").addEventListener("input", resHistRender);
+
+  // ✎ 修改预约弹窗
+  document.getElementById("reSave").addEventListener("click", resEditSave);
+  document.getElementById("reCancel").addEventListener("click", resEditClose);
+  document.getElementById("resEditOverlay").addEventListener("click", function (e) {
+    if (e.target === this) resEditClose();
+  });
+  document.getElementById("reCountSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-recount]");
+    if (!b) return;
+    resEditCountSet(Number(b.getAttribute("data-recount")) || 1);
+    resEditResetForce();
+  });
+  ["reDate", "reTime", "reName", "rePhone", "reNote", "reTable"].forEach(function (fid) {
+    var el = document.getElementById(fid);
+    if (!el) return;
+    el.addEventListener("input", resEditResetForce);
+    el.addEventListener("change", resEditResetForce);
+  });
+  try { maskTime(document.getElementById("reTime")); } catch (e) {}
   document.getElementById("resCSBtn").addEventListener("click", function () {
     try { location.hash = "cs"; } catch (e) { resCSMode = true; resCSApply(); }
   });
@@ -17796,60 +17995,138 @@ rows += "<tr>" +
     var m = (p && p.memberId) ? findMember(p.memberId) : null;
     return m ? (Number(m.balance) || 0) : null;
   }
-  // 收款明细：刷卡（同额合并成 X×N）/ 扣卡（带余额）/ 微信人民币 / 现金
-  function wxPaySegs(rec) {
-    var parts = rec.parts || [];
-    var cardAmts = [], mems = [], rmbs = [], cashes = [];
-    var i, p;
-    for (i = 0; i < parts.length; i++) {
-      p = parts[i];
-      if (p.payType === "card") cardAmts.push(Number(p.amount) || 0);
-      else if (p.payType === "member") mems.push(p);
-      else if (p.payType === "rmb") rmbs.push(p);
-      else if (p.payType === "cash") cashes.push(p);
+  // ============================================================
+  //  ★ v3.40.0：收款明细改成「每一笔都写出来」（用户要求）
+  //    · 台费 / 罚款 / 零食 不再单独占一行，付款方式跟着明细走
+  //    · 「台费」两个字只出现一次：台费刷卡18.37刀×4=73.48刀
+  //    · 刷卡写【实际到账】（含手续费），不写手续费前的价格（用户要求）
+  //    · 同一种方式金额相同 → ×N=合计；金额不同 → 18.37刀+18.35刀=36.72刀
+  // ============================================================
+  // 这一笔实际到账多少澳币：刷卡用 due（含手续费）；其它方式 amount 就是实收
+  function wxPartActual(p) {
+    if (p && p.payType === "card") {
+      if (p.due != null && p.due !== "") return round2(Number(p.due) || 0);
+      return round2((Number(p.amount) || 0) + (p.fee != null ? Number(p.fee) : feeOf(Number(p.amount) || 0)));
     }
-    var out = [];
-    if (cardAmts.length) {
-      var sum = 0, same = true;
-      for (i = 0; i < cardAmts.length; i++) {
-        sum += cardAmts[i];
-        if (i && Math.abs(cardAmts[i] - cardAmts[0]) > 0.005) same = false;
+    return round2(Number(p && p.amount) || 0);
+  }
+  // 这一笔算在哪个名目上：台费 / 零食 / 台费+零食
+  function wxPartItem(p, rec) {
+    // ★ v3.40.0：结算时已经算好名目的（记录里的 parts[].item）直接用
+    if (p && p.item) return String(p.item);
+    var lb = String((p && p.label) == null ? "" : p.label).replace(/^\d+\s*号\s*/, "").trim();
+    var hasF = p && p.feeAmt != null && p.feeAmt !== "";
+    var hasS = p && p.snackAmt != null && p.snackAmt !== "";
+    var fa = hasF ? (Number(p.feeAmt) || 0) : 0;
+    var sa = hasS ? (Number(p.snackAmt) || 0) : 0;
+    if (hasF || hasS) {
+      if (fa > 0.005 && sa > 0.005) return "台费+零食";
+      if (sa > 0.005) return "零食";
+      if (fa > 0.005) return "台费";
+    }
+    if (lb.indexOf("台费+零食") >= 0) return "台费+零食";
+    if (lb.indexOf("零食") >= 0) return "零食";
+    if (lb.indexOf("台费") >= 0) return "台费";
+    // 整单付（没有 label）：有零食/其它费用就写「台费+零食」，否则写「台费」
+    return (Number(rec && rec.other) > 0.005) ? "台费+零食" : "台费";
+  }
+  // 一组金额怎么写：单笔 a刀 / 相同 a刀×N=总刀 / 不同 a刀+b刀=总刀
+  function wxAmtList(arr) {
+    var n = arr.length, i, total = 0, same = true;
+    if (!n) return "";
+    for (i = 0; i < n; i++) {
+      total = round2(total + arr[i]);
+      if (i && Math.abs(arr[i] - arr[0]) > 0.005) same = false;
+    }
+    if (n === 1) return wxNum(arr[0]) + "刀";
+    if (same) return wxNum(arr[0]) + "刀×" + n + "=" + wxNum(total) + "刀";
+    var s = [];
+    for (i = 0; i < n; i++) s.push(wxNum(arr[i]) + "刀");
+    return s.join("+") + "=" + wxNum(total) + "刀";
+  }
+  // 收款明细主体：按名目分组，「台费」只写一次，后面跟着每一种付款方式的每一笔
+  function wxPayDetail(rec) {
+    var parts = (rec && rec.parts) || [];
+    var out = [], i, j, p, g;
+    var exTxt = "", exAdded = false;
+    var ex = (rec && rec.extras) || [];
+    if (ex.length) {
+      var arr = [];
+      for (i = 0; i < ex.length; i++) {
+        var q = Number(ex[i].qty) || 0;
+        arr.push((ex[i].name || "") + (q > 1 ? "×" + q : ""));
       }
-      sum = round2(sum);
-      // ★ v3.30.2：金额一律带单位（用户要求）
-      if (same && cardAmts.length > 1) out.push("刷卡" + wxNum(cardAmts[0]) + "刀×" + cardAmts.length + "=" + wxNum(sum) + "刀");
-      else out.push("刷卡" + wxNum(sum) + "刀");
+      if (arr.length) exTxt = "（" + arr.join(" ") + "）";
     }
-    for (i = 0; i < mems.length; i++) {
-      p = mems[i];
-      var nm = p.memberName || ((p.memberId && findMember(p.memberId)) ? findMember(p.memberId).name : "") || "会员";
-      var bal = wxMemberBal(p);
-      out.push("扣卡" + nm + wxNum(p.amount) + "刀" + (bal != null ? "（余额" + wxNum(bal) + "刀）" : ""));
+    var groups = [], gMap = {};
+    for (i = 0; i < parts.length; i++) {
+      p = parts[i] || {};
+      var item = wxPartItem(p, rec);
+      if (!gMap[item]) { gMap[item] = { item: item, segs: [], smap: {} }; groups.push(gMap[item]); }
+      g = gMap[item];
+      var amt = wxPartActual(p);
+      if (p.payType === "card") {
+        if (amt <= 0.005) continue;
+        if (!g.smap.card) { g.smap.card = { kind: "card", amts: [] }; g.segs.push(g.smap.card); }
+        g.smap.card.amts.push(amt);
+      } else if (p.payType === "cash") {
+        if (amt <= 0.005) continue;
+        var ch = (p.cashChannel === "transfer") ? "转账" : "现金";
+        var ck = "cash:" + ch;
+        if (!g.smap[ck]) { g.smap[ck] = { kind: "cash", channel: ch, amts: [] }; g.segs.push(g.smap[ck]); }
+        g.smap[ck].amts.push(amt);
+      } else if (p.payType === "member") {
+        var nm = p.memberName || ((p.memberId && findMember(p.memberId)) ? findMember(p.memberId).name : "") || "会员";
+        var bal = wxMemberBal(p);
+        g.segs.push({ kind: "member", text: "扣卡" + nm + wxNum(amt) + "刀" + (bal != null ? "（余额" + wxNum(bal) + "刀）" : "") });
+      } else if (p.payType === "rmb") {
+        var rv = (p.rmb != null && p.rmb !== "") ? Number(p.rmb) : rmbOf(amt);
+        if (rv == null || isNaN(rv)) continue;
+        // ★ v3.31.0：写清微信 / 支付宝（老记录没存渠道 → 按微信）
+        var chName = (p.rmbChannel === "alipay") ? "支付宝收" : "微信收";
+        g.segs.push({ kind: "rmb", text: wxNum(amt) + "刀" + chName + wxNum(rv) + "人民币" });
+      } else {
+        g.segs.push({ kind: "other", text: payLabelOf(p.payType) + wxNum(amt) + "刀" });
+      }
     }
-    for (i = 0; i < rmbs.length; i++) {
-      p = rmbs[i];
-      var rv = (p.rmb != null) ? Number(p.rmb) : rmbOf(Number(p.amount) || 0);
-      if (rv == null) continue;
-      // ★ v3.31.0：写清是微信还是支付宝收的（老记录没存渠道 → 按微信）
-      // ★ v3.32.4：格式统一成「30.67刀微信收144.22人民币」，不再区分"剩下"
-      var chName = (p.rmbChannel === "alipay") ? "支付宝收" : "微信收";
-      out.push(wxNum(p.amount) + "刀" + chName + wxNum(rv) + "人民币");
+    for (i = 0; i < groups.length; i++) {
+      g = groups[i];
+      var segsTxt = [];
+      for (j = 0; j < g.segs.length; j++) {
+        var sg = g.segs[j];
+        if (sg.text != null) segsTxt.push(sg.text);
+        else if (sg.kind === "card") segsTxt.push("刷卡" + wxAmtList(sg.amts));
+        else if (sg.kind === "cash") segsTxt.push((sg.channel || "现金") + wxAmtList(sg.amts));
+      }
+      var one = g.item + segsTxt.join(" ");
+      if (!exAdded && g.item.indexOf("零食") >= 0 && exTxt) { one += exTxt; exAdded = true; }
+      out.push(one);
     }
-    for (i = 0; i < cashes.length; i++) {
-      p = cashes[i];
-      // ★ v3.31.0：现金 / 转账（老记录没存形式 → 按现金）
-      out.push(((p.cashChannel === "transfer") ? "转账" : "现金") + wxNum(p.amount) + "刀");
+    // 罚款算在台费里（金额已经包含），括号里说明一下，别让人对不上
+    if (Number(rec.fine) > 0.005) {
+      if (out.length) out[0] += "（含罚款" + wxNum(rec.fine) + "刀）";
+      else out.push("罚款" + wxNum(rec.fine) + "刀");
     }
     // 老记录没有 parts → 用主字段兜底（优雅降级，不让文案空白）
-    if (!out.length) {
+    if (!out.length || (out.length === 1 && out[0].indexOf("罚款") === 0)) {
+      var item0 = (Number(rec.other) > 0.005) ? "台费+零食" : "台费";
       var collected = Number(rec.collected != null ? rec.collected : rec.grand) || 0;
-      if (Number(rec.rmbActual) > 0.005) out.push("微信收" + wxNum(rec.rmbActual) + "人民币");
-      else if (rec.payType === "rmb") out.push("微信收" + wxNum(rmbOf(collected)) + "人民币");
-      else if (rec.payType === "cash") out.push("现金" + wxNum(collected) + "刀");
-      else if (rec.payType === "member") out.push("扣卡" + wxNum(collected) + "刀" + (rec.memberName ? "（" + rec.memberName + "）" : ""));
-      else out.push("刷卡" + wxNum(collected) + "刀");
+      var txt0;
+      if (Number(rec.rmbActual) > 0.005) txt0 = wxNum(collected) + "刀微信收" + wxNum(rec.rmbActual) + "人民币";
+      else if (rec.payType === "rmb") txt0 = wxNum(collected) + "刀微信收" + wxNum(rmbOf(collected)) + "人民币";
+      else if (rec.payType === "cash") txt0 = "现金" + wxNum(collected) + "刀";
+      else if (rec.payType === "member") txt0 = "扣卡" + (rec.memberName || "会员") + wxNum(collected) + "刀";
+      else txt0 = "刷卡" + wxNum(collected) + "刀";
+      var one0 = item0 + txt0;
+      if (exTxt) one0 += exTxt;
+      if (Number(rec.fine) > 0.005) one0 += "（含罚款" + wxNum(rec.fine) + "刀）";
+      out = [one0];
     }
-    return out;
+    // 补齐说明：上次未付 / 抹零 / 这次没收齐
+    if (Number(rec.carryIn) > 0.005) out.push("（含上次未付" + wxNum(rec.carryIn) + "刀）");
+    if (Number(rec.waived) > 0.005) out.push("（已抹零" + wxNum(rec.waived) + "刀）");
+    else if (Number(rec.unpaid) > 0.005) out.push("（这次没收" + wxNum(rec.unpaid) + "刀，记桌上）");
+    return out.join(" ");
   }
   // 结账群消息
   function wxSettleMsg(rec) {
@@ -17858,27 +18135,8 @@ rows += "<tr>" +
     var gLabel = wxGameLabel(wxGameOf(rec));   // 老记录没存种类 → 空，不写
     var head = no + "号桌 " + (gLabel ? gLabel + " " : "") +
                wxHM(rec.start) + "开始 " + wxHM(rec.end) + "结束";
-    var segs = [];
-    var tableFee = Number(rec.tableFee != null ? rec.tableFee : rec.total) || 0;
-    if (tableFee > 0.005) segs.push("台费" + wxNum(tableFee) + "刀");
-    if (Number(rec.fine) > 0.005) segs.push("罚款" + wxNum(rec.fine) + "刀");
-    var other = Number(rec.other) || 0;
-    if (other > 0.005) {
-      var exTxt = "";
-      var ex = rec.extras || [];
-      if (ex.length) {
-        var arr = [];
-        for (var i = 0; i < ex.length; i++) {
-          var q = Number(ex[i].qty) || 0;
-          arr.push((ex[i].name || "") + (q > 1 ? "×" + q : ""));
-        }
-        exTxt = "（" + arr.join(" ") + "）";
-      }
-      segs.push("零食" + wxNum(other) + "刀" + exTxt);
-    }
-    var pay = wxPaySegs(rec);
-    for (var j = 0; j < pay.length; j++) segs.push(pay[j]);
-    return head + " " + segs.join(" ");
+    var body = wxPayDetail(rec);
+    return body ? (head + " " + body) : head;
   }
   // ★ v3.30.0：指定营业日的全部桌 → 一整段群消息（默认今天）
   //   · 已结算：完整一行（台费 / 罚款 / 零食明细 / 收款方式）
