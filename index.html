@@ -3843,8 +3843,11 @@
               "appId": "1:158535277656:web:36842265d71f67aa5a7e2d"
       },   // Firebase 配置（内置，用户不用粘贴）
       fbPath: "tianhu-3ib4hdz526dyjp", fbSeeded: false,   // 数据路径密钥（随机串）+ 是否已上传过本机数据
-      // ★ 汇率加点%（模拟支付宝的加点 ✗ 实测黄金会员 = 0.33% ✓ 普通会员 0.5~0.8% ✓）
-      fxMarkup: 0.33, fxMarket: 0,
+      // ★ 汇率加点%（v3.43.0 起【自动学习】✓）
+      //   原来固定 0.33%（10-20 单日实测黄金会员）✗ 但 16 天对照数据平均偏低 0.161%
+      //   现在：默认按 fxLog 最近 30 条「支付宝价 ÷ 市场价」的中位数算（默认 0.45%）
+      //        长按「实时」填数字 = 固定值；填 auto = 回到自动学习 ✓
+      fxMarkup: 0.45, fxMarkupAuto: true, fxMarket: 0,
       // ★ 汇率对照记录：每天一条 ✓
       //   { d:"2026-10-20", at:"17:33", market:4.6662, markup:0.33, auto:4.6816, manual:4.6814 }
       fxLog: [],
@@ -3887,6 +3890,12 @@
     if (typeof s.globalRate !== "number") s.globalRate = 16;
     if (typeof s.feeRate !== "number") s.feeRate = 1.2;
     if (typeof s.fxRate !== "number" || s.fxRate <= 0) s.fxRate = 4.67;
+    // ★ v3.43.0：加点改成【自动学习】✓
+    //   老数据没有 fxMarkupAuto 字段 → 默认 true（以前那个 0.33 只是默认值，
+    //   不代表用户手动设定过；用户在新版长按改过才会是 false ✓）
+    if (typeof s.fxMarkup !== "number" || isNaN(s.fxMarkup) || s.fxMarkup < 0) s.fxMarkup = 0.45;
+    if (typeof s.fxMarkupAuto !== "boolean") s.fxMarkupAuto = true;
+    if (!Array.isArray(s.fxLog)) s.fxLog = [];
     if (typeof s.fxUpdatedAt !== "string") s.fxUpdatedAt = "";
     if (typeof s.googleUrl !== "string") s.googleUrl = "";
     if (s.fbConfig === undefined) s.fbConfig = null;
@@ -5114,7 +5123,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.42.0";
+  var APP_VER = "v3.43.0";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5125,6 +5134,12 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.43.0", date: "2026-11-06", items: [
+      "📊 汇率加点改成**自动学习**（用户要求：看 16 天对照的平均差值调整）：`📊 汇率对照` 16 天实测支付宝真实加点中位 **0.45%**、平均 0.49%，而原来固定 0.33%，自动价平均比支付宝**低 0.161%**（¥1000 少收 ¥1.6）。现在自动价 = 市场价 × (1 + 加点)，加点取最近 30 条对照记录「支付宝价 ÷ 市场价 − 1」的中位数（不足 5 条用默认 0.45%，离群值过滤）",
+      "长按「实时」填数字 = 固定加点、填 `auto` = 恢复自动",
+      "📊 弹窗顶部显示当前加点 / 样本数 / 平均差值",
+      "加点状态跟云端同步（`fxMarkupAuto`）"
+    ] },
     { ver: "v3.42.0", date: "2026-11-06", items: [
       "🎨 界面优化 7 条（用户确认全做）：① **顶部 4 个营业参数收进下拉面板**（默认只显示一行摘要 `$16/小时 · 手续费1.2% · 汇率 · 营业日`，点一下才展开编辑）→ 桌面省 95px、手机省 105px",
       "② **手机标签页改单行横向滑动**（原来 6 个占两行）→ 再省 110px",
@@ -5204,9 +5219,6 @@
       "第 3 条按方案 B 处理：**账单完全不动**，让结算跟着账单走——结算弹窗「一次性全付」选人民币时，「应收 ¥」默认取「📄 看人民币账单」上那个合计（账单仍按「台费人均 × 4、零食单价 × 数量」逐项折算）",
       "顶部大字、整单收款卡片、老的快捷「人民币」按钮、结算记录里存的人民币都是同一个数。账单里没列的罚款 / 合并结算另一桌 / 其它费用 / 上次未付按汇率一次折算加上，保证钱收齐",
       "实收 ¥ 仍可手动改"
-    ] },
-    { ver: "v3.36.1", date: "2026-11-02", items: [
-      "按用户要求**撤销 v3.36.0 的第 3 条**：人民币账单恢复成之前的写法——台费按 4 人平摊显示「人均 × 4」、零食按「单价折算人民币 × 数量」、合计为各项相加（界面和金额都跟 v3.35.0 一致）。v3.36.0 的另外两条（备注跟着这一场走、预约按营业日显示）保留"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6161,6 +6173,46 @@
   function fxAutoTick() { if (fxNeedsRefresh()) fetchFxRate(); }
 
   // ============================================================
+  //  ★ v3.43.0：加点【自动学习】✓（用户要求：看 16 天的平均差值调整）
+  //    原理：fxLog 每天记了「市场价」和「你手填的支付宝价」，
+  //          支付宝真实加点 = 支付宝价 ÷ 市场价 − 1。
+  //    实测 2026-10-20 ~ 11-05（16 天有效）：真实加点中位 0.45%、平均 0.49%；
+  //    原来固定 0.33% → 自动价平均比支付宝低 0.161%（¥1000 少收 ¥1.6）。
+  //    取最近 30 条的中位数（抗单日极值）；不足 5 条用默认 0.45%。
+  //    长按「实时」填数字 = 永久固定（fxMarkupAuto=false），填 auto 恢复自动 ✓
+  // ============================================================
+  var FX_MARKUP_DEFAULT = 0.45;
+  var FX_MARKUP_AUTO_N = 30;
+  var FX_MARKUP_AUTO_MIN = 5;
+
+  function fxMarkupAutoValue() {
+    var list = Array.isArray(state.fxLog) ? state.fxLog : [];
+    var vals = [], i;
+    for (i = list.length - 1; i >= 0 && vals.length < FX_MARKUP_AUTO_N; i--) {
+      var e = list[i] || {};
+      var ma = Number(e.manual), mk = Number(e.market);
+      if (!(ma > 0) || !(mk > 0)) continue;
+      var v = (ma / mk - 1) * 100;
+      if (!(v >= 0) || v > 2) continue;      // 异常记录（手填错 / 市场价不是同一天）不参与
+      vals.push(v);
+    }
+    if (vals.length < FX_MARKUP_AUTO_MIN) return { v: FX_MARKUP_DEFAULT, n: vals.length };
+    var sorted = vals.slice().sort(function (a, b) { return a - b; });
+    var mid = sorted.length % 2 ? sorted[(sorted.length - 1) / 2]
+                                : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+    return { v: Math.round(mid * 100) / 100, n: vals.length };
+  }
+
+  // 当前生效的加点：手动固定优先，否则用自动学习值
+  function fxMarkupNow() {
+    if (state.fxMarkupAuto === false) {
+      var m = Number(state.fxMarkup);
+      if (isFinite(m) && m >= 0) return m;
+    }
+    return fxMarkupAutoValue().v;
+  }
+
+  // ============================================================
   //  📊 汇率对照记录（用户要求 ✗ 每天记一条 ✓）
   //    每天记：API 市场价 / 加点后的自动价 / 你手填的支付宝价
   //    过一段时间就能统计出「支付宝实际比市场价高多少 %」✓
@@ -6179,7 +6231,7 @@
       e.at = at;
       if (which === "auto") {
         e.market = Number(state.fxMarket) || 0;
-        e.markup = Number(state.fxMarkup) || 0;
+        e.markup = fxMarkupNow();          // ★ 记实际生效的加点（自动学习的值 / 手动固定值）
         e.auto = Number(state.fxRate) || 0;
       } else {
         e.manual = Number(val) || 0;
@@ -6251,12 +6303,22 @@
       var sum = 0; for (var j = 0; j < diffs.length; j++) sum += diffs[j];
       var avg = sum / diffs.length;
       var mn = Math.min.apply(null, diffs), mx = Math.max.apply(null, diffs);
+      // ★ v3.43.0：写清楚「自动价现在按多少加点、这个数怎么来的」✓
+      var autoMk = fxMarkupAutoValue(), nowMk = fxMarkupNow(), isAuto = state.fxMarkupAuto !== false;
+      var mkLine = isAuto
+        ? "自动价现在按 <b>" + nowMk + "%</b> 加点（取最近 " + autoMk.n + " 条有效记录的中位数）"
+        : "自动价现在按 <b>固定 " + nowMk + "%</b> 加点（长按「实时」可改回自动）";
+      if (isAuto && autoMk.n < FX_MARKUP_AUTO_MIN) {
+        mkLine += "　<span style='font-size:12px;color:var(--muted);'>（样本不足 " +
+                  FX_MARKUP_AUTO_MIN + " 天，先用默认 " + FX_MARKUP_DEFAULT + "%）</span>";
+      }
       head = '<div style="padding:10px 12px;margin-bottom:10px;border-radius:10px;background:#f0f7f3;border:1px solid #cfe6d9;">' +
         "<b>已记录 " + n + " 天</b>　平均值 <b style='color:var(--green-dark);'>" +
         (avg >= 0 ? "+" : "") + avg.toFixed(3) + "%</b>　" +
         "<span style='font-size:12px;color:var(--muted);'>最低 " + mn.toFixed(3) + "%　最高 " + mx.toFixed(3) + "%</span>" +
         "<div style='font-size:12px;color:var(--muted);margin-top:4px;'>" +
-        "差值 = (你填的支付宝价 − API自动价) ÷ API自动价　正数 = 支付宝比自动价高 ✓</div></div>";
+        "差值 = (你填的支付宝价 − API自动价) ÷ API自动价　正数 = 支付宝比自动价高 ✓</div>" +
+        "<div style='margin-top:6px;padding-top:6px;border-top:1px dashed #cfe6d9;'>" + mkLine + "</div></div>";
     }
     body.innerHTML = head +
       '<table><thead><tr><th>日期</th><th class="num">市场价</th><th class="num">自动价</th>' +
@@ -6278,8 +6340,8 @@
         var rate = j && j.rates && j.rates.CNY;
         if (rate && rate > 0) {
           // ★ 拉的是【纯市场价】✗ 支付宝实际汇率 = 市场价 × (1 + 加点%) ✓
-          //   实测（2026-10-20）：市场 4.6662 ✗ 支付宝黄金会员 4.6814 ✗ 加点 0.33% ✓
-          var mk = Number(state.fxMarkup); if (isNaN(mk) || mk < 0) mk = 0.33;
+          //   v3.43.0：加点不再固定 0.33% ✗ 改成按 fxLog 历史自动学习 ✓
+          var mk = fxMarkupNow();
           state.fxMarket = Math.round(rate * 10000) / 10000;
           state.fxRate = Math.round(rate * (1 + mk / 100) * 10000) / 10000;
           state.fxUpdatedAt = new Date().toLocaleString("zh-CN");
@@ -6289,7 +6351,8 @@
           fxLogPut("auto", 0);                          // ★ 记一条：API 价
           try {
             toast("汇率 " + state.fxRate + " = 市场 " + state.fxMarket +
-                  " × " + (1 + mk / 100).toFixed(4) + "（含 " + mk + "% 加点）", "var(--green-dark)");
+                  " × " + (1 + mk / 100).toFixed(4) + "（" +
+                  (state.fxMarkupAuto === false ? "固定" : "自动") + "加点 " + mk + "%）", "var(--green-dark)");
           } catch (e) {}
         }
       })
@@ -6315,27 +6378,43 @@
   document.getElementById("fxRefresh").addEventListener("click", fetchFxRate);
   // ★ 长按 / 右键「实时」按钮 ✗ 改"加点%"✓
   //   支付宝实际汇率 ≈ 公开市场价 × (1 + 加点%)
-  //   实测：黄金会员 0.33% ✓ 普通会员约 0.5~0.8% ✓ 填 0 = 纯市场价 ✓
+  //   v3.43.0：默认按 fxLog 历史自动学习（16 天实测中位 0.45%）
+  //   填数字 = 固定这个加点（不再自动）；填 auto = 恢复自动学习；填 0 = 纯市场价
   document.getElementById("fxRefresh").addEventListener("contextmenu", function (e) {
     e.preventDefault();
-    var cur = (state.fxMarkup != null ? state.fxMarkup : 0.33);
-    var v = prompt("支付宝汇率【加点%】（默认 0.33 ✗ 黄金会员）\n\n" +
+    var autoMk = fxMarkupAutoValue(), cur = fxMarkupNow(), isAuto = state.fxMarkupAuto !== false;
+    var v = prompt("支付宝汇率【加点%】\n\n" +
+      "现在：" + (isAuto
+        ? "自动 " + cur + "%（按最近 " + autoMk.n + " 条对照记录算的中位数）"
+        : "固定 " + cur + "%") + "\n\n" +
       "支付宝实际汇率 ≈ 公开市场价 × (1 + 加点%)\n" +
-      "实测 2026-10-20：市场 4.6662 → 支付宝黄金 4.6814（+0.33%）\n" +
-      "普通会员大约 0.5 ~ 0.8\n" +
-      "填 0 = 用纯市场价", String(cur));
+      "· 填数字 = 固定用这个加点（以后不再自动调整）\n" +
+      "· 填 auto = 回到自动学习\n" +
+      "· 填 0 = 用纯市场价\n\n" +
+      "16 天实测（2026-10-20 ~ 11-05）：真实加点中位 " + autoMk.v + "%、平均 0.49%；" +
+      "以前固定 0.33% 平均比支付宝低 0.16%",
+      String(cur));
     if (v === null) return;
-    var n2 = parseFloat(v);
+    var raw = String(v).trim();
+    if (/^(auto|自动|自动学习|恢复|恢复自动)$/i.test(raw)) {
+      state.fxMarkupAuto = true;
+      save();
+      try { toast("已恢复自动加点 " + fxMarkupNow() + "% ✓ 点「实时」重新取价", "var(--green-dark)"); } catch (x) {}
+      fetchFxRate();
+      return;
+    }
+    var n2 = parseFloat(raw);
     if (isNaN(n2) || n2 < 0) return;
     state.fxMarkup = n2;
+    state.fxMarkupAuto = false;
     save();
-    try { toast("已设加点 " + n2 + "% ✓ 点「实时」重新取价", "var(--green-dark)"); } catch (x) {}
+    try { toast("已固定加点 " + n2 + "% ✓ 点「实时」重新取价", "var(--green-dark)"); } catch (x) {}
     fetchFxRate();
   });
   // 提示用户这个按钮可以长按
   (function () {
     var fb2 = document.getElementById("fxRefresh");
-    if (fb2) fb2.title = "点=抓市场汇率（含加点）；长按/右键=改加点%（模拟支付宝汇率）";
+    if (fb2) fb2.title = "点=抓市场汇率（含自动加点）；长按/右键=改加点%（填 auto 恢复自动学习）";
   })();
 
   // ---------- 自定义时间弹窗（24 小时制） ----------
@@ -9777,7 +9856,8 @@ function inventoryPayloads() {
                       "vapeCardAdd", "vapeCardPer", "autoSyncMin",
                       // ★ v3.3.2：这几个以前漏了 ✗ 导致两台设备的"忙日加成 / 充值提成 /
                       //   工资周期 / 员工价"可能不一致 ✓
-                      "busyThreshold", "busyBonus", "rechargePct", "wageMode", "vapeStaffOn", "wechatHook", "fxMarkup"];
+                      // ★ v3.43.0：fxMarkupAuto 也要同步（否则一台设了固定、另一台还在自动）
+                      "busyThreshold", "busyBonus", "rechargePct", "wageMode", "vapeStaffOn", "wechatHook", "fxMarkup", "fxMarkupAuto"];
   function settingPayloads() {
     var out = [], i;
     for (i = 0; i < SETTING_KEYS.length; i++) {
@@ -9827,7 +9907,8 @@ function inventoryPayloads() {
     vapeCardAdd: "电子烟刷卡加价", vapeCardPer: "电子烟加价方式", autoSyncMin: "自动同步间隔(分钟)",
     // ★ v3.3.2 补上的 —— 这几个以前【有 UI 但没同步】✗ 两台设备会不一致 ✗
     busyThreshold: "忙日营业额阈值", busyBonus: "忙日每小时加成", rechargePct: "充值提成%",
-    wageMode: "工资结算周期", vapeStaffOn: "员工价开关", wechatHook: "微信通知Webhook", fxMarkup: "汇率加点%"
+    wageMode: "工资结算周期", vapeStaffOn: "员工价开关", wechatHook: "微信通知Webhook", fxMarkup: "汇率加点%",
+    fxMarkupAuto: "汇率加点自动"
   };
   var CFG_MIN_V = 8;   // 商品库存/员工名单/系统设置 需要脚本 v8
   function pushConfigToGoogle(opts) {
@@ -10037,6 +10118,8 @@ function verifyConfigPush(done) {
     if (byLabel["员工价开关"] != null) state.vapeStaffOn = (byLabel["员工价开关"] === "true");
     if (byLabel["微信通知Webhook"] != null) state.wechatHook = txt("微信通知Webhook", state.wechatHook);
     if (byLabel["汇率加点%"] != null) state.fxMarkup = num("汇率加点%", state.fxMarkup);
+    // ★ v3.43.0：自动/固定标记（true/false 字符串 → 布尔）
+    if (byLabel["汇率加点自动"] != null) state.fxMarkupAuto = (byLabel["汇率加点自动"] === "true");
     if (byLabel["汇率对照记录"]) {
       try {
         var fl = JSON.parse(byLabel["汇率对照记录"]);
