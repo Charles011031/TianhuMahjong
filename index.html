@@ -33,6 +33,18 @@
     --line: #e5e7eb;
     --red: #d93025;
     --amber: #b7791f;
+    /* ★ v3.43.2：顶部「额外留白」——让开 iOS 状态栏那一条系统玻璃模糊带。
+       默认 0（电脑 / 鼠标操作一个像素都不变），触屏设备（手机 / 平板）由下面
+       那条媒体查询改成 36px。
+       依据：真机截图量出来模糊带约到 105pt，原来的顶部留白只有 16+safe(62)=78pt，
+       绿色标题栏上沿正好压进带子里 → 又高又糊（2026-11-06 用户反馈）。 */
+    --top-extra: 0px;
+  }
+  /* 触屏设备（手机 / 平板）才加这一档；宽度上限 1024 是为了别把大触屏显示器算进来。
+     用媒体查询而不是 JS：不用多一块脚本（测试工具是按页面里第一块脚本取应用代码的，
+     在它前面再放一块会被当成应用代码），也不会在首屏之后才加留白、让页面跳一下。 */
+  @media (hover: none) and (pointer: coarse) and (max-width: 1024px) {
+    :root { --top-extra: 36px; }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -41,8 +53,10 @@
     color: var(--ink);
     /* 安全区内边距（v3.25.8）：配合 viewport-fit=cover，
        灵动岛 / 圆角 / 手势条 / 展开横屏右侧 Dock 都用 env() 让开；
-       没刘海、或在 Safari 里直接浏览时 env() 是 0，等于原来的 16px */
-    padding: calc(16px + env(safe-area-inset-top, 0px))
+       没刘海、或在 Safari 里直接浏览时 env() 是 0，等于原来的 16px
+       ★ v3.43.2：顶部再加 --top-extra（触屏 36px），标题栏整个落到系统玻璃带下面，
+         那条带子里只剩页面底色，糊了也看不出来 */
+    padding: calc(16px + env(safe-area-inset-top, 0px) + var(--top-extra))
              calc(16px + env(safe-area-inset-right, 0px))
              calc(16px + env(safe-area-inset-bottom, 0px))
              calc(16px + env(safe-area-inset-left, 0px));
@@ -68,15 +82,15 @@
     }
   }
   /* ============================================================
-     全屏（添加到主屏幕）时：绿色标题栏顶到状态栏下面（v3.25.10）
+     全屏（添加到主屏幕）时：和浏览器模式用同一套顶部留白（v3.43.2）
+     ------------------------------------------------------------
+     v3.25.10 让绿色标题栏「吃下」safe-area、变成满幅绿带，为的是顶上不空一条；
+     但 v3.42.0 的手机版 !important 早就把标题栏内边距压回 9px，绿带其实没生效，
+     而且标题栏顶进状态栏就会被系统玻璃糊掉（2026-11-06 用户反馈的「顶部又高又糊」）。
+     现在两种模式一致：body 留 16px + safe-area + --top-extra，标题栏就是普通圆角卡片。
+     注意：原来这条规则会把 body 的 padding-top 清零 / 让标题栏自己吃 safe-area，
+     删掉后全屏模式直接用上面那条统一规则。
      ============================================================ */
-  @media (display-mode: standalone) {
-    body { padding-top: 0; }
-    header {
-      padding-top: calc(18px + env(safe-area-inset-top, 0px));
-      margin-top: 0;
-    }
-  }
   /* 页面最底下的工具栏（不浮动，跟着内容走），版本号在它下面 */
   .bottom-bar {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -5135,7 +5149,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.43.1";
+  var APP_VER = "v3.43.2";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5146,6 +5160,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.43.2", date: "2026-11-06", items: [
+      "🐛 修：**手机顶部又高又糊**（用户截图反馈「最上面有一条模糊、绿栏贴着状态栏」）。根因不是页面样式，是 **iOS 26+ 状态栏那一条系统的液态玻璃模糊**：网页内容顶进去就会被糊掉，而原来的顶部留白只有 `16px + safe-area`（iPhone 16 Pro Max 约 78pt），绿色标题栏上沿正好压进模糊带（真机截图量出来这条带子到 ~105pt）。修法：**触屏设备（手机 / 平板，≤1024px）顶部额外多留 36px**（纯 CSS 媒体查询，没加新脚本），标题栏整个落到模糊带下面，上面那条只剩页面底色、糊了也看不出来",
+      "**电脑 / 鼠标操作一个像素都不变**。顺手清掉「添加到主屏幕」那套旧的满幅绿带规则（早被 v3.42.0 手机版 `!important` 覆盖、实际没生效），现在全屏和浏览器模式顶部留白一致",
+      "`?debug=1` 探针多显示 `pad-top` / `extra`，以后换机型可以直接量"
+    ] },
     { ver: "v3.43.1", date: "2026-11-06", items: [
       "📱 手机端按实际使用习惯再调（用户要求）：① **右上角常用改成「复制文案 💬 / 预约 📅 / 刷新 ↻」**（原来直接显示的是 预约 / 夜间 / 字号），待办、汇率对照、夜间模式、字号收进「⋯」",
       "② **「⋯」菜单每项带文字**（店铺待办 / 汇率对照 / 夜间模式 / 字号）—— 抽象图标认不出，写了字点之前就知道是什么",
@@ -5229,10 +5248,6 @@
       "预估营业额仍只在「按日」显示",
       "生成文案前缀跟着范围走（本周 / 10月26日–11月1日 / 本月 / 10月）"
     ] },
-    { ver: "v3.36.3", date: "2026-11-02", items: [
-      "结算弹窗顶部那排「怎么收」不再重复显示：**整单收款**模式下隐藏（下面「整单收款」卡片里已有同样的按钮），只在**按人分账**模式下出现",
-      "按钮样式改成和卡片里一样的胶囊按钮（sp-pay），点一下 = 所有人按这个方式收，所有人方式一致时对应按钮高亮。顺手把旧提示文案「点下面每张卡的怎么付」换成准确的说明"
-    ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
 
@@ -5262,6 +5277,8 @@
         "safe  t" + envPx("safe-area-inset-top") + " r" + envPx("safe-area-inset-right") +
         " b" + envPx("safe-area-inset-bottom") + " l" + envPx("safe-area-inset-left") + "\n" +
         "ui-zoom " + (getComputedStyle(document.documentElement).getPropertyValue("--ui-zoom") || "1") + "\n" +
+        "pad-top " + (parseFloat(getComputedStyle(document.body).paddingTop) || 0) +
+        " extra " + (getComputedStyle(document.documentElement).getPropertyValue("--top-extra") || "0").trim() + "\n" +
         "mode " + (window.matchMedia("(display-mode: standalone)").matches ? "standalone" : "browser") + "\n" +
         "vv " + (vv ? Math.round(vv.width) + "x" + Math.round(vv.height) + " s" + vv.scale : "-");
       document.body.appendChild(box);
