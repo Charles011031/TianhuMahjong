@@ -750,6 +750,22 @@
   .pay-ch button.ch-wx.on { border-color: #07C160; background: #07C160; }
   .pay-ch button.ch-ali.on { border-color: #1677FF; background: #1677FF; }
   body.dark .pay-ch button:not(.on) { background: #111827; border-color: #374151; color: #d1d5db; }
+  /* ★ v3.41.1：支付方式改成明显的胶囊按钮（用户要求：和上面渠道按钮一个风格） */
+  .pay-seg { display: flex; gap: 9px; flex-wrap: wrap; margin: 14px 0 14px; }
+  .pay-seg label {
+    position: relative; display: inline-flex; align-items: center; gap: 6px; margin: 0;
+    cursor: pointer; font-size: 14px; font-weight: 800; color: #374151; line-height: 1.2;
+    border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 11px 22px; min-height: 44px; user-select: none; -webkit-tap-highlight-color: transparent;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .pay-seg label em { font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+  .pay-seg label.on { background: var(--green); border-color: var(--green); color: #fff; }
+  .pay-seg label.on em { color: rgba(255,255,255,.86); }
+  .pay-seg label:active { transform: translateY(1px); }
+  .pay-seg input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+  body.dark .pay-seg label:not(.on) { background: #111827; border-color: #374151; color: #d1d5db; }
+  body.dark .pay-seg label em { color: #9aa7b4; }
   .attach-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
   .attach-row select { flex: 1; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
 
@@ -2304,10 +2320,11 @@
           <button type="button" class="snack-mode-btn" data-snackmode="attach">挂到桌台</button>
         </div>
         <div id="snackSinglePane">
-          <div class="pay-row">
-            <label><input type="radio" name="snackPay" value="card" checked> 刷卡（+<span id="snackFeePct">1.2</span>%）</label>
-            <label><input type="radio" name="snackPay" value="cash"> 现金</label>
-            <label><input type="radio" name="snackPay" value="rmb"> 人民币</label>
+          <!-- ★ v3.41.1：支付方式做成明显的胶囊按钮（用户要求，和渠道按钮一个风格） -->
+          <div class="pay-seg" id="snackPaySeg">
+            <label class="on" data-pay="card"><input type="radio" name="snackPay" value="card" checked> 刷卡 <em>+<span id="snackFeePct">1.2</span>%</em></label>
+            <label data-pay="cash"><input type="radio" name="snackPay" value="cash"> 现金</label>
+            <label data-pay="rmb"><input type="radio" name="snackPay" value="rmb"> 人民币</label>
           </div>
           <!-- ★ v3.41.0：现金形式 / 人民币渠道（和台费结算一致，用户要求） -->
           <div class="pay-ch" id="snackCashChWrap" style="display:none;">
@@ -2427,10 +2444,11 @@
         <div class="box-head"><h2>当前点单</h2><button id="vapeClear" class="btn-ghost sm" style="margin-left:auto;">清空</button></div>
         <div id="vapeCart" class="list-scroll" style="max-height:min(30vh,320px);"></div>
         <div class="cart-total" id="vapeTotal"></div>
-        <div class="pay-row">
-          <label><input type="radio" name="vapePay" value="rmb" checked> 人民币（默认）</label>
-          <label><input type="radio" name="vapePay" value="cash"> 现金</label>
-          <label><input type="radio" name="vapePay" value="card"> 刷卡</label>
+        <!-- ★ v3.41.1：支付方式做成明显的胶囊按钮 -->
+        <div class="pay-seg" id="vapePaySeg">
+          <label class="on" data-pay="rmb"><input type="radio" name="vapePay" value="rmb" checked> 人民币 <em>默认</em></label>
+          <label data-pay="cash"><input type="radio" name="vapePay" value="cash"> 现金</label>
+          <label data-pay="card"><input type="radio" name="vapePay" value="card"> 刷卡</label>
         </div>
         <!-- ★ v3.41.0：现金形式 / 人民币渠道（和台费结算一致，用户要求） -->
         <div class="pay-ch" id="vapeCashChWrap" style="display:none;">
@@ -3394,10 +3412,10 @@
       </div>
       <div class="field">
         <label>支付方式</label>
-        <div class="pay-row" style="margin:0;">
-          <label><input type="radio" name="vePay" value="rmb"> 人民币</label>
-          <label><input type="radio" name="vePay" value="cash"> 现金</label>
-          <label><input type="radio" name="vePay" value="card"> 刷卡</label>
+        <div class="pay-seg" id="vePaySeg">
+          <label data-pay="rmb"><input type="radio" name="vePay" value="rmb"> 人民币</label>
+          <label data-pay="cash"><input type="radio" name="vePay" value="cash"> 现金</label>
+          <label data-pay="card"><input type="radio" name="vePay" value="card"> 刷卡</label>
         </div>
         <!-- ★ v3.41.0：现金形式 / 人民币渠道 -->
         <div class="pay-ch" id="veCashChWrap" style="display:none;">
@@ -3466,10 +3484,10 @@
       </div>
       <div class="field">
         <label>支付方式</label>
-        <div class="pay-row" style="margin:0;">
-          <label><input type="radio" name="sePay" value="card"> 刷卡（+<span id="seFeePct">1.2</span>%）</label>
-          <label><input type="radio" name="sePay" value="cash"> 现金</label>
-          <label><input type="radio" name="sePay" value="rmb"> 人民币</label>
+        <div class="pay-seg" id="sePaySeg">
+          <label data-pay="card"><input type="radio" name="sePay" value="card"> 刷卡 <em>+<span id="seFeePct">1.2</span>%</em></label>
+          <label data-pay="cash"><input type="radio" name="sePay" value="cash"> 现金</label>
+          <label data-pay="rmb"><input type="radio" name="sePay" value="rmb"> 人民币</label>
         </div>
         <!-- ★ v3.41.0：现金形式 / 人民币渠道 -->
         <div class="pay-ch" id="seCashChWrap" style="display:none;">
@@ -4942,7 +4960,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.41.0";
+  var APP_VER = "v3.41.1";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4953,6 +4971,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.41.1", date: "2026-11-06", items: [
+      "零食饮料 / 鸭嘴兽的**支付方式改成明显的胶囊按钮**（用户反馈：原来那排小圆点不够显眼）：「刷卡 / 现金 / 人民币」变成和渠道按钮一样的大按钮，选中的绿底白字高亮，刷卡后面小字写「+1.2%」",
+      "结算页和「修改记录」弹窗都改了，桌面 / 手机 / 暗色模式都适配。测试同步更新（真 Chrome 点按钮 + 断言高亮）"
+    ] },
     { ver: "v3.41.0", date: "2026-11-06", items: [
       "所有的结账都跟台费一样能选渠道（用户要求）：**零食饮料、鸭嘴兽**的结算和「修改记录」里，选现金时多一行「现金（纸币）/ 转账」、选人民币时多一行「微信 / 支付宝」，默认现金=现金（纸币）、人民币=微信（跟台费结算一致）",
       "渠道存进记录并跟着 Firebase / 表格同步（换设备不丢），记录列表和统计明细只对「转账 / 支付宝」标出来",
@@ -5028,10 +5050,6 @@
       "**点版本号看更新日志**：页面左上角标题旁、页面最底部的版本号都能点，弹出「📋 更新日志」——显示当前版本 + 最近 15 个版本的改动（版本徽章 + 日期 + 要点）",
       "弹窗底部有「在 GitHub 看完整历史」直达 `版本记录.md`",
       "关闭方式：✕ / 知道了 / 点空白处 / Esc。日志数据由 `工具/生成更新日志.py` 从 README「最近 15 个版本」表自动生成，发版时自动同步，不用手抄"
-    ] },
-    { ver: "v3.34.1", date: "2026-10-31", items: [
-      "修：点了「到店开台」后预约消失一下又重新出现在「今天待来」（另一台设备的旧预约状态把本机的「到店」盖回去了）",
-      "现在预约按 `updatedAt` 合并、到店/取消后立刻推送，谁新用谁"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -11869,6 +11887,17 @@ jsonpGet(t, onRes);
     var rw = document.getElementById(rmbWrapId);
     if (rw) rw.style.display = (payType === "rmb") ? "flex" : "none";
   }
+  // ★ v3.41.1：支付方式胶囊按钮的高亮（跟着真实的 radio 走，radio 只是藏起来）
+  function paySegSync(segId) {
+    var seg = document.getElementById(segId);
+    if (!seg) return;
+    var ls = seg.querySelectorAll("label");
+    for (var i = 0; i < ls.length; i++) {
+      var ip = ls[i].querySelector("input");
+      if (ip && ip.checked) ls[i].classList.add("on");
+      else ls[i].classList.remove("on");
+    }
+  }
 
   // ★ v3.25.0：挂账桌台从「下拉」改成「桌台卡片」——
   //   直接看到 状态（计时中/待结算/未开台）+ 台费 + 已挂金额，未开台也能挂。
@@ -12602,6 +12631,7 @@ jsonpGet(t, onRes);
     if (rmbWrap) rmbWrap.style.display = (ch.payType === "rmb" ? "block" : "none");
     // ★ v3.41.0：现金形式 / 人民币渠道（现金 → 纸币/转账；人民币 → 微信/支付宝）
     payChShow(ch.payType, "snackCashChWrap", "snackRmbChWrap");
+    paySegSync("snackPaySeg");
     payChSync("snackCashChWrap", "data-snackcashch", snackCashChannel);
     payChSync("snackRmbChWrap", "data-snackrmbch", snackRmbChannel);
     var payLine;
@@ -13356,6 +13386,7 @@ document.getElementById("snackCart").addEventListener("click", function (e) {
       seEl("seRmb").value = state.fxRate > 0 ? round2(sub * state.fxRate) : "";
     }
     payChShow(pt, "seCashChWrap", "seRmbChWrap");
+    paySegSync("sePaySeg");
     payChSync("seCashChWrap", "data-secashch", seCashChannel);
     payChSync("seRmbChWrap", "data-sermbch", seRmbChannel);
     var chTxt = pt === "rmb" ? (seRmbChannel === "alipay" ? "支付宝" : "微信")
@@ -13964,6 +13995,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     document.getElementById("vapeCashWrap").style.display = (ch.payType === "cash") ? "block" : "none";
     // ★ v3.41.0：现金形式 / 人民币渠道（和台费结算一致）
     payChShow(ch.payType, "vapeCashChWrap", "vapeRmbChWrap");
+    paySegSync("vapePaySeg");
     payChSync("vapeCashChWrap", "data-vapecashch", vapeCashChannel);
     payChSync("vapeRmbChWrap", "data-vapermch", vapeRmbChannel);
     updateVapePill();
@@ -14387,6 +14419,7 @@ rows += "<tr>" +
     if (pt === "rmb" && !veEl("veRmb").value && state.fxRate > 0) veEl("veRmb").value = round2(grand * state.fxRate);
     // ★ v3.41.0：现金形式 / 人民币渠道
     payChShow(pt, "veCashChWrap", "veRmbChWrap");
+    paySegSync("vePaySeg");
     payChSync("veCashChWrap", "data-vecashch", veCashChannel);
     payChSync("veRmbChWrap", "data-vermbch", veRmbChannel);
     var chTxt = pt === "rmb" ? (veRmbChannel === "alipay" ? "支付宝" : "微信")
