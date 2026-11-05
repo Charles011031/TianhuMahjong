@@ -2322,7 +2322,7 @@
         <div id="snackSinglePane">
           <!-- ★ v3.41.1：支付方式做成明显的胶囊按钮（用户要求，和渠道按钮一个风格） -->
           <div class="pay-seg" id="snackPaySeg">
-            <label class="on" data-pay="card"><input type="radio" name="snackPay" value="card" checked> 刷卡 <em>+<span id="snackFeePct">1.2</span>%</em></label>
+            <label class="on" data-pay="card"><input type="radio" name="snackPay" value="card" checked> 刷卡</label>
             <label data-pay="cash"><input type="radio" name="snackPay" value="cash"> 现金</label>
             <label data-pay="rmb"><input type="radio" name="snackPay" value="rmb"> 人民币</label>
           </div>
@@ -3485,7 +3485,7 @@
       <div class="field">
         <label>支付方式</label>
         <div class="pay-seg" id="sePaySeg">
-          <label data-pay="card"><input type="radio" name="sePay" value="card"> 刷卡 <em>+<span id="seFeePct">1.2</span>%</em></label>
+          <label data-pay="card"><input type="radio" name="sePay" value="card"> 刷卡</label>
           <label data-pay="cash"><input type="radio" name="sePay" value="cash"> 现金</label>
           <label data-pay="rmb"><input type="radio" name="sePay" value="rmb"> 人民币</label>
         </div>
@@ -4960,7 +4960,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.41.1";
+  var APP_VER = "v3.41.2";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4971,6 +4971,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.41.2", date: "2026-11-06", items: [
+      "支付方式按钮上**不再显示「+1.2%」**（用户要求）：零食饮料的结算页和「修改记录」里，「刷卡」按钮只写「刷卡」，手续费率只在下面「刷卡手续费（1.2%）」那行小字里说明",
+      "结算逻辑、记录完全不变"
+    ] },
     { ver: "v3.41.1", date: "2026-11-06", items: [
       "零食饮料 / 鸭嘴兽的**支付方式改成明显的胶囊按钮**（用户反馈：原来那排小圆点不够显眼）：「刷卡 / 现金 / 人民币」变成和渠道按钮一样的大按钮，选中的绿底白字高亮，刷卡后面小字写「+1.2%」",
       "结算页和「修改记录」弹窗都改了，桌面 / 手机 / 暗色模式都适配。测试同步更新（真 Chrome 点按钮 + 断言高亮）"
@@ -5045,11 +5049,6 @@
       "用户反馈三条一起修：**备注跟着这一场走**——结算完成 / 收进待结算后桌卡备注自动清空（待结算账单里仍保留，搬回桌台时带回来）",
       "**预约按营业日显示**——凌晨场算前一个营业日，提醒条 / 台账分组 / 已到计数 / 收工判定 / 桌卡角标全部按营业日，「还有多久 / 超时」按真实日期时间算（跨夜不再算错），上一营业日已到店的不再显示、没到店的留在「过期待处理」",
       "**人民币账单与结算对齐**——账单「应付人民币」= 整单澳币 × 汇率（一次折算，与结算「一次性全付」完全一致，不再差几分钱），台费行改「人均参考 + 真实合计」、去掉会多算 1～2 分的「人均 × 4」竖式，罚款 / 合并桌 / 其它费用 / 上次未付也一起列进账单"
-    ] },
-    { ver: "v3.35.0", date: "2026-10-31", items: [
-      "**点版本号看更新日志**：页面左上角标题旁、页面最底部的版本号都能点，弹出「📋 更新日志」——显示当前版本 + 最近 15 个版本的改动（版本徽章 + 日期 + 要点）",
-      "弹窗底部有「在 GitHub 看完整历史」直达 `版本记录.md`",
-      "关闭方式：✕ / 知道了 / 点空白处 / Esc。日志数据由 `工具/生成更新日志.py` 从 README「最近 15 个版本」表自动生成，发版时自动同步，不用手抄"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -12651,7 +12650,7 @@ jsonpGet(t, onRes);
       "小计 <b>$" + ch.subtotal.toFixed(2) + "</b> ≈ " + fmtRmb(ch.subtotal) +
       '<br><span style="font-size:13px;color:var(--muted);">' + payLine + "</span>";
 
-    document.getElementById("snackFeePct").textContent = state.feeRate;
+    // v3.41.2：支付按钮上不再显示「+1.2%」（用户要求），手续费率只在下面的小字里说明
     renderSnackAttachTable();
     renderSnackHistory();
   }
@@ -18959,7 +18958,6 @@ document.addEventListener("mousedown", function (e) {
   document.getElementById("vapeDate").addEventListener("change", function () { vapeDateDirty = true; });
   document.getElementById("vapeDate").value = bizDate(Date.now());
   renderVapes();
-  document.getElementById("seFeePct").textContent = state.feeRate;
   document.getElementById("wageMonth").value = fmtDate(Date.now()).slice(0, 7);
   // ★ v3.37.1：这里要等通用组件把 ◀ ▶ 包好之后再执行，否则藏的是输入框、箭头还露在外面
   applyWageModeUI();
