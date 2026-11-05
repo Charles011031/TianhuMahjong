@@ -2057,6 +2057,9 @@
   /* ★ v3.44.1：盘点记录顶部总览（按类别分块） */
   .sl-sum { font-size:12px; color:var(--muted); padding:0 0 8px; border-bottom:1px solid var(--line); letter-spacing:.2px; }
   .sl-sum b { font-weight:800; }
+  /* ★ v3.45.0：盘点记录类别筛选按钮（全部 / 零食饮料 / 鸭嘴兽） */
+  .sl-tabs { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:-4px 0 10px; }
+  .sl-tabs .snack-tab { padding:5px 12px; font-size:12px; }
   .res-done { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#f1f8f4; border:1px solid #cfe0d6; color:var(--green-dark); border-radius:10px; padding:10px 13px; font-size:13px; font-weight:700; margin:2px 0 11px; }
   .res-conflict { display:none; background:var(--c-danger-bg); border:1px solid #fecaca; color:var(--c-danger); border-radius:10px; padding:9px 12px; font-size:13px; margin:0 0 10px; }
   .res-conflict.show { display:block; }
@@ -3831,7 +3834,8 @@
   <!-- 盘点记录弹窗 -->
   <div class="overlay" id="slOverlay">
     <div class="modal">
-      <h3>📋 盘点记录（按类别 · 每类最近 12 条）</h3>
+      <h3>📋 盘点记录（每类最近 12 条）</h3>
+      <div class="sl-tabs" id="slTabs"></div>
       <div id="slList" style="max-height:52vh;overflow:auto;"></div>
       <div class="modal-btns"><button id="slClose" class="btn-ghost">关闭</button></div>
     </div>
@@ -5233,7 +5237,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.44.1";
+  var APP_VER = "v3.45.0";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5244,6 +5248,13 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.45.0", date: "2026-11-06", items: [
+      "📋 **盘点记录可以自己选类别**（用户要求）：① 打开时**按入口自动选**——在零食饮料页点开就看「零食饮料」，在鸭嘴兽页点开就看「鸭嘴兽」",
+      "② 弹窗顶部加按钮 **全部 / 零食饮料 / 鸭嘴兽**，点一下就切（按钮上带条数）",
+      "③ 分类合成两大类：**零食 + 饮料 = 零食饮料**、**一代 + 二代 = 鸭嘴兽**",
+      "④ 每类各自最近 12 条，块头保留盘盈 / 盘亏小计，选「全部」时顶部是两类合计，选某一类时只看这一类",
+      "老记录按名字前缀归位，不用迁移数据"
+    ] },
     { ver: "v3.44.1", date: "2026-11-06", items: [
       "📋 **盘点记录按类别分开**（用户要求）：弹窗里原来四类（零食 / 饮料 / 鸭嘴兽一代 / 二代）混成一串、总共只取 30 条，一类盘得多就会把另一类挤没",
       "现在固定分 4 块，**每块显示条数 + 盘盈 / 盘亏小计**",
@@ -5329,11 +5340,6 @@
       "🦆 鸭嘴兽现货文案改成**每个口味单独一行、数字对齐成一列**（用户要求：口味和数量一行一个、每行对齐）：按最长的口味名补空格，一代 / 二代各自分组、组名单独一行，发到群里一眼看清每样还剩几根",
       "售罄不出现、阶梯价读设置等行为不变",
       "界面测试同步改成断言「逐行 + 同列对齐」"
-    ] },
-    { ver: "v3.38.0", date: "2026-11-03", items: [
-      "🦆 鸭嘴兽「口味与库存」加**一键生成文案**：点按钮就把当前口味＋库存拼成一段现货文案（一代 / 二代分组、写「口味 N」），**售罄的口味自动不出现**",
-      "末尾自动带**阶梯价提示**（零售 / 满3根 / 满5根，读当前价格设置，改价后文案跟着变）",
-      "弹窗里显示并自动复制，直接粘到群里 / 朋友圈"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -13323,20 +13329,24 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
     closeStocktake();
   });
 
-  // ★ v3.44.1：盘点记录【按类别分块】——零食 / 饮料 / 鸭嘴兽一代 / 鸭嘴兽二代
-  //   之前四类混成一串、总共只取 30 条：一类盘得多就把另一类挤没，找起来也费劲
+  // ★ v3.45.0：盘点记录改成【两类 + 按钮筛选】——零食饮料 / 鸭嘴兽（一代二代合并）
+  //   打开时按入口自动选类：从零食页点「📋 盘点记录」→ 零食饮料；从鸭嘴兽页点 → 鸭嘴兽
+  //   顶部还能点「全部 / 零食饮料 / 鸭嘴兽」自己切；按钮上的数字 = 这一类最近 12 条里有几条
   //   老记录没有分类字段，靠名字前缀归位（stockTitle() 生成的名字一定带「零食 /饮料 /一代 /二代 」）
   var SL_CATS = [
-    { key: "snack", label: "🍿 零食", pre: "零食 " },
-    { key: "drink", label: "🥤 饮料", pre: "饮料 " },
-    { key: "v1", label: "🦆 鸭嘴兽 一代", pre: "一代 " },
-    { key: "v2", label: "🦆 鸭嘴兽 二代", pre: "二代 " }
+    { key: "snack", label: "🍿 零食饮料", pres: ["零食 ", "饮料 "] },
+    { key: "vape", label: "🦆 鸭嘴兽", pres: ["一代 ", "二代 "] }
   ];
-  var SL_PER_CAT = 12;   // 每类各自最多 12 条（不是总共 12 条）
+  var SL_PER_CAT = 12;      // 每类各自最多 12 条（不是总共 12 条）
+  var slFilter = "all";     // "all" | "snack" | "vape"（打开时按入口设置）
   function slCatOf(L) {
     var nm = String((L && L.name) || "");
-    for (var i = 0; i < SL_CATS.length; i++) if (nm.indexOf(SL_CATS[i].pre) === 0) return SL_CATS[i].key;
-    return L && L.kind === "vape" ? "v1" : "snack";   // 老数据 / 测试数据的兜底
+    for (var i = 0; i < SL_CATS.length; i++) {
+      for (var p = 0; p < SL_CATS[i].pres.length; p++) {
+        if (nm.indexOf(SL_CATS[i].pres[p]) === 0) return SL_CATS[i].key;
+      }
+    }
+    return L && L.kind === "vape" ? "vape" : "snack";   // 老数据 / 测试数据的兜底
   }
   function slRowHtml(L) {
     return '<div class="res-row">' +
@@ -13347,39 +13357,90 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
       (L.diff > 0 ? "+" + L.diff : L.diff) + "</span>" +
       "</div>";
   }
-  function renderStockLogs() {
-    var wrap = document.getElementById("slList");
-    if (!state.stockLogs.length) { wrap.innerHTML = '<div class="empty-mini">还没有盘点记录</div>'; return; }
-    // 每类各自从【最新】往前取 12 条
-    var groups = {}, i, j, k;
+  // 每类各自从【最新】往前取 12 条
+  function slGroups() {
+    var groups = {}, i, k;
     for (i = 0; i < SL_CATS.length; i++) groups[SL_CATS[i].key] = [];
     for (i = state.stockLogs.length - 1; i >= 0; i--) {
       k = slCatOf(state.stockLogs[i]);
       if (groups[k] && groups[k].length < SL_PER_CAT) groups[k].push(state.stockLogs[i]);
     }
-    var html = "", total = 0, allUp = 0, allDown = 0;
+    return groups;
+  }
+  function slMetaOf(rows) {
+    var up = 0, down = 0;
+    for (var j = 0; j < rows.length; j++) {
+      var d = Number(rows[j].diff) || 0;
+      if (d > 0) up += d; else if (d < 0) down += d;
+    }
+    return { up: up, down: down };
+  }
+  function slTabsHtml(groups, shownAll) {
+    var h = '<button type="button" class="snack-tab' + (slFilter === "all" ? " on" : "") +
+      '" data-slcat="all">全部 ' + shownAll + "</button>";
+    for (var i = 0; i < SL_CATS.length; i++) {
+      var c = SL_CATS[i];
+      h += '<button type="button" class="snack-tab' + (slFilter === c.key ? " on" : "") +
+        '" data-slcat="' + c.key + '">' + c.label + " " + groups[c.key].length + "</button>";
+    }
+    return h;
+  }
+  function renderStockLogs() {
+    var wrap = document.getElementById("slList");
+    var tabs = document.getElementById("slTabs");
+    if (!state.stockLogs.length) {
+      tabs.innerHTML = "";
+      wrap.innerHTML = '<div class="empty-mini">还没有盘点记录</div>';
+      return;
+    }
+    var groups = slGroups(), shown = 0, i, j;
+    var pick = [];
     for (i = 0; i < SL_CATS.length; i++) {
       var c = SL_CATS[i], rows = groups[c.key];
-      if (!rows.length) continue;   // 空的类别不占地方
-      var body = "", up = 0, down = 0;
-      for (j = 0; j < rows.length; j++) {
-        var d = Number(rows[j].diff) || 0;
-        if (d > 0) up += d; else if (d < 0) down += d;
-        body += slRowHtml(rows[j]);
-      }
-      total += rows.length; allUp += up; allDown += down;
-      html += '<div class="res-group">' + c.label + " · " + rows.length + " 条" +
-        '<span>盘盈 <b style="color:var(--green-dark);">+' + up + "</b>　盘亏 " +
-        '<b style="color:var(--red);">' + down + "</b></span></div>" + body;
+      shown += rows.length;
+      if (slFilter === "all" || slFilter === c.key) pick.push({ cat: c, rows: rows });
     }
-    wrap.innerHTML = '<div class="sl-sum">共 ' + total + " 条（每类最多 " + SL_PER_CAT + " 条）" +
-      '　总盘盈 <b style="color:var(--green-dark);">+' + allUp + "</b>" +
-      '　总盘亏 <b style="color:var(--red);">' + allDown + "</b></div>" + html;
+    tabs.innerHTML = slTabsHtml(groups, shown);
+    if (!pick.length) { wrap.innerHTML = '<div class="empty-mini">这一类还没有盘点记录</div>'; return; }
+    // 顶部总览：全部 → 两类合计；单选某类 → 只说这一类
+    var top;
+    if (slFilter === "all") {
+      var allUp = 0, allDown = 0;
+      for (i = 0; i < pick.length; i++) {
+        var m0 = slMetaOf(pick[i].rows);
+        allUp += m0.up; allDown += m0.down;
+      }
+      top = "共 " + shown + " 条（每类最多 " + SL_PER_CAT + " 条）" +
+        '　总盘盈 <b style="color:var(--green-dark);">+' + allUp + "</b>" +
+        '　总盘亏 <b style="color:var(--red);">' + allDown + "</b>";
+    } else {
+      var m1 = slMetaOf(pick[0].rows);
+      top = pick[0].cat.label + " · " + pick[0].rows.length + " 条" +
+        '　盘盈 <b style="color:var(--green-dark);">+' + m1.up + "</b>" +
+        '　盘亏 <b style="color:var(--red);">' + m1.down + "</b>";
+    }
+    var html = '<div class="sl-sum">' + top + "</div>";
+    for (i = 0; i < pick.length; i++) {
+      var cc = pick[i].cat, rr = pick[i].rows;
+      if (!rr.length) continue;   // 空的类别不占地方
+      var m2 = slMetaOf(rr), body = "";
+      for (j = 0; j < rr.length; j++) body += slRowHtml(rr[j]);
+      html += '<div class="res-group">' + cc.label + " · " + rr.length + " 条" +
+        '<span>盘盈 <b style="color:var(--green-dark);">+' + m2.up + "</b>　盘亏 " +
+        '<b style="color:var(--red);">' + m2.down + "</b></span></div>" + body;
+    }
+    wrap.innerHTML = html;
   }
+  document.getElementById("slTabs").addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("button[data-slcat]") : null;
+    if (!b) return;
+    slFilter = b.getAttribute("data-slcat") || "all";
+    renderStockLogs();
+  });
   document.getElementById("slClose").addEventListener("click", function () { document.getElementById("slOverlay").classList.remove("show"); });
   document.getElementById("slOverlay").addEventListener("click", function (e) { if (e.target === document.getElementById("slOverlay")) this.classList.remove("show"); });
-  document.getElementById("snackLogBtn").addEventListener("click", function () { renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
-  document.getElementById("vapeLogBtn").addEventListener("click", function () { renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
+  document.getElementById("snackLogBtn").addEventListener("click", function () { slFilter = "snack"; renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
+  document.getElementById("vapeLogBtn").addEventListener("click", function () { slFilter = "vape"; renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
 
   document.getElementById("snackMenu").addEventListener("keydown", function (e) {
     var el = e.target;
