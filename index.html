@@ -738,6 +738,18 @@
   .cart-total b { font-size: 20px; color: var(--green-dark); }
   .pay-row { display: flex; gap: 18px; margin: 10px 0 4px; font-size: 14px; }
   .pay-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  /* ★ v3.41.0：零食 / 鸭嘴兽 结账的「现金形式 / 人民币渠道」胶囊按钮（和台费结算一个风格） */
+  .pay-ch { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; font-size: 13px; }
+  .pay-ch .pc-label { font-weight: 700; color: var(--muted); }
+  .pay-ch button {
+    font-family: inherit; cursor: pointer; font-size: 12.5px; font-weight: 700;
+    border-radius: 999px; padding: 7px 14px; min-height: 34px;
+    border: 1px solid #e3e8e5; background: #fff; color: #6b7280;
+  }
+  .pay-ch button.on { border-color: #1d7a4f; background: #1d7a4f; color: #fff; }
+  .pay-ch button.ch-wx.on { border-color: #07C160; background: #07C160; }
+  .pay-ch button.ch-ali.on { border-color: #1677FF; background: #1677FF; }
+  body.dark .pay-ch button:not(.on) { background: #111827; border-color: #374151; color: #d1d5db; }
   .attach-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
   .attach-row select { flex: 1; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
 
@@ -2297,6 +2309,17 @@
             <label><input type="radio" name="snackPay" value="cash"> 现金</label>
             <label><input type="radio" name="snackPay" value="rmb"> 人民币</label>
           </div>
+          <!-- ★ v3.41.0：现金形式 / 人民币渠道（和台费结算一致，用户要求） -->
+          <div class="pay-ch" id="snackCashChWrap" style="display:none;">
+            <span class="pc-label">现金形式</span>
+            <button type="button" data-snackcashch="cash">现金（纸币）</button>
+            <button type="button" data-snackcashch="transfer">转账</button>
+          </div>
+          <div class="pay-ch" id="snackRmbChWrap" style="display:none;">
+            <span class="pc-label">人民币渠道</span>
+            <button type="button" class="ch-wx" data-snackrmbch="wx">微信</button>
+            <button type="button" class="ch-ali" data-snackrmbch="alipay">支付宝</button>
+          </div>
           <div class="field" id="snackCustomWrap" style="display:none;margin-bottom:8px;">
             <label>现金实际收取（可抹零，留空 = 按应收）</label>
             <input type="number" id="snackCustom" min="0" step="0.5" placeholder="留空 = 按应收">
@@ -2408,6 +2431,17 @@
           <label><input type="radio" name="vapePay" value="rmb" checked> 人民币（默认）</label>
           <label><input type="radio" name="vapePay" value="cash"> 现金</label>
           <label><input type="radio" name="vapePay" value="card"> 刷卡</label>
+        </div>
+        <!-- ★ v3.41.0：现金形式 / 人民币渠道（和台费结算一致，用户要求） -->
+        <div class="pay-ch" id="vapeCashChWrap" style="display:none;">
+          <span class="pc-label">现金形式</span>
+          <button type="button" data-vapecashch="cash">现金（纸币）</button>
+          <button type="button" data-vapecashch="transfer">转账</button>
+        </div>
+        <div class="pay-ch" id="vapeRmbChWrap">
+          <span class="pc-label">人民币渠道</span>
+          <button type="button" class="ch-wx" data-vapermch="wx">微信</button>
+          <button type="button" class="ch-ali" data-vapermch="alipay">支付宝</button>
         </div>
         <div class="field" style="margin-bottom:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#b45309;font-weight:700;">
@@ -3365,6 +3399,17 @@
           <label><input type="radio" name="vePay" value="cash"> 现金</label>
           <label><input type="radio" name="vePay" value="card"> 刷卡</label>
         </div>
+        <!-- ★ v3.41.0：现金形式 / 人民币渠道 -->
+        <div class="pay-ch" id="veCashChWrap" style="display:none;">
+          <span class="pc-label">现金形式</span>
+          <button type="button" data-vecashch="cash">现金（纸币）</button>
+          <button type="button" data-vecashch="transfer">转账</button>
+        </div>
+        <div class="pay-ch" id="veRmbChWrap" style="display:none;">
+          <span class="pc-label">人民币渠道</span>
+          <button type="button" class="ch-wx" data-vermbch="wx">微信</button>
+          <button type="button" class="ch-ali" data-vermbch="alipay">支付宝</button>
+        </div>
       </div>
       <div class="field">
         <label>应收（澳币，可改）</label>
@@ -3425,6 +3470,17 @@
           <label><input type="radio" name="sePay" value="card"> 刷卡（+<span id="seFeePct">1.2</span>%）</label>
           <label><input type="radio" name="sePay" value="cash"> 现金</label>
           <label><input type="radio" name="sePay" value="rmb"> 人民币</label>
+        </div>
+        <!-- ★ v3.41.0：现金形式 / 人民币渠道 -->
+        <div class="pay-ch" id="seCashChWrap" style="display:none;">
+          <span class="pc-label">现金形式</span>
+          <button type="button" data-secashch="cash">现金（纸币）</button>
+          <button type="button" data-secashch="transfer">转账</button>
+        </div>
+        <div class="pay-ch" id="seRmbChWrap" style="display:none;">
+          <span class="pc-label">人民币渠道</span>
+          <button type="button" class="ch-wx" data-sermbch="wx">微信</button>
+          <button type="button" class="ch-ali" data-sermbch="alipay">支付宝</button>
         </div>
       </div>
       <div class="field">
@@ -4886,8 +4942,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.40.0";
-  var APP_DATE = "2026-11-05";
+  var APP_VER = "v3.41.0";
+  var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -4897,6 +4953,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.41.0", date: "2026-11-06", items: [
+      "所有的结账都跟台费一样能选渠道（用户要求）：**零食饮料、鸭嘴兽**的结算和「修改记录」里，选现金时多一行「现金（纸币）/ 转账」、选人民币时多一行「微信 / 支付宝」，默认现金=现金（纸币）、人民币=微信（跟台费结算一致）",
+      "渠道存进记录并跟着 Firebase / 表格同步（换设备不丢），记录列表和统计明细只对「转账 / 支付宝」标出来",
+      "桌台结算、会员充值本来就有这两个选项。测试：集成测试新增静态检查（界面按钮 / 记录字段 / 推送拉取 / 列表显示），界面测试新增「零食、鸭嘴兽现金转账 + 人民币支付宝 + 修改记录改渠道」用例"
+    ] },
     { ver: "v3.40.0", date: "2026-11-05", items: [
       "✎ 预约可以**编辑**（用户要求）：台账 / 预约历史每条多一个「✎ 改」，弹窗能改**日期 / 时间 / 姓名 / 电话 / 桌数（1~3 张）/ 指定桌 / 备注**",
       "**待来 / 已到店 / 已取消都能改**，状态不会被改掉",
@@ -4971,10 +5032,6 @@
     { ver: "v3.34.1", date: "2026-10-31", items: [
       "修：点了「到店开台」后预约消失一下又重新出现在「今天待来」（另一台设备的旧预约状态把本机的「到店」盖回去了）",
       "现在预约按 `updatedAt` 合并、到店/取消后立刻推送，谁新用谁"
-    ] },
-    { ver: "v3.34.0", date: "2026-10-31", items: [
-      "客服端预约录入改版：**日期**改成日历、**时间**改成手机自带时间选择器（像定闹钟）、**人数**换成**桌数**（1 / 2 / 3 张，另可选指定先开哪张桌）",
-      "系统里「新增预约」也去掉人数框。预约台账 / 提醒条 / 到店开台 / 确认话术都会显示桌数"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -9389,7 +9446,10 @@
       fee: rec.fee != null ? rec.fee : 0,
       grand: rec.grand != null ? rec.grand : 0,
       payType: snackPayLabel(rec.payType),
-      rmb: rec.rmb != null ? rec.rmb : 0
+      rmb: rec.rmb != null ? rec.rmb : 0,
+      // ★ v3.41.0：现金形式 / 人民币渠道（换设备、同步一圈也丢不了）
+      cashChannel: rec.payType === "cash" ? (rec.cashChannel || "cash") : "",
+      rmbChannel: rec.payType === "rmb" ? (rec.rmbChannel || "wx") : ""
     };
   }
 
@@ -9410,7 +9470,10 @@
       fee: rec.fee != null ? rec.fee : 0,
       grand: rec.grand != null ? rec.grand : 0,
       payType: snackPayLabel(rec.payType),
-      rmb: rec.rmb != null ? rec.rmb : 0
+      rmb: rec.rmb != null ? rec.rmb : 0,
+      // ★ v3.41.0：现金形式 / 人民币渠道（换设备、同步一圈也丢不了）
+      cashChannel: rec.payType === "cash" ? (rec.cashChannel || "cash") : "",
+      rmbChannel: rec.payType === "rmb" ? (rec.rmbChannel || "wx") : ""
     };
   }
 
@@ -10950,6 +11013,9 @@ function pullTableStates() {
       fee: numOr(h.fee, 0),
       grand: numOr(h.grand, numOr(h.subtotal, 0)),
       payType: (h.payType === "刷卡" || h.payType === "card") ? "card" : ((h.payType === "人民币" || h.payType === "rmb") ? "rmb" : "cash"),
+      // ★ v3.41.0：现金形式 / 人民币渠道（老数据没有 → 默认 现金 / 微信）
+      cashChannel: h.cashChannel === "transfer" ? "transfer" : "cash",
+      rmbChannel: h.rmbChannel === "alipay" ? "alipay" : "wx",
       rmb: numOr(h.rmb, 0)
     };
   }
@@ -10985,7 +11051,10 @@ function pullTableStates() {
       grand: gr0,
       discount: h.discount != null ? numOr(h.discount, 0) : round2(Math.max(0, sub0 + fee0 - gr0)),
       rmb: numOr(h.rmb, 0),
-      payType: (h.payType === "刷卡" || h.payType === "card") ? "card" : ((h.payType === "人民币" || h.payType === "rmb") ? "rmb" : "cash")
+      payType: (h.payType === "刷卡" || h.payType === "card") ? "card" : ((h.payType === "人民币" || h.payType === "rmb") ? "rmb" : "cash"),
+      // ★ v3.41.0：现金形式 / 人民币渠道
+      cashChannel: h.cashChannel === "transfer" ? "transfer" : "cash",
+      rmbChannel: h.rmbChannel === "alipay" ? "alipay" : "wx"
     };
   }
 
@@ -11769,6 +11838,38 @@ jsonpGet(t, onRes);
   }
   function snackPayLabel(p) { return p === "rmb" ? "人民币" : (p === "card" ? "刷卡" : "现金"); }
 
+  // ★ v3.41.0：零食 / 鸭嘴兽结账也支持「现金 → 纸币 / 转账」「人民币 → 微信 / 支付宝」（用户要求，和台费一致）
+  var snackCashChannel = "cash", snackRmbChannel = "wx";
+  var vapeCashChannel = "cash", vapeRmbChannel = "wx";
+  // 渠道显示：默认（现金 / 微信）不额外标，只标「转账 / 支付宝」
+  function payChanLabel(payType, rec) {
+    if (!rec) return "";
+    if (payType === "cash" && rec.cashChannel === "transfer") return "转账";
+    if (payType === "rmb" && rec.rmbChannel === "alipay") return "支付宝";
+    return "";
+  }
+  function payFullLabel(payType, rec) {
+    var base = snackPayLabel(payType), c = payChanLabel(payType, rec);
+    return base + (c ? "·" + c : "");
+  }
+  // 让一组渠道胶囊按钮高亮（同组只亮一个）
+  function payChSync(wrapId, attr, val) {
+    var w = document.getElementById(wrapId);
+    if (!w) return;
+    var bs = w.querySelectorAll("[" + attr + "]");
+    for (var i = 0; i < bs.length; i++) {
+      if (String(bs[i].getAttribute(attr)) === String(val)) bs[i].classList.add("on");
+      else bs[i].classList.remove("on");
+    }
+  }
+  // 渠道行显示/隐藏（现金 → 现金形式；人民币 → 人民币渠道）
+  function payChShow(payType, cashWrapId, rmbWrapId) {
+    var cw = document.getElementById(cashWrapId);
+    if (cw) cw.style.display = (payType === "cash") ? "flex" : "none";
+    var rw = document.getElementById(rmbWrapId);
+    if (rw) rw.style.display = (payType === "rmb") ? "flex" : "none";
+  }
+
   // ★ v3.25.0：挂账桌台从「下拉」改成「桌台卡片」——
   //   直接看到 状态（计时中/待结算/未开台）+ 台费 + 已挂金额，未开台也能挂。
   //   （函数名沿用旧的，调用点不用改）
@@ -12499,6 +12600,10 @@ jsonpGet(t, onRes);
     if (customWrap) customWrap.style.display = (ch.payType === "cash" ? "block" : "none");
     var rmbWrap = document.getElementById("snackRmbWrap");
     if (rmbWrap) rmbWrap.style.display = (ch.payType === "rmb" ? "block" : "none");
+    // ★ v3.41.0：现金形式 / 人民币渠道（现金 → 纸币/转账；人民币 → 微信/支付宝）
+    payChShow(ch.payType, "snackCashChWrap", "snackRmbChWrap");
+    payChSync("snackCashChWrap", "data-snackcashch", snackCashChannel);
+    payChSync("snackRmbChWrap", "data-snackrmbch", snackRmbChannel);
     var payLine;
     if (snackMode === "attach") {
       // 挂账金额 = 小计（不含手续费）；手续费在结算该桌时按付款方式算
@@ -12506,9 +12611,10 @@ jsonpGet(t, onRes);
     } else if (ch.payType === "card") {
       payLine = "刷卡手续费（" + state.feeRate + "%）：$" + ch.fee.toFixed(2) + "　应收 <b>$" + ch.grand.toFixed(2) + "</b>";
     } else if (ch.payType === "rmb") {
-      payLine = "澳币应收 <b>$" + ch.grand.toFixed(2) + "</b>　人民币实收 <b>¥" + (ch.rmb != null ? ch.rmb.toFixed(2) : "—") + "</b>（无手续费）";
+      payLine = "澳币应收 <b>$" + ch.grand.toFixed(2) + "</b>　" +
+        (snackRmbChannel === "alipay" ? "支付宝" : "微信") + "实收 <b>¥" + (ch.rmb != null ? ch.rmb.toFixed(2) : "—") + "</b>（无手续费）";
     } else {
-      payLine = "现金实收：<b>$" + ch.grand.toFixed(2) + "</b>（无手续费）";
+      payLine = "现金实收：<b>$" + ch.grand.toFixed(2) + "</b>（" + (snackCashChannel === "transfer" ? "转账" : "纸币") + "，无手续费）";
     }
     if (snackMode !== "attach" && ch.payType === "cash" && ch.discount > 0.005) payLine += "　抹零 <b>-$" + ch.discount.toFixed(2) + "</b>";
     document.getElementById("snackTotal").innerHTML =
@@ -12641,7 +12747,7 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
           '<div class="rec-sub">小计 $' + Number(h.subtotal || 0).toFixed(2) +
             (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div>" +
           '<div class="rec-bottom"><span class="rec-pays">' +
-            recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, "") +
+            recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, payChanLabel(h.payType, h)) +
           '</span><span class="rec-acts">' +
             '<button class="row-edit" data-snackedit="' + idx + '">编辑</button>' +
             '<button class="row-edit" data-snackdel="' + idx + '" data-armkey="snack-del"' +
@@ -12654,7 +12760,7 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
           '<td class="money">$' + Number(h.subtotal || 0).toFixed(2) + "</td>" +
           '<td class="grand">$' + Number(h.grand || 0).toFixed(2) +
             (showFee && notes.length ? '<div class="cell-note">' + esc(notes.join("　")) + "</div>" : "") + "</td>" +
-          '<td class="pay-cell">' + recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, "") + "</td>" +
+          '<td class="pay-cell">' + recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, payChanLabel(h.payType, h)) + "</td>" +
           '<td style="white-space:nowrap;"><button class="row-edit" data-snackedit="' + idx + '">编辑</button> ' +
           '<button class="row-edit" data-snackdel="' + idx + '" data-armkey="snack-del"' +
             (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
@@ -12678,6 +12784,23 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
       renderSnacks();
     });
   });
+  // ★ v3.41.0：现金形式 / 人民币渠道 按钮（和台费结算一致）
+  (function () {
+    var cw = document.getElementById("snackCashChWrap");
+    if (cw) cw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-snackcashch]");
+      if (!b) return;
+      snackCashChannel = (b.getAttribute("data-snackcashch") === "transfer") ? "transfer" : "cash";
+      renderSnacks();
+    });
+    var rw = document.getElementById("snackRmbChWrap");
+    if (rw) rw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-snackrmbch]");
+      if (!b) return;
+      snackRmbChannel = (b.getAttribute("data-snackrmbch") === "alipay") ? "alipay" : "wx";
+      renderSnacks();
+    });
+  })();
   // ★ v3.25.0：单独结算 / 挂到桌台 切换
   (function () {
     var modeBox = document.getElementById("snackMode");
@@ -13215,6 +13338,9 @@ document.getElementById("snackCart").addEventListener("click", function (e) {
     return isNaN(d.getTime()) ? null : d.getTime();
   }
 
+  // ★ v3.41.0：修改记录弹窗里的渠道（打开时从记录带出、保存时写回）
+  var seCashChannel = "cash", seRmbChannel = "wx";
+  var veCashChannel = "cash", veRmbChannel = "wx";
   function updateSePreview() {
     var pt = sePayType();
     var sub = parseFloat(seEl("seSubtotal").value) || 0;
@@ -13229,10 +13355,16 @@ document.getElementById("snackCart").addEventListener("click", function (e) {
     if (pt === "rmb" && !seEl("seRmb").value) {
       seEl("seRmb").value = state.fxRate > 0 ? round2(sub * state.fxRate) : "";
     }
+    payChShow(pt, "seCashChWrap", "seRmbChWrap");
+    payChSync("seCashChWrap", "data-secashch", seCashChannel);
+    payChSync("seRmbChWrap", "data-sermbch", seRmbChannel);
+    var chTxt = pt === "rmb" ? (seRmbChannel === "alipay" ? "支付宝" : "微信")
+              : (pt === "cash" ? (seCashChannel === "transfer" ? "转账" : "纸币") : "");
     seEl("sePreview").innerHTML =
       "小计 <b>$" + sub.toFixed(2) + "</b>　手续费 <b>$" + fee.toFixed(2) + "</b>　应收 <b>$" + grand.toFixed(2) + "</b>" +
       (grand < auto - 0.005 ? ("　抹零 <b>-$" + round2(auto - grand).toFixed(2) + "</b>") : "") +
-      (pt === "rmb" ? ("<br>人民币实收 <b>¥" + (parseFloat(seEl("seRmb").value) || 0).toFixed(2) + "</b>") : "");
+      (pt === "rmb" ? ("<br>" + chTxt + "实收 <b>¥" + (parseFloat(seEl("seRmb").value) || 0).toFixed(2) + "</b>") : "") +
+      (pt === "cash" ? ("<br>现金形式 <b>" + chTxt + "</b>") : "");
   }
 
 // ===== 零食饮料「品项」选单 =====
@@ -13329,6 +13461,8 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     seEl("seSubtotal").value = h.subtotal != null ? h.subtotal : 0;
     var pt = h.payType || "card";
     document.querySelectorAll('input[name="sePay"]').forEach(function (el) { el.checked = (el.value === pt); });
+    seCashChannel = (h.cashChannel === "transfer") ? "transfer" : "cash";      // ★ v3.41.0：渠道带出来
+    seRmbChannel = (h.rmbChannel === "alipay") ? "alipay" : "wx";
     var gEl = seEl("seGrand");
     gEl.removeAttribute("data-touched");
     gEl.value = h.grand != null ? h.grand : (h.subtotal || 0);
@@ -13344,6 +13478,23 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     snackEditIndex = null;
   }
   maskTime(document.getElementById("seTime"));
+  // ★ v3.41.0：修改记录里的现金形式 / 人民币渠道按钮
+  (function () {
+    var cw = document.getElementById("seCashChWrap");
+    if (cw) cw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-secashch]");
+      if (!b) return;
+      seCashChannel = (b.getAttribute("data-secashch") === "transfer") ? "transfer" : "cash";
+      updateSePreview();
+    });
+    var rw = document.getElementById("seRmbChWrap");
+    if (rw) rw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-sermbch]");
+      if (!b) return;
+      seRmbChannel = (b.getAttribute("data-sermbch") === "alipay") ? "alipay" : "wx";
+      updateSePreview();
+    });
+  })();
   document.querySelectorAll('input[name="sePay"]').forEach(function (el) {
     el.addEventListener("change", function () { seEl("seRmb").value = ""; seEl("seGrand").removeAttribute("data-touched"); updateSePreview(); });
   });
@@ -13390,6 +13541,8 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     h.grand = round2(grand);
     h.discount = round2(round2(sub + fee) - round2(grand));
     h.rmb = (pt === "rmb") ? (parseFloat(seEl("seRmb").value) || (state.fxRate > 0 ? round2(sub * state.fxRate) : 0)) : 0;
+    h.cashChannel = (pt === "cash") ? seCashChannel : "";      // ★ v3.41.0
+    h.rmbChannel = (pt === "rmb") ? seRmbChannel : "";
     if (!h.id) h.id = genId();
     save();
     renderSnacks();
@@ -13473,6 +13626,9 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
       rmb: ch.rmb,
       discount: ch.discount,
       payType: snackPayType(),
+      // ★ v3.41.0：现金形式（纸币/转账）、人民币渠道（微信/支付宝）存进记录
+      cashChannel: ch.payType === "cash" ? snackCashChannel : "",
+      rmbChannel: ch.payType === "rmb" ? snackRmbChannel : "",
       ts: Date.now()
     };
     // 扣库存
@@ -13493,11 +13649,11 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     save(); renderSnacks();
     notifyWeChat("🍜 零食 收 $" + Number(rec.grand || 0).toFixed(2),
       (rec.items || []).map(function (x) { return x.name + "×" + x.qty; }).join("、") +
-      "\n实收 " + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
+      "\n实收 " + fmtMoney(rec.grand) + "（" + payFullLabel(rec.payType, rec) + "）");
     logOp("零食结算", (rec.items || []).map(function (x) { return x.name + "×" + x.qty; }).join("、") +
-          "　" + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
+          "　" + fmtMoney(rec.grand) + "（" + payFullLabel(rec.payType, rec) + "）");
     postToGoogle("snacks", [snackPayload(rec)]);
-    st.textContent = "已结算 澳币 $" + rec.grand.toFixed(2) + "（" + snackPayLabel(rec.payType) + "）" +
+    st.textContent = "已结算 澳币 $" + rec.grand.toFixed(2) + "（" + payFullLabel(rec.payType, rec) + "）" +
       (rec.payType === "rmb" && rec.rmb != null ? "　实收 ¥" + Number(rec.rmb).toFixed(2) : "") +
       (rec.payType === "cash" && rec.discount > 0.005 ? "　抹零 -$" + rec.discount.toFixed(2) : "");
     st.style.color = "var(--green-dark)";
@@ -13806,6 +13962,10 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     document.getElementById("vapeTotal").innerHTML = line;
     document.getElementById("vapeRmbWrap").style.display = (ch.payType === "rmb") ? "block" : "none";
     document.getElementById("vapeCashWrap").style.display = (ch.payType === "cash") ? "block" : "none";
+    // ★ v3.41.0：现金形式 / 人民币渠道（和台费结算一致）
+    payChShow(ch.payType, "vapeCashChWrap", "vapeRmbChWrap");
+    payChSync("vapeCashChWrap", "data-vapecashch", vapeCashChannel);
+    payChSync("vapeRmbChWrap", "data-vapermch", vapeRmbChannel);
     updateVapePill();
   }
 
@@ -13846,7 +14006,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
           '<div class="rec-sub">小计 $' + Number(h.subtotal || 0).toFixed(2) +
             (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div>" +
           '<div class="rec-bottom"><span class="rec-pays">' +
-            recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, "") +
+            recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, payChanLabel(h.payType, h)) +
           '</span><span class="rec-acts">' +
             '<button class="row-edit" data-vapeedit="' + idx + '">编辑</button>' +
             '<button class="row-edit" data-vapedelrec="' + idx + '" data-armkey="vape-del"' +
@@ -13858,7 +14018,7 @@ rows += "<tr>" +
           '<td class="money">$' + Number(h.subtotal || 0).toFixed(2) + "</td>" +
           '<td class="grand">$' + Number(h.grand || 0).toFixed(2) +
             (showFee && notes.length ? '<div class="cell-note">' + esc(notes.join("　")) + "</div>" : "") + "</td>" +
-          '<td class="pay-cell">' + recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, "") + "</td>" +
+          '<td class="pay-cell">' + recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, payChanLabel(h.payType, h)) + "</td>" +
           '<td style="white-space:nowrap;"><button class="row-edit" data-vapeedit="' + idx + '">编辑</button> ' +
           '<button class="row-edit" data-vapedelrec="' + idx + '" data-armkey="vape-del"' +
             (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
@@ -14173,6 +14333,23 @@ rows += "<tr>" +
       renderVapeCart();
     });
   });
+  // ★ v3.41.0：现金形式 / 人民币渠道 按钮（和台费结算一致）
+  (function () {
+    var cw = document.getElementById("vapeCashChWrap");
+    if (cw) cw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-vapecashch]");
+      if (!b) return;
+      vapeCashChannel = (b.getAttribute("data-vapecashch") === "transfer") ? "transfer" : "cash";
+      renderVapeCart();
+    });
+    var rw = document.getElementById("vapeRmbChWrap");
+    if (rw) rw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-vapermch]");
+      if (!b) return;
+      vapeRmbChannel = (b.getAttribute("data-vapermch") === "alipay") ? "alipay" : "wx";
+      renderVapeCart();
+    });
+  })();
   // 改澳币应收 → 人民币自动跟着变
   document.getElementById("vapeAud").addEventListener("input", function () {
     var av = parseFloat(this.value);
@@ -14208,10 +14385,17 @@ rows += "<tr>" +
     if (isNaN(grand) || grand < 0) grand = auto;
     veEl("veRmbWrap").style.display = (pt === "rmb") ? "block" : "none";
     if (pt === "rmb" && !veEl("veRmb").value && state.fxRate > 0) veEl("veRmb").value = round2(grand * state.fxRate);
+    // ★ v3.41.0：现金形式 / 人民币渠道
+    payChShow(pt, "veCashChWrap", "veRmbChWrap");
+    payChSync("veCashChWrap", "data-vecashch", veCashChannel);
+    payChSync("veRmbChWrap", "data-vermbch", veRmbChannel);
+    var chTxt = pt === "rmb" ? (veRmbChannel === "alipay" ? "支付宝" : "微信")
+              : (pt === "cash" ? (veCashChannel === "transfer" ? "转账" : "纸币") : "");
     veEl("vePreview").innerHTML =
       "小计 <b>$" + sub.toFixed(2) + "</b>" + (add > 0.005 ? ("　刷卡加价 <b>+$" + add.toFixed(2) + "</b>") : "") +
       "　手续费 <b>$" + fee.toFixed(2) + "</b>　应收 <b>$" + grand.toFixed(2) + "</b>" +
-      (pt === "rmb" ? ("<br>人民币实收 <b>¥" + (parseFloat(veEl("veRmb").value) || 0).toFixed(2) + "</b>") : "");
+      (pt === "rmb" ? ("<br>" + chTxt + "实收 <b>¥" + (parseFloat(veEl("veRmb").value) || 0).toFixed(2) + "</b>") : "") +
+      (pt === "cash" ? ("<br>现金形式 <b>" + chTxt + "</b>") : "");
   }
 // ===== 电子烟「品项」选单 =====
 // 以前是让人手打「二代 百香果×1」，容易打错、也对不上库存里的名字。
@@ -14331,6 +14515,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     veEl("veCardAdd").value = h.cardAdd != null ? h.cardAdd : 0;
     var pt = h.payType || "rmb";
     document.querySelectorAll('input[name="vePay"]').forEach(function (el) { el.checked = (el.value === pt); });
+    veCashChannel = (h.cashChannel === "transfer") ? "transfer" : "cash";      // ★ v3.41.0：渠道带出来
+    veRmbChannel = (h.rmbChannel === "alipay") ? "alipay" : "wx";
     var gEl = veEl("veGrand");
     gEl.removeAttribute("data-touched");
     gEl.value = h.grand != null ? h.grand : (h.subtotal || 0);
@@ -14343,6 +14529,23 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   }
   function closeVapeEdit() { vapeEditOverlay.classList.remove("show"); vapeEditIndex = null; }
   maskTime(document.getElementById("veTime"));
+  // ★ v3.41.0：修改记录里的现金形式 / 人民币渠道按钮
+  (function () {
+    var cw = document.getElementById("veCashChWrap");
+    if (cw) cw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-vecashch]");
+      if (!b) return;
+      veCashChannel = (b.getAttribute("data-vecashch") === "transfer") ? "transfer" : "cash";
+      updateVePreview();
+    });
+    var rw = document.getElementById("veRmbChWrap");
+    if (rw) rw.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-vermbch]");
+      if (!b) return;
+      veRmbChannel = (b.getAttribute("data-vermbch") === "alipay") ? "alipay" : "wx";
+      updateVePreview();
+    });
+  })();
   document.querySelectorAll('input[name="vePay"]').forEach(function (el) {
     el.addEventListener("change", function () { veEl("veRmb").value = ""; veEl("veGrand").removeAttribute("data-touched"); updateVePreview(); });
   });
@@ -14380,6 +14583,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     h.grand = round2(grand);
     h.payType = pt;
     h.rmb = (pt === "rmb") ? (parseFloat(veEl("veRmb").value) || (state.fxRate > 0 ? round2(grand * state.fxRate) : 0)) : 0;
+    h.cashChannel = (pt === "cash") ? veCashChannel : "";      // ★ v3.41.0
+    h.rmbChannel = (pt === "rmb") ? veRmbChannel : "";
     if (!h.id) h.id = genId();
     save(); renderVapes(); renderStats(); closeVapeEdit();
     postToGoogle("vapes", [vapePayload(h)]);
@@ -14450,6 +14655,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       grand: ch.grand,
       payType: ch.payType,
       rmb: ch.rmb != null ? ch.rmb : 0,
+      // ★ v3.41.0：现金形式（纸币/转账）、人民币渠道（微信/支付宝）存进记录
+      cashChannel: ch.payType === "cash" ? vapeCashChannel : "",
+      rmbChannel: ch.payType === "rmb" ? vapeRmbChannel : "",
       ts: Date.now()
     };
     state.vapeHistory.push(rec);
@@ -14464,11 +14672,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     save(); renderVapes(); renderStats();
     notifyWeChat("🦆 鸭嘴兽 收 $" + Number(rec.grand || 0).toFixed(2),
       (rec.items || []).map(function (x) { return (x.gen === 2 ? "二代" : "一代") + x.name + "×" + x.qty; }).join("、") +
-      "\n实收 " + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
+      "\n实收 " + fmtMoney(rec.grand) + "（" + payFullLabel(rec.payType, rec) + "）");
     logOp("鸭嘴兽结算", (rec.items || []).map(function (x) { return (x.gen === 2 ? "二代" : "一代") + x.name + "×" + x.qty; }).join("、") +
-          "　" + fmtMoney(rec.grand) + "（" + snackPayLabel(rec.payType) + "）");
+          "　" + fmtMoney(rec.grand) + "（" + payFullLabel(rec.payType, rec) + "）");
     postToGoogle("vapes", [vapePayload(rec)]);
-    st.textContent = "已收款 澳币 $" + rec.grand.toFixed(2) + "（" + snackPayLabel(rec.payType) + "）" +
+    st.textContent = "已收款 澳币 $" + rec.grand.toFixed(2) + "（" + payFullLabel(rec.payType, rec) + "）" +
       (rec.payType === "rmb" && rec.rmb ? "　实收 ¥" + Number(rec.rmb).toFixed(2) : "") +
       (rec.cardAdd > 0.005 ? "　含刷卡加价 $" + rec.cardAdd.toFixed(2) : "");
     st.style.color = "var(--green-dark)";
@@ -17699,7 +17907,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       for (var q = 0; q < s.items.length; q++) { if (q) items += "、"; items += s.items[q].name + "×" + s.items[q].qty; }
       r.txns.push({
         kind: "snack", dt: s.date, t: txnTimeWithReal(s, s.time), d: items, a: Number(s.grand) || 0,
-        chips: [payChip(chipCls(s.payType), payLabelOf(s.payType), s.grand, s.payType === "rmb" ? s.rmb : null)],
+        chips: [payChip(chipCls(s.payType), payLabelOf(s.payType), s.grand, s.payType === "rmb" ? s.rmb : null, payChanLabel(s.payType, s))],
         info: (s.payType === "cash" && Number(s.discount) > 0.005 ? "抹零 -$" + Number(s.discount).toFixed(2) : "")
       });
     }
@@ -17718,7 +17926,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       }
       r.txns.push({
         kind: "vape", dt: vh.date, t: txnTimeWithReal(vh, vh.time), d: vitems, a: Number(vh.grand) || 0,
-        chips: [payChip(chipCls(vh.payType), payLabelOf(vh.payType), vh.grand, vh.payType === "rmb" ? vh.rmb : null)],
+        chips: [payChip(chipCls(vh.payType), payLabelOf(vh.payType), vh.grand, vh.payType === "rmb" ? vh.rmb : null, payChanLabel(vh.payType, vh))],
         info: (Number(vh.cardAdd) > 0.005 ? "刷卡加价 $" + Number(vh.cardAdd).toFixed(2) : "")
       });
     }
