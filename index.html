@@ -773,6 +773,9 @@
      先选「单独结算 / 挂到桌台」，挂账用桌台卡片选桌 + 确认弹窗，
      金额写清「不含手续费」，未开台的桌也能挂（客人先到、还没开始计时）。 */
   .snack-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 2px; }
+  /* ★ v3.42.0：给「单独结算 / 挂到桌台」加一行小标题，避免和下面的「确认收款」按钮混淆 */
+  .snack-mode-label { font-size: 12.5px; font-weight: 800; color: var(--muted); margin: 12px 0 6px; }
+  .snack-mode-label + .snack-mode { margin-top: 0; }
   .snack-mode-btn {
     padding: 11px 10px; font-size: 15px; font-weight: 800; border-radius: 11px;
     border: 1.5px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
@@ -2181,6 +2184,145 @@
   body.dark .res-arrive-tab { background:#111827; color:#e8eef4; border-color:#2a3846; }
   body.dark .res-arrive-tab.free { background:#12241c; }
   @media (max-width:420px) { .res-arrive-grid { grid-template-columns:repeat(2,1fr); } }
+
+  /* ============================================================
+     ★ v3.42.0 界面优化（用户确认的 7 条）
+       ① 顶部营业参数收进下拉面板（省首屏 95px / 手机 105px）
+       ② 手机标签页单行横向滑动（再省 110px）
+       ③ 手机顶部图标收进「⋯」，标题行不再挤
+       ④ 结算按钮不再和「单独结算」同名
+       ⑤ 统计页「总额」升成主卡（hero）
+       ⑥ 桌面卡片 hover 微反馈
+       ⑦ 顶部工具栏 / 标签页图标换成内联 SVG（跨平台一致）
+     ============================================================ */
+
+  /* ---------- ⑦ 图标 ---------- */
+  .icon-btn svg, .more-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; display: block; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; }
+  .tab svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  .tab { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+
+  /* ---------- ① 顶部参数面板 ---------- */
+  header { position: relative; }
+  .head-title { flex: 0 0 auto; }
+  .head-title h1 { white-space: nowrap; }
+  /* 副标题收起来：标题 + 摘要 + 图标一行就够（说明在页脚里也有） */
+  .head-title .sub { display: none; }
+  .cfg-sum {
+    display: inline-flex; align-items: center; gap: 9px;
+    margin: 0; padding: 7px 13px 7px 15px;
+    font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: .1px;
+    color: #fff; background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.28); border-radius: 999px;
+    cursor: pointer; white-space: nowrap; transition: background .15s, color .15s;
+  }
+  .cfg-sum:hover { background: rgba(255,255,255,.26); }
+  .cfg-sum.on { background: #fff; color: var(--green-dark); border-color: #fff; }
+  .cfg-sum .cfg-k { opacity: .78; font-weight: 500; }
+  .cfg-sum b { font-weight: 800; font-size: 14px; }
+  .cfg-sum .cfg-sep { opacity: .45; }
+  .cfg-caret {
+    width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent;
+    border-top: 5.5px solid currentColor; opacity: .7; transition: transform .18s;
+  }
+  .cfg-sum.on .cfg-caret { transform: rotate(180deg); }
+  .settings {
+    position: absolute; top: calc(100% + 8px); right: 0; left: auto;
+    margin-left: 0;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    padding: 12px 14px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    box-shadow: 0 16px 36px rgba(10, 36, 24, .32);
+    z-index: 80; max-width: calc(100vw - 24px);
+  }
+  .settings[hidden] { display: none; }
+
+  /* ---------- ③ 工具图标分组（桌面全显示，手机收进⋯） ---------- */
+  .ha-main, .ha-more { display: contents; }
+  .more-btn { display: none !important; }
+  #wxAllBtn { order: 1; } #resEntryBtn { order: 2; } #noteBtn { order: 3; }
+  #fxCompare { order: 4; } #nightBtn { order: 5; } #fontBtn { order: 6; }
+  #refreshBtn { order: 7; } .more-btn { order: 8; }
+
+  /* ---------- ②③ 手机 ---------- */
+  @media (max-width: 640px) {
+    header { padding: 9px 12px 10px !important; row-gap: 0 !important; }
+    header h1 { font-size: 16px !important; }
+    .head-title .sub { display: none !important; }
+    .head-top { flex-wrap: wrap !important; row-gap: 7px !important; }
+    .cfg-sum {
+      order: 10; flex: 1 0 100%; justify-content: flex-start;
+      font-size: 11.5px; padding: 5px 10px 5px 12px; gap: 6px; margin-top: 2px;
+    }
+    .cfg-sum b { font-size: 12.5px; }
+    .cfg-caret { border-left-width: 3.5px; border-right-width: 3.5px; border-top-width: 4.5px; }
+    .head-actions .icon-btn { width: 30px; height: 30px; }
+    .more-btn { display: inline-flex !important; }
+    .ha-more {
+      display: none; position: absolute; right: 10px; top: calc(100% + 6px);
+      z-index: 90; flex-direction: column; gap: 6px; padding: 8px; border-radius: 14px;
+      background: #fff; border: 1px solid var(--line);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .2);
+    }
+    .ha-more.open { display: flex; }
+    .ha-more .icon-btn { background: #eef4f0; color: #1f5c43; border-color: #d3e4da; }
+    .settings { left: 0; right: 0; top: calc(100% + 6px); gap: 8px; padding: 10px; }
+    .settings .rate-box { flex: 1 1 100%; min-width: 0; padding: 8px 10px; gap: 5px; }
+    .settings .rate-box label { font-size: 12px; }
+    .settings .rate-box input { width: 100%; min-width: 0; font-size: 15px; padding: 6px; }
+    .settings .rate-box .cur { font-size: 11px; }
+  }
+  body.dark .ha-more { background: #17222c !important; border-color: #2a3846 !important; }
+  body.dark .ha-more .icon-btn { background: #1d2b37 !important; color: #cfe0ee !important; border-color: #2f4050 !important; }
+  body.dark .settings { background: linear-gradient(135deg, #155c3b, #0b2a1b); }
+  body.dark .cfg-sum.on { background: #17222c; color: #5ee2a0; border-color: #2a3846; }
+
+  /* ---------- ② 标签页：手机单行横向滑动 ---------- */
+  @media (max-width: 640px) {
+    .tabs {
+      flex-wrap: nowrap !important; overflow-x: auto; overflow-y: hidden;
+      gap: 7px !important; margin: 0 -16px 12px; padding: 1px 16px 5px;
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 0 0 auto !important; padding: 9px 13px !important; font-size: 13px !important;
+      border-radius: 11px; scroll-snap-align: start;
+    }
+  }
+
+  /* ---------- ⑥ 桌面卡片 hover ---------- */
+  @media (hover: hover) and (pointer: fine) {
+    .table { transition: box-shadow .16s ease, transform .16s ease, border-color .16s ease; }
+    .table:hover { box-shadow: 0 10px 26px rgba(15, 55, 38, .11); transform: translateY(-1px); }
+    .table.running:hover { box-shadow: 0 12px 28px rgba(46, 139, 95, .22); }
+    .table.ended:hover { box-shadow: 0 12px 28px rgba(217, 119, 6, .18); }
+    .stat-card, .snack-card, .member-card, .emp-card { transition: box-shadow .16s ease, transform .16s ease; }
+    .stat-card:hover, .snack-card:hover, .member-card:hover, .emp-card:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(15, 55, 38, .09); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .table, .stat-card, .snack-card, .member-card, .emp-card, .settings { transition: none; animation: none; }
+    .table:hover, .stat-card:hover, .snack-card:hover, .member-card:hover, .emp-card:hover { transform: none; }
+  }
+
+  /* ---------- ⑤ 统计页「总额」主卡 ---------- */
+  .stat-card.hero {
+    grid-column: 1 / -1;
+    display: flex; align-items: baseline; gap: 8px 18px; flex-wrap: wrap;
+    padding: 15px 18px;
+    background: linear-gradient(135deg, #f3fbf7, #e8f6ee);
+    border-color: #9fd6b5;
+  }
+  .stat-card.hero .k { font-size: 13px; font-weight: 800; color: #1d7a4f; }
+  .stat-card.hero .v { font-size: 34px; margin-top: 0; order: 1; }
+  .stat-card.hero .s { margin: 0 0 0 auto; order: 2; font-size: 12.5px; text-align: right; }
+  @media (max-width: 640px) {
+    .stat-card.hero { padding: 13px 15px; gap: 4px 12px; }
+    .stat-card.hero .v { font-size: 30px; }
+    .stat-card.hero .s { margin-left: 0; flex: 1 0 100%; text-align: left; }
+  }
+  body.dark .stat-card.hero { background: linear-gradient(135deg, #12241c, #0f1f18) !important; border-color: #2f6b4c !important; }
 </style>
 </head>
 <body>
@@ -2193,17 +2335,27 @@
         <h1>🀄 天胡麻将馆 <span class="ver" id="appVer">v0</span></h1>
         <div class="sub">6 张桌台 · 独立计时 · 统一价格（澳币 AUD）· 手续费可调 · 支持人民币结算</div>
       </div>
+      <!-- ★ v3.42.0：4 个营业参数默认收成一行摘要，点一下才展开编辑（首屏省 95px） -->
+      <button type="button" class="cfg-sum" id="cfgSum" aria-expanded="false" aria-controls="settingsPanel" title="营业参数（每小时价格 / 手续费 / 汇率 / 营业日起算），点一下展开可改">
+        <span id="cfgSumText">…</span>
+        <span class="cfg-caret" aria-hidden="true"></span>
+      </button>
       <div class="head-actions">
-        <button type="button" class="icon-btn" id="wxAllBtn" title="复制今天所有桌的微信群消息（整段发群里）">💬</button>
-        <button type="button" class="icon-btn" id="resEntryBtn" title="预约台账（新预约会亮红点）">📅<span class="note-badge" id="resDot" hidden>0</span></button>
-        <button type="button" class="icon-btn" id="noteBtn" title="店铺待办（补餐巾纸 / 垃圾袋…）">📌<span class="note-badge" id="noteBadge" hidden>0</span></button>
-        <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）">📊</button>
-        <button type="button" class="icon-btn" id="nightBtn" title="夜间模式（跟随时间 / 开 / 关）">🌙</button>
-        <button type="button" class="icon-btn" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）">Aa</button>
-        <button type="button" class="icon-btn" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）">↻</button>
+        <div class="ha-main">
+          <button type="button" class="icon-btn" id="resEntryBtn" title="预约台账（新预约会亮红点）"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="note-badge" id="resDot" hidden>0</span></button>
+          <button type="button" class="icon-btn" id="nightBtn" title="夜间模式（跟随时间 / 开 / 关）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.4A8.5 8.5 0 0 1 9.6 3.5a8.5 8.5 0 1 0 10.9 10.9z"/></svg></button>
+          <button type="button" class="icon-btn" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）">Aa</button>
+        </div>
+        <button type="button" class="icon-btn more-btn" id="moreBtn" aria-expanded="false" aria-controls="haMore" title="更多工具（群消息 / 待办 / 汇率对照 / 刷新）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12h.01M12 12h.01M18.5 12h.01" stroke-width="2.8"/></svg></button>
+        <div class="ha-more" id="haMore">
+          <button type="button" class="icon-btn" id="wxAllBtn" title="复制今天所有桌的微信群消息（整段发群里）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4 8.6 8.6 0 0 1-3.6-.8L4 20.5l1.5-4.5A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/></svg></button>
+          <button type="button" class="icon-btn" id="noteBtn" title="店铺待办（补餐巾纸 / 垃圾袋…）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5h6l-1 6 4 4.5H6l4-4.5-1-6z"/><path d="M12 14v6.5"/></svg><span class="note-badge" id="noteBadge" hidden>0</span></button>
+          <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-8M9.5 20V5M15 20v-5M20.5 20v-9M3 21h18"/></svg></button>
+          <button type="button" class="icon-btn" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 6.4"/><path d="M20 4.5V11h-6.5"/></svg></button>
+        </div>
       </div>
     </div>
-    <div class="settings">
+    <div class="settings" id="settingsPanel" hidden>
       <div class="rate-box">
         <label>每小时价格</label>
         <div class="input-wrap">
@@ -2237,12 +2389,12 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="tables">🀄 桌台计时</button>
-    <button class="tab" data-tab="snacks">🍜 零食饮料</button>
-    <button class="tab" data-tab="vapes">🦆 鸭嘴兽</button>
-    <button class="tab" data-tab="members">💰 会员充值</button>
-    <button class="tab" data-tab="attendance">🕐 员工打卡</button>
-    <button class="tab" data-tab="stats">📊 统计</button>
+    <button class="tab active" data-tab="tables"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M9.5 8.5h5M9.5 12h5M9.5 15.5h5"/></svg>桌台计时</button>
+    <button class="tab" data-tab="snacks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 3.2c0 1.6 1 1.6 1 3.2M12 2.6c0 1.6 1 1.6 1 3.2M16 3.2c0 1.6 1 1.6 1 3.2"/></svg>零食饮料</button>
+    <button class="tab" data-tab="vapes"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.4" y="2" width="5.2" height="12.6" rx="2.2"/><path d="M12 14.6V21.5M9.4 6.6h5.2"/></svg>鸭嘴兽</button>
+    <button class="tab" data-tab="members"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.4 8.4 12 12.6l3.6-4.2M12 12.6v4.9M8.8 13.6h6.4M8.8 15.8h6.4"/></svg>会员充值</button>
+    <button class="tab" data-tab="attendance"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6.8v5.4l3.3 1.9"/></svg>员工打卡</button>
+    <button class="tab" data-tab="stats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-8M9.5 20V5.5M15 20v-5M20.5 20v-9M3 21h18"/></svg>统计</button>
   </nav>
 
   <div class="panel" id="panel-tables">
@@ -2315,6 +2467,8 @@
         <div id="snackCart" class="list-scroll" style="max-height:min(30vh,320px);"></div>
         <div class="cart-total" id="snackTotal"></div>
         <!-- ★ v3.25.0：先选「怎么结账」，再看对应内容（挂账选项更清楚） -->
+        <!-- ★ v3.42.0：加小标题，和下面的「✓ 确认收款」按钮区分开 -->
+        <div class="snack-mode-label">结算方式</div>
         <div class="snack-mode" id="snackMode">
           <button type="button" class="snack-mode-btn on" data-snackmode="single">单独结算</button>
           <button type="button" class="snack-mode-btn" data-snackmode="attach">挂到桌台</button>
@@ -2350,7 +2504,7 @@
             <input type="date" id="snackDate">
           </div>
           <div class="modal-btns">
-            <button id="snackSettle" class="btn-export">单独结算</button>
+            <button id="snackSettle" class="btn-export">✓ 确认收款</button>
           </div>
         </div>
         <div id="snackAttachPane" style="display:none;">
@@ -2483,7 +2637,7 @@
           <label>结账日期（默认今天）</label>
           <input type="date" id="vapeDate">
         </div>
-        <div class="modal-btns"><button id="vapeSettle" class="btn-export">结算收款</button></div>
+        <div class="modal-btns"><button id="vapeSettle" class="btn-export">✓ 确认收款</button></div>
         <div class="hint" id="vapeStatus"></div>
       </section>
     </div>
@@ -4960,7 +5114,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.41.2";
+  var APP_VER = "v3.42.0";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -4971,6 +5125,15 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.42.0", date: "2026-11-06", items: [
+      "🎨 界面优化 7 条（用户确认全做）：① **顶部 4 个营业参数收进下拉面板**（默认只显示一行摘要 `$16/小时 · 手续费1.2% · 汇率 · 营业日`，点一下才展开编辑）→ 桌面省 95px、手机省 105px",
+      "② **手机标签页改单行横向滑动**（原来 6 个占两行）→ 再省 110px",
+      "③ **手机顶部只留 4 个常用图标**（预约 / 夜间 / 字号 / ⋯），其余收进「⋯」菜单",
+      "④ 结算按钮不再和「单独结算」同名 → 零食、鸭嘴兽统一成「✓ 确认收款」，零食页上面加「结算方式」小标题",
+      "⑤ 统计页「总额」升成**通栏主卡**，其余 6 张降为次级卡，不再 7 张一样大",
+      "⑥ 桌面卡片加 **hover 微反馈**",
+      "⑦ 顶部工具栏 + 标签页图标从 emoji 换成**内联 SVG**（Mac / 安卓 / Windows 长得一样）。首屏效果：桌面 6 张桌台一屏看全，手机多出半张卡。测试同步更新（图标断言改成查 SVG、参数面板先展开再测失焦）"
+    ] },
     { ver: "v3.41.2", date: "2026-11-06", items: [
       "支付方式按钮上**不再显示「+1.2%」**（用户要求）：零食饮料的结算页和「修改记录」里，「刷卡」按钮只写「刷卡」，手续费率只在下面「刷卡手续费（1.2%）」那行小字里说明",
       "结算逻辑、记录完全不变"
@@ -5044,11 +5207,6 @@
     ] },
     { ver: "v3.36.1", date: "2026-11-02", items: [
       "按用户要求**撤销 v3.36.0 的第 3 条**：人民币账单恢复成之前的写法——台费按 4 人平摊显示「人均 × 4」、零食按「单价折算人民币 × 数量」、合计为各项相加（界面和金额都跟 v3.35.0 一致）。v3.36.0 的另外两条（备注跟着这一场走、预约按营业日显示）保留"
-    ] },
-    { ver: "v3.36.0", date: "2026-11-02", items: [
-      "用户反馈三条一起修：**备注跟着这一场走**——结算完成 / 收进待结算后桌卡备注自动清空（待结算账单里仍保留，搬回桌台时带回来）",
-      "**预约按营业日显示**——凌晨场算前一个营业日，提醒条 / 台账分组 / 已到计数 / 收工判定 / 桌卡角标全部按营业日，「还有多久 / 超时」按真实日期时间算（跨夜不再算错），上一营业日已到店的不再显示、没到店的留在「过期待处理」",
-      "**人民币账单与结算对齐**——账单「应付人民币」= 整单澳币 × 汇率（一次折算，与结算「一次性全付」完全一致，不再差几分钱），台费行改「人均参考 + 真实合计」、去掉会多算 1～2 分的「人均 × 4」竖式，罚款 / 合并桌 / 其它费用 / 上次未付也一起列进账单"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -18069,16 +18227,18 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("stRange").textContent = scopeTxt;
     document.getElementById("stTxnTitle").textContent = scopeTxt + " · 明细";
 
+    // ★ v3.42.0：总额升成通栏「主卡」（hero），其余 6 张降成次级卡
+    //   以前 7 张卡一样大、一片 $0.00 分不出主次；现在先看总额，再看拆项
     var cardsHtml =
+      statCard("总额", fmtMoney(round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand)),
+        "台费 ＋ 罚款 ＋ 零食饮料 ＋ 鸭嘴兽 · 不含充值",
+        "hero") +
       statCard("台费", fmtMoney(round2(r.tableGrand)), r.tableCount + " 场") +
-      // ★ 罚款单独一张卡 ✗ 和台费并列 ✓ 两个都算进下面的总额 ✓
+      // ★ 罚款单独一张卡 ✗ 和台费并列 ✓ 两个都算进上面的总额 ✓
       statCard("⚖️ 罚款", fmtMoney(round2(r.fineGrand)), r.fineCount + " 笔") +
       statCard("零食饮料", fmtMoney(round2(r.snackGrand + r.snackFromTable)),
         "单独结算 " + fmtMoney(round2(r.snackGrand)) + " ＋ 挂桌上 " + fmtMoney(round2(r.snackFromTable))) +
       statCard("鸭嘴兽", fmtMoney(round2(r.vapeGrand)), r.vapeCount + " 单") +
-      statCard("总额", fmtMoney(round2(r.tableGrand + r.fineGrand + r.snackGrand + r.snackFromTable + r.vapeGrand)),
-        "台费 ＋ ⚖️ 罚款 ＋ 零食饮料 ＋ 鸭嘴兽<br>" +
-        "<span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
       statCard("其中人民币", "¥" + round2(r.rmbActual).toFixed(2),
         "折合 " + fmtMoney(round2(r.rmb)) + " 澳币<br><span style='font-size:12px;color:var(--muted);'>不含充值</span>") +
       statCard("会员充值", fmtMoney(round2(r.recharge)),
@@ -20641,6 +20801,86 @@ try { fbMaybeMigrateTableStates(); } catch (x) {}
       checkScriptVersion();
     }
   }
+
+  // ============================================================
+  //  ★ v3.42.0 界面优化：顶部参数折叠摘要 + 手机「⋯」工具菜单
+  //   · 参数默认收起（首屏省 95px），点摘要条展开 / 再点收起
+  //   · 摘要值跟着 4 个输入框实时同步（汇率自动刷新也会跟着变）
+  //   · 手机上 4 个低频工具收进「⋯」
+  // ============================================================
+  (function initUiChrome() {
+    var sumBtn = document.getElementById("cfgSum");
+    var panel = document.getElementById("settingsPanel");
+    var sumText = document.getElementById("cfgSumText");
+    var moreBtn = document.getElementById("moreBtn");
+    var moreBox = document.getElementById("haMore");
+    function val(id, dft) {
+      var el = document.getElementById(id);
+      return el && String(el.value).trim() !== "" ? String(el.value).trim() : dft;
+    }
+    function refreshCfgSum() {
+      if (!sumText) return;
+      sumText.innerHTML =
+        "<b>$" + val("globalRate", "16") + "</b>/小时" +
+        '<span class="cfg-sep">·</span><span class="cfg-k">手续费</span>' + val("feeRate", "1.2") + "%" +
+        '<span class="cfg-sep">·</span><span class="cfg-k">汇率</span>' + val("fxRate", "4.7") +
+        '<span class="cfg-sep">·</span><span class="cfg-k">营业日</span>' + val("bizStart", "08:00");
+    }
+    function setCfg(open) {
+      if (!panel || !sumBtn) return;
+      panel.hidden = !open;
+      sumBtn.classList.toggle("on", !!open);
+      sumBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) setMore(false);
+    }
+    function setMore(open) {
+      if (!moreBox || !moreBtn) return;
+      moreBox.classList.toggle("open", !!open);
+      moreBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) setCfg(false);
+    }
+    if (sumBtn) {
+      sumBtn.addEventListener("click", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        setCfg(panel.hidden);
+      });
+    }
+    if (moreBtn) {
+      moreBtn.addEventListener("click", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        setMore(!moreBox.classList.contains("open"));
+      });
+    }
+    document.addEventListener("click", function (e) {
+      if (panel && !panel.hidden && !panel.contains(e.target) &&
+          !(sumBtn && sumBtn.contains(e.target))) setCfg(false);
+      if (moreBox && moreBox.classList.contains("open") && !moreBox.contains(e.target) &&
+          !(moreBtn && moreBtn.contains(e.target))) setMore(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { setCfg(false); setMore(false); }
+    });
+    ["globalRate", "feeRate", "fxRate", "bizStart"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", refreshCfgSum);
+      el.addEventListener("change", refreshCfgSum);
+    });
+    // 「⋯」里的按钮点完就收起菜单
+    if (moreBox) {
+      moreBox.addEventListener("click", function (e) {
+        var b = e.target && e.target.closest ? e.target.closest(".icon-btn") : null;
+        if (b) setTimeout(function () { setMore(false); }, 0);
+      });
+    }
+    refreshCfgSum();
+    // 汇率自动刷新（updateFxInput）直接改 input.value，不触发事件 → 低频兜底同步摘要
+    var lastSig = "";
+    setInterval(function () {
+      var sig = [val("globalRate", ""), val("feeRate", ""), val("fxRate", ""), val("bizStart", "")].join("|");
+      if (sig !== lastSig) { lastSig = sig; refreshCfgSum(); }
+    }, 1500);
+  })();
 })();
 </script>
 <div class="overlay" id="rmbBillOverlay">
