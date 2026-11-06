@@ -2060,6 +2060,17 @@
   /* ★ v3.45.0：盘点记录类别筛选按钮（全部 / 零食饮料 / 鸭嘴兽） */
   .sl-tabs { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:-4px 0 10px; }
   .sl-tabs .snack-tab { padding:5px 12px; font-size:12px; }
+  /* ★ v3.46.0：盘点记录每行的删除按钮（两击确认） */
+  .res-row .sl-del { margin-left:auto; flex:0 0 auto; background:none; border:1px solid var(--line); color:var(--muted); border-radius:8px; font-size:12px; line-height:1.2; padding:3px 8px; cursor:pointer; }
+  .res-row .sl-del:hover { border-color:var(--red); color:var(--red); }
+  .res-row .sl-del.arm { border-color:var(--red); color:#fff; background:var(--red); font-weight:800; }
+  /* 手机上把行内列收紧，保证「日期 / 名称 / 库存变化 / 差值 / 删除」还是一行（v3.46.0） */
+  @media (max-width: 560px) {
+    #slList .res-row { gap:6px; font-size:13.5px; }
+    #slList .res-row .rt { min-width:0; font-size:12px; }
+    #slList .res-row .rn { min-width:0; }
+    #slList .sl-del { padding:2px 6px; font-size:11px; }
+  }
   .res-done { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#f1f8f4; border:1px solid #cfe0d6; color:var(--green-dark); border-radius:10px; padding:10px 13px; font-size:13px; font-weight:700; margin:2px 0 11px; }
   .res-conflict { display:none; background:var(--c-danger-bg); border:1px solid #fecaca; color:var(--c-danger); border-radius:10px; padding:9px 12px; font-size:13px; margin:0 0 10px; }
   .res-conflict.show { display:block; }
@@ -5237,7 +5248,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.45.0";
+  var APP_VER = "v3.46.0";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5248,6 +5259,12 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.46.0", date: "2026-11-06", items: [
+      "🗑 **盘点记录可以删掉记错的那条**（用户要求）：每条记录右侧加小 `✕`，**两击确认**（第一次变「确定删？」，第二次才删，防误触）",
+      "只删记录、**不改库存**",
+      "删掉的会自动从云端 / 表格删掉（走现有的记录同步），其它设备拉取后也消失",
+      "顺手清了云端一条测试数据（`测试商品`，2026-10-12）"
+    ] },
     { ver: "v3.45.0", date: "2026-11-06", items: [
       "📋 **盘点记录可以自己选类别**（用户要求）：① 打开时**按入口自动选**——在零食饮料页点开就看「零食饮料」，在鸭嘴兽页点开就看「鸭嘴兽」",
       "② 弹窗顶部加按钮 **全部 / 零食饮料 / 鸭嘴兽**，点一下就切（按钮上带条数）",
@@ -5335,11 +5352,6 @@
       "🦆 鸭嘴兽现货文案排版再改一版（用户反馈：v3.38.1 那种拉空格的对齐不好看）：每个口味一行写 **`口味名 ×剩余根数`**，数字紧跟名字、不再补空格（微信是比例字体，空格对齐会飘）",
       "组名改成带款数的 **`🟢 一代（15 款）`**，不再单独空一行",
       "售罄不出现、阶梯价读设置等行为不变"
-    ] },
-    { ver: "v3.38.1", date: "2026-11-03", items: [
-      "🦆 鸭嘴兽现货文案改成**每个口味单独一行、数字对齐成一列**（用户要求：口味和数量一行一个、每行对齐）：按最长的口味名补空格，一代 / 二代各自分组、组名单独一行，发到群里一眼看清每样还剩几根",
-      "售罄不出现、阶梯价读设置等行为不变",
-      "界面测试同步改成断言「逐行 + 同列对齐」"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -13339,6 +13351,7 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
   ];
   var SL_PER_CAT = 12;      // 每类各自最多 12 条（不是总共 12 条）
   var slFilter = "all";     // "all" | "snack" | "vape"（打开时按入口设置）
+  var slArmId = null;       // ★ v3.46.0：两击确认——第一次点记下 id，第二次才真删
   function slCatOf(L) {
     var nm = String((L && L.name) || "");
     for (var i = 0; i < SL_CATS.length; i++) {
@@ -13349,12 +13362,16 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
     return L && L.kind === "vape" ? "vape" : "snack";   // 老数据 / 测试数据的兜底
   }
   function slRowHtml(L) {
+    // ★ v3.46.0：每行右侧加删除（两击确认：先变「确定删？」，再点才真删）
+    var armed = slArmId === L.id;
     return '<div class="res-row">' +
       '<span class="rt">' + esc(L.date) + " " + esc(L.time) + "</span>" +
       '<span class="rn">' + esc(L.name) + "</span>" +
       "<span>" + L.before + " → <b>" + L.after + "</b></span>" +
       '<span style="font-weight:700;color:' + (L.diff >= 0 ? "var(--green-dark)" : "var(--red)") + ';">' +
       (L.diff > 0 ? "+" + L.diff : L.diff) + "</span>" +
+      '<button type="button" class="sl-del' + (armed ? " arm" : "") + '" data-sldel="' + esc(String(L.id || "")) +
+      '" title="删掉这条盘点记录（只删记录，不改库存）">' + (armed ? "确定删？" : "✕") + "</button>" +
       "</div>";
   }
   // 每类各自从【最新】往前取 12 条
@@ -13435,12 +13452,31 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
     var b = e.target && e.target.closest ? e.target.closest("button[data-slcat]") : null;
     if (!b) return;
     slFilter = b.getAttribute("data-slcat") || "all";
+    slArmId = null;
+    renderStockLogs();
+  });
+  // ★ v3.46.0：删掉一条盘点记录（两击确认；只删记录、不改库存；save() 会自动把删除同步到云端）
+  document.getElementById("slList").addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("button[data-sldel]") : null;
+    if (!b) return;
+    var id = b.getAttribute("data-sldel");
+    if (slArmId !== id) { slArmId = id; renderStockLogs(); return; }   // 第一下只是「上膛」
+    var idx = -1, i;
+    for (i = 0; i < state.stockLogs.length; i++) {
+      if (String(state.stockLogs[i].id) === String(id)) { idx = i; break; }
+    }
+    if (idx < 0) { slArmId = null; renderStockLogs(); return; }
+    var L = state.stockLogs[idx];
+    state.stockLogs.splice(idx, 1);
+    slArmId = null;
+    logOp("删盘点记录", (L.name || "") + "　" + L.before + " → " + L.after);
+    save();                 // 记录类数据统一同步：删掉的会从云端/表格删掉
     renderStockLogs();
   });
   document.getElementById("slClose").addEventListener("click", function () { document.getElementById("slOverlay").classList.remove("show"); });
   document.getElementById("slOverlay").addEventListener("click", function (e) { if (e.target === document.getElementById("slOverlay")) this.classList.remove("show"); });
-  document.getElementById("snackLogBtn").addEventListener("click", function () { slFilter = "snack"; renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
-  document.getElementById("vapeLogBtn").addEventListener("click", function () { slFilter = "vape"; renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
+  document.getElementById("snackLogBtn").addEventListener("click", function () { slFilter = "snack"; slArmId = null; renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
+  document.getElementById("vapeLogBtn").addEventListener("click", function () { slFilter = "vape"; slArmId = null; renderStockLogs(); document.getElementById("slOverlay").classList.add("show"); });
 
   document.getElementById("snackMenu").addEventListener("keydown", function (e) {
     var el = e.target;
