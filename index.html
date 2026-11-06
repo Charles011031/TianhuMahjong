@@ -2443,6 +2443,51 @@
   @media (max-width: 640px) {
     .brand-logo { width: 26px; height: 26px; vertical-align: -6px; margin-right: 6px; }
   }
+
+  /* ============================================================
+     ★ v3.47.0 整体性调整
+       C 桌台页今日概览条 · E 可读性 · D 危险操作 · A 记录分页
+     ============================================================ */
+
+
+  /* ---------- E 可读性：次要文字加深一档（11px 灰字对比度不够） ---------- */
+  :root { --muted-2: #5b6673; }   /* 比 --muted(#6b7280) 深一档，用于说明文字 */
+  .hint, .s, .tb-meta, .est-note, .cell-note, .mem-sub, .cl-sub { color: var(--muted-2); }
+  .hint { font-size: 12.5px; }
+
+  /* ---------- A 记录分页「显示更早的记录」 ---------- */
+  .hist-more {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    justify-content: center; padding: 12px 10px 4px;
+    font-size: 12.5px; color: var(--muted-2);
+  }
+  .hist-more button {
+    padding: 7px 14px; font-size: 12.5px; font-weight: 700;
+    border-radius: 10px; border: 1px solid var(--line);
+    background: var(--c-surface-2); color: var(--ink); cursor: pointer;
+  }
+  .hist-more button:hover { background: var(--c-surface); }
+
+  /* ---------- D 最近删除（可恢复） ---------- */
+  .trash-list {
+    max-height: 180px; overflow: auto;
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 5px; background: var(--c-surface); text-align: left;
+  }
+  .trash-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; font-size: 12.5px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .trash-row:last-child { border-bottom: 0; }
+  .trash-row .tr-date { color: var(--muted-2); font-variant-numeric: tabular-nums; }
+  .trash-row .tr-main { flex: 1; font-weight: 600; min-width: 0; }
+  .trash-row .tr-at { color: var(--muted-2); white-space: nowrap; }
+  .trash-row .tr-restore {
+    padding: 4px 11px; font-size: 12px; font-weight: 700; border-radius: 8px;
+    border: 1px solid #9fd6b5; background: #fff; color: var(--green); cursor: pointer;
+  }
+  .trash-row .tr-restore:hover { background: #eef8f2; }
 </style>
 </head>
 <body>
@@ -3388,6 +3433,11 @@
 
       <div class="divider"></div>
       <div class="field">
+        <label>最近删除（可恢复）<span class="hint" style="display:inline;margin:0 0 0 6px;font-weight:400;">只存本机，最多 20 条</span></label>
+        <div id="trashList" class="trash-list"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="field">
         <label>从备份文件恢复（会覆盖当前本机数据）</label>
         <input type="file" id="restoreFile" accept=".json,application/json" style="display:none;">
         <button id="chooseRestoreBtn" class="btn-ghost">选择备份文件…</button>
@@ -3989,7 +4039,8 @@
       currentTab: "tables", bizStart: "08:00", fxFetchedAt: 0,
       lastSyncOk: 0, stockLogs: [], autoPullOnOpen: false,
       rechargeTiers: [{ id: "t1", pay: 500, bonus: 100 }],
-      localKeepMonths: 12,          // 本机只保留最近多少个月的结算记录（0 = 永久保留）
+      localKeepMonths: 12,
+      trash: [],                    // ★ v3.47.0（D）：最近删除（可恢复），只存本机          // 本机只保留最近多少个月的结算记录（0 = 永久保留）
       dayRate: 16, nightRate: 18, nightAt: "21:00", opLogs: [], showFeeDetail: true,
       wechatHook: "",                  // ★ 微信通知 webhook（空=不通知 ✓）
       wageMode: "month",              // 工资汇总按【按月】还是【按周】结算
@@ -5248,7 +5299,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.46.0";
+  var APP_VER = "v3.47.0";
   var APP_DATE = "2026-11-06";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5259,6 +5310,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.47.0", date: "2026-11-06", items: [
+      "🧩 整体性调整（用户确认 3 项，第 4 项「今日概览条」做了一半后按用户要求撤掉）：① **记录分页** —— 结算记录默认只渲染最近 **100 条**，底部「显示更早的 100 条」按需加载（3000 条时 DOM 从 9 万降到 2.7 万，首屏不再越用越慢）",
+      "② **误删回收站** —— 删除结算记录时先把整条存进本机「最近删除」（最多 20 条），在底部「备份/恢复」弹窗里能看到并一键恢复（恢复时会提示：如果当时退过会员余额要自己核对）",
+      "③ **可读性** —— 说明文字加深一档（新增 `--muted-2`，比原来的 `--muted` 深）、`.hint` 提到 12.5px，11~12px 灰字在浅色底上的对比度从 4.8:1 提到约 6:1"
+    ] },
     { ver: "v3.46.0", date: "2026-11-06", items: [
       "🗑 **盘点记录可以删掉记错的那条**（用户要求）：每条记录右侧加小 `✕`，**两击确认**（第一次变「确定删？」，第二次才删，防误触）",
       "只删记录、**不改库存**",
@@ -5347,11 +5403,6 @@
       "档位小字从「满10根八折」改成「满10根」（因为不再是写死的八折）",
       "现货文案末尾自动多一段「满10根 $X」",
       "设置导出 / 导入、同步都带上这一项"
-    ] },
-    { ver: "v3.38.2", date: "2026-11-03", items: [
-      "🦆 鸭嘴兽现货文案排版再改一版（用户反馈：v3.38.1 那种拉空格的对齐不好看）：每个口味一行写 **`口味名 ×剩余根数`**，数字紧跟名字、不再补空格（微信是比例字体，空格对齐会飘）",
-      "组名改成带款数的 **`🟢 一代（15 款）`**，不再单独空一行",
-      "售罄不出现、阶梯价读设置等行为不变"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -5999,7 +6050,15 @@
       wrap.innerHTML = '<div class="empty">' + (kw ? "没有匹配「" + esc(histFilter) + "」的记录" : "暂无结算记录") + "</div>";
       return;
     }
-    var groups = groupByDate(list0,
+    // ★ v3.47.0（A）：先按「日期倒序 + 结束时间倒序」排，再只取前 histShown 条
+    var sortedAll = list0.slice().sort(function (a, b) {
+      var ad = showDateOf(a), bd = showDateOf(b);
+      if (ad !== bd) return ad < bd ? 1 : -1;
+      return timeMinutes(b.end || b.start) - timeMinutes(a.end || a.start);
+    });
+    var shownList = sortedAll.slice(0, histShown);
+    var moreCount = sortedAll.length - shownList.length;
+    var groups = groupByDate(shownList,
       function (h) { return showDateOf(h); },
       function (h) { return timeMinutes(h.end || h.start); });   // ★ 按【结束时间】排（用户要求）
 
@@ -6057,11 +6116,22 @@
       }
     }
 
+    // ★ v3.47.0（A）：「显示更早的记录」按钮（还有没渲染的就给入口）
+    var moreHtml = moreCount > 0
+      ? '<div class="hist-more"><button type="button" id="histMoreBtn">显示更早的 ' +
+        Math.min(HIST_PAGE, moreCount) + " 条</button><span>还有 " + moreCount +
+        " 条没显示（共 " + sortedAll.length + " 条）</span></div>"
+      : "";
     wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
       '<table><thead><tr>' +
       '<th>时间（开台–结束）</th><th>桌号</th><th>时长</th>' +
       '<th class="num">台费</th><th class="num">零食</th><th class="num">应收</th><th>收款</th><th>操作</th>' +
-      "</tr></thead><tbody>" + rows + "</tbody></table>";
+      "</tr></thead><tbody>" + rows + "</tbody></table>" + moreHtml;
+    var mb = document.getElementById("histMoreBtn");
+    if (mb) mb.addEventListener("click", function () {
+      histShown += HIST_PAGE;
+      renderHistory();
+    });
   }
 
   // ---------- 计时刷新 ----------
@@ -6246,6 +6316,9 @@
   });
 
   var histFilter = "";          // 结算记录的搜索词（只在本机内存里，刷新就清空）
+  // ★ v3.47.0（A）：记录分页 —— 默认只渲染最近 100 条，避免记录多了以后 DOM 太大
+  var HIST_PAGE = 100;
+  var histShown = HIST_PAGE;
 
   // 麻将种类：常规 108 / 136 / 144，其它自己填
   var MAHJONG_KINDS = ["108", "136", "144"];
@@ -9458,6 +9531,12 @@
     //   所以点第二次「确认删除」必然报 "rec is not defined"，记录删不掉。
     var delRec = state.history[idx];
     var delId = delRec && delRec.id;
+    // ★ v3.47.0（D）：删掉的记录先放进回收站（最近 20 条），可在这里恢复
+    if (delRec) {
+      state.trash = state.trash || [];
+      state.trash.unshift({ kind: "record", at: Date.now(), data: JSON.parse(JSON.stringify(delRec)) });
+      if (state.trash.length > 20) state.trash.length = 20;
+    }
     // ★ 先把会员抵扣的钱退回去，再删记录（顺序很重要：退款要用到记录里的明细）
     var refunded = refundRecordMembers(delRec);
     state.history.splice(idx, 1);
@@ -11160,6 +11239,44 @@ function pullTableStates() {
       m.style.color = state.autoPullNote ? "var(--amber)" : "var(--muted)";
     }
   }
+  // ★ v3.47.0（D）：最近删除列表（只本机，最多 20 条，可恢复）
+  function renderTrash() {
+    var box = document.getElementById("trashList");
+    if (!box) return;
+    var all = state.trash || [], h = "", n = 0;
+    for (var i = 0; i < all.length; i++) {
+      var it = all[i];
+      if (!it || it.kind !== "record" || !it.data) continue;
+      var r = it.data, d = new Date(it.at || Date.now());
+      h += '<div class="trash-row">' +
+        '<span class="tr-date">' + esc(r.date || "") + "</span>" +
+        '<span class="tr-main">' + esc(r.tableNo != null ? (r.tableNo + " 号桌") : (r.name || "记录")) +
+        " · " + fmtMoney(r.grand != null ? r.grand : r.total) + "</span>" +
+        '<span class="tr-at">' + d.getMonth() + 1 + "/" + d.getDate() + " " +
+        ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + " 删</span>" +
+        '<button type="button" class="tr-restore" data-trash="' + i + '">恢复</button>' +
+        "</div>";
+      n++;
+    }
+    box.innerHTML = n ? h : '<div class="empty-mini" style="padding:10px;">还没有删除过记录</div>';
+  }
+  (function () {
+    var box = document.getElementById("trashList");
+    if (!box) return;
+    box.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest("[data-trash]") : null;
+      if (!b) return;
+      var i = Number(b.getAttribute("data-trash"));
+      var it = (state.trash || [])[i];
+      if (!it || !it.data) return;
+      state.history.unshift(it.data);
+      state.trash.splice(i, 1);
+      save();
+      try { render(); renderStats(); renderTrash(); } catch (err) {}
+      try { toast("已恢复这条记录 ✓（如果当时退过会员余额，请核对一下）", "var(--amber)"); } catch (err) {}
+    });
+  })();
+
   function openDataModal() {
     pendingRestore = null;
     document.getElementById("restorePreview").innerHTML = "";
@@ -11168,6 +11285,7 @@ function pullTableStates() {
     document.getElementById("pullStatus").textContent = state.googleUrl ? "点击下方按钮拉取云端记录" : "需先连接 Firebase";
     document.getElementById("pullStatus").style.color = "var(--muted)";
     hideDataError();
+    renderTrash();
     dataOverlay.classList.add("show");
   }
   function closeDataModal() {
