@@ -2197,6 +2197,9 @@
   body.dark .res-bar, body.dark .res-pop, body.dark .res-hist-modal, body.dark .cs-card { background:var(--card) !important; color:#e8eef4; }
   body.dark .rb-row, body.dark .res-hist-row { border-color:#243441; }
   body.dark .rb-chip, body.dark .chip-sm { background:#243441; color:#cbd5e1; }
+  /* ★ v3.49.2：「今天已收工」提示条白天是浅绿底，夜间没配色 → 夜里一条亮白条很刺眼 */
+  body.dark .res-done { background:#123524 !important; border-color:#2a6a48 !important; color:#6ee7a8 !important; }
+  body.dark .rb-foot b { color:#cbd5e1; }
   body.dark .cs-seat, body.dark .cs-seg button { background:var(--dk-sunken); color:#e8eef4; border-color:var(--line); }
   body.dark .cs-paste { background:var(--dk-sunken); border-color:var(--line); }
   body.dark .cs-copy { background:#12241c; border-color:#1f3d30; }
@@ -2314,9 +2317,14 @@
     .settings .rate-box label { font-size: 12px; }
     .settings .rate-box input { width: 100%; min-width: 0; font-size: 15px; padding: 6px; }
     .settings .rate-box .cur { font-size: 11px; }
+    /* ★ v3.49.2：这两条原本是给手机「⋯」弹出菜单用的深色底，但桌面端 .ha-more 是
+       display:contents，会把桌面上 4 个头部图标（待办/汇率/夜间/字号）也压成深蓝灰，
+       和另外 3 个白 16% 半透明的按钮一栏两种底色 → 收进手机媒体查询，桌面统一走
+       .head-actions .icon-btn；手机菜单里夜间模式开启时给个绿底亮字。 */
+    body.dark .ha-more .icon-btn { background: var(--dk-raise) !important; color: #cfe0ee !important; border-color: var(--dk-border) !important; }
+    body.dark .ha-more .icon-btn.on { background: #123524 !important; color: #6ee7a8 !important; border-color: #2a6a48 !important; }
   }
   body.dark .ha-more { background: var(--card) !important; border-color: var(--line) !important; }
-  body.dark .ha-more .icon-btn { background: var(--dk-raise) !important; color: #cfe0ee !important; border-color: var(--dk-border) !important; }
   body.dark .settings { background: linear-gradient(135deg, #155c3b, #0b2a1b); }
   body.dark .cfg-sum.on { background: var(--card); color: var(--green-dark); border-color: var(--line); }
 
@@ -5299,7 +5307,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.49.1";
+  var APP_VER = "v3.49.2";
   var APP_DATE = "2026-11-08";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5310,6 +5318,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.49.2", date: "2026-11-08", items: [
+      "🌙 夜间模式两处补色（用户反馈红框 UI 还不对）：① **顶部一排图标底色不统一** —— 中间 4 个（店铺待办 / 汇率对照 / 夜间模式 / 字号）被一条本该只给手机「⋯」弹出菜单用的深色规则误伤，在深绿顶栏上变成深蓝灰，和左右 3 个半透明白底按钮一排两种底色 → 规则收进手机媒体查询，桌面 7 个统一半透明白底",
+      "夜间模式开启时月亮按钮亮起（原来被误伤覆盖、看不出已开启）。② **预约台账「✅ 今天已收工」提示条夜里还是一条亮白绿条**（白天浅绿底配色没做夜间版）→ 改成深绿底 + 亮绿字，和夜间其他绿色块一致",
+      "顺手把预约展开条底部说明的深灰字提亮"
+    ] },
     { ver: "v3.49.1", date: "2026-11-08", items: [
       "📅 「💬 今天整体文案」**最上方第一行加日期**（用户要求）：弹窗里那段结账记录文案的首行变成 `2026年11月8日（周日）`，发到微信群里一眼能看出是哪一天",
       "下面照旧从 `1. …` 开始编号。当天没记录时仍显示「这天还没有记录」，不会只剩一行日期。集成测试补了三条断言（首行日期 / 第二行从 1. 开始 / 空日提示不变）"
@@ -5386,11 +5399,6 @@
     { ver: "v3.41.1", date: "2026-11-06", items: [
       "零食饮料 / 鸭嘴兽的**支付方式改成明显的胶囊按钮**（用户反馈：原来那排小圆点不够显眼）：「刷卡 / 现金 / 人民币」变成和渠道按钮一样的大按钮，选中的绿底白字高亮，刷卡后面小字写「+1.2%」",
       "结算页和「修改记录」弹窗都改了，桌面 / 手机 / 暗色模式都适配。测试同步更新（真 Chrome 点按钮 + 断言高亮）"
-    ] },
-    { ver: "v3.41.0", date: "2026-11-06", items: [
-      "所有的结账都跟台费一样能选渠道（用户要求）：**零食饮料、鸭嘴兽**的结算和「修改记录」里，选现金时多一行「现金（纸币）/ 转账」、选人民币时多一行「微信 / 支付宝」，默认现金=现金（纸币）、人民币=微信（跟台费结算一致）",
-      "渠道存进记录并跟着 Firebase / 表格同步（换设备不丢），记录列表和统计明细只对「转账 / 支付宝」标出来",
-      "桌台结算、会员充值本来就有这两个选项。测试：集成测试新增静态检查（界面按钮 / 记录字段 / 推送拉取 / 列表显示），界面测试新增「零食、鸭嘴兽现金转账 + 人民币支付宝 + 修改记录改渠道」用例"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
