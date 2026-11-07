@@ -1337,7 +1337,7 @@
   body.dark .chip.rmb    { background: #3a2a12 !important; color: #f0b95a !important; border: 1px solid #6b4d20 !important; }
   body.dark .chip.member { background: #2f2144 !important; color: #c4a6ff !important; border: 1px solid #513a7a !important; }
   body.dark .chip.mix    { background: #12333a !important; color: #7fd6e8 !important; border: 1px solid #2a5f6b !important; }
-  body.dark .icon-btn.on { background: rgba(255, 255, 255, .34) !important; }
+  /* v3.49.3：夜间模式开启时不再把月亮按钮调亮（用户要求「不需要高亮」），7 个按钮始终一致 */
   body.dark .font-pop { background: var(--card) !important; border-color: var(--line) !important; }
   body.dark .font-pop .fp-title { color: #b9c6d3 !important; }
   body.dark .font-pop .fp-opts button {
@@ -2320,9 +2320,8 @@
     /* ★ v3.49.2：这两条原本是给手机「⋯」弹出菜单用的深色底，但桌面端 .ha-more 是
        display:contents，会把桌面上 4 个头部图标（待办/汇率/夜间/字号）也压成深蓝灰，
        和另外 3 个白 16% 半透明的按钮一栏两种底色 → 收进手机媒体查询，桌面统一走
-       .head-actions .icon-btn；手机菜单里夜间模式开启时给个绿底亮字。 */
+       .head-actions .icon-btn。v3.49.3：菜单里夜间模式也不再高亮（用户要求），四项始终一致。 */
     body.dark .ha-more .icon-btn { background: var(--dk-raise) !important; color: #cfe0ee !important; border-color: var(--dk-border) !important; }
-    body.dark .ha-more .icon-btn.on { background: #123524 !important; color: #6ee7a8 !important; border-color: #2a6a48 !important; }
   }
   body.dark .ha-more { background: var(--card) !important; border-color: var(--line) !important; }
   body.dark .settings { background: linear-gradient(135deg, #155c3b, #0b2a1b); }
@@ -5307,7 +5306,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.49.2";
+  var APP_VER = "v3.49.3";
   var APP_DATE = "2026-11-08";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5318,6 +5317,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.49.3", date: "2026-11-08", items: [
+      "🌙 夜间模式按钮**不再高亮**（用户要求）：删掉夜间配色里「夜间模式开启时把月亮按钮调亮」的规则（`body.dark .icon-btn.on`），桌面 7 个图标始终同一底色",
+      "手机「⋯」菜单里夜间模式开启时也不再变绿底。夜间模式功能本身不变（跟随时间 / 开 / 关 + 记住本机）。集成测试里对应的源码断言同步从 `.icon-btn.on` 换成 `applyNight()`"
+    ] },
     { ver: "v3.49.2", date: "2026-11-08", items: [
       "🌙 夜间模式两处补色（用户反馈红框 UI 还不对）：① **顶部一排图标底色不统一** —— 中间 4 个（店铺待办 / 汇率对照 / 夜间模式 / 字号）被一条本该只给手机「⋯」弹出菜单用的深色规则误伤，在深绿顶栏上变成深蓝灰，和左右 3 个半透明白底按钮一排两种底色 → 规则收进手机媒体查询，桌面 7 个统一半透明白底",
       "夜间模式开启时月亮按钮亮起（原来被误伤覆盖、看不出已开启）。② **预约台账「✅ 今天已收工」提示条夜里还是一条亮白绿条**（白天浅绿底配色没做夜间版）→ 改成深绿底 + 亮绿字，和夜间其他绿色块一致",
@@ -5395,10 +5398,6 @@
     { ver: "v3.41.2", date: "2026-11-06", items: [
       "支付方式按钮上**不再显示「+1.2%」**（用户要求）：零食饮料的结算页和「修改记录」里，「刷卡」按钮只写「刷卡」，手续费率只在下面「刷卡手续费（1.2%）」那行小字里说明",
       "结算逻辑、记录完全不变"
-    ] },
-    { ver: "v3.41.1", date: "2026-11-06", items: [
-      "零食饮料 / 鸭嘴兽的**支付方式改成明显的胶囊按钮**（用户反馈：原来那排小圆点不够显眼）：「刷卡 / 现金 / 人民币」变成和渠道按钮一样的大按钮，选中的绿底白字高亮，刷卡后面小字写「+1.2%」",
-      "结算页和「修改记录」弹窗都改了，桌面 / 手机 / 暗色模式都适配。测试同步更新（真 Chrome 点按钮 + 断言高亮）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
