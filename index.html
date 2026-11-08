@@ -3725,11 +3725,12 @@
     <div class="modal">
       <h3>修改鸭嘴兽销售记录</h3>
       <div class="field">
-        <label>日期 / 时间</label>
+        <label>实际发生日期 / 时间（真实时间，营业日会自动算）</label>
         <div class="row">
           <input type="date" id="veDate">
           <input type="text" id="veTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
         </div>
+        <div class="hint" id="veDayHint" style="margin:6px 0 0;"></div>
       </div>
       <div class="field">
         <label>品项（从菜单里选）</label>
@@ -3801,11 +3802,12 @@
     <div class="modal">
       <h3>修改零食饮料记录</h3>
       <div class="field">
-        <label>日期 / 时间</label>
+        <label>实际发生日期 / 时间（真实时间，营业日会自动算）</label>
         <div class="row">
           <input type="date" id="seDate">
           <input type="text" id="seTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
         </div>
+        <div class="hint" id="seDayHint" style="margin:6px 0 0;"></div>
       </div>
       <div class="field">
         <label>品项（从菜单里选）</label>
@@ -5306,8 +5308,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.49.3";
-  var APP_DATE = "2026-11-08";
+  var APP_VER = "v3.49.4";
+  var APP_DATE = "2026-11-09";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -5317,6 +5319,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.49.4", date: "2026-11-09", items: [
+      "🕐 编辑零食 / 鸭嘴兽记录改成**按真实时间算营业日**（用户反馈：填真实的 11/8 05:00，却算进了 11/8 的统计）：弹窗里的「日期 / 时间」现在就是**真实发生时间**（不再是营业日），保存时用 `bizDate(ts)` 自动换算营业日，并顺手补上 `realDate`（以前改时间不更新，跨天记录的「真实日期」会留着旧值）。弹窗里**实时显示「→ 归入 2026/11/07 营业日」**，填的时候就能看出落到哪一天，不用自己换算。老记录打开回填真实时间（营业日 11/7 的 05:00 → 显示 11/8 05:00），**原样保存不会把营业日改坏**（幂等）",
+      "列表仍按营业日分组、跨天时间照旧标「次日 05:00」。界面测试新增 12 条断言（回填 / 提示 / 换算 / 幂等 / 鸭嘴兽 / 统计落 11/7 不落 11/8）"
+    ] },
     { ver: "v3.49.3", date: "2026-11-08", items: [
       "🌙 夜间模式按钮**不再高亮**（用户要求）：删掉夜间配色里「夜间模式开启时把月亮按钮调亮」的规则（`body.dark .icon-btn.on`），桌面 7 个图标始终同一底色",
       "手机「⋯」菜单里夜间模式开启时也不再变绿底。夜间模式功能本身不变（跟随时间 / 开 / 关 + 记住本机）。集成测试里对应的源码断言同步从 `.icon-btn.on` 换成 `applyNight()`"
@@ -5394,10 +5400,6 @@
       "⑤ 统计页「总额」升成**通栏主卡**，其余 6 张降为次级卡，不再 7 张一样大",
       "⑥ 桌面卡片加 **hover 微反馈**",
       "⑦ 顶部工具栏 + 标签页图标从 emoji 换成**内联 SVG**（Mac / 安卓 / Windows 长得一样）。首屏效果：桌面 6 张桌台一屏看全，手机多出半张卡。测试同步更新（图标断言改成查 SVG、参数面板先展开再测失焦）"
-    ] },
-    { ver: "v3.41.2", date: "2026-11-06", items: [
-      "支付方式按钮上**不再显示「+1.2%」**（用户要求）：零食饮料的结算页和「修改记录」里，「刷卡」按钮只写「刷卡」，手续费率只在下面「刷卡手续费（1.2%）」那行小字里说明",
-      "结算逻辑、记录完全不变"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6005,6 +6007,27 @@
     var d = String(r.date || "");
     if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
     return realDateOf(r);
+  }
+
+  // ★ v3.49.4：一条零食 / 鸭嘴兽记录 → 它【真实发生的时刻】（编辑弹窗回填用）
+  //   记录里 date = 营业日、time = 真实时钟，单看一个拼不回真实日期 ✗
+  //   规则（和统计 / 列表口径一致）：time 早于「营业日起算」→ 真实日期 = 营业日 + 1 天
+  //   ⚠️ 故意【不】优先用 realDate / ts：老记录里它们可能停在上一次修改之前，
+  //      用「date + time」反推才能保证「打开弹窗 → 直接保存」不会把营业日改掉（幂等）
+  function realTsOfRecord(r) {
+    if (!r) return null;
+    var d = String(r.date || "");
+    var m = String(r.time || r.start || "").match(/(\d{1,2}):(\d{2})/);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !m) return null;
+    var mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    var b = parseTimeStr(state.bizStart) || { h: 8, min: 0 };
+    var day = d;
+    if (mins < b.h * 60 + b.min) {
+      var x = new Date(d + "T12:00:00");
+      x.setDate(x.getDate() + 1);
+      day = fmtDate(x.getTime());
+    }
+    return combineToTs(day, ("0" + Math.floor(mins / 60)).slice(-2) + ":" + ("0" + (mins % 60)).slice(-2));
   }
 
   function dayGroupRow(icon, date, count, sum, cols) {
@@ -13995,6 +14018,24 @@ document.getElementById("snackCart").addEventListener("click", function (e) {
     return isNaN(d.getTime()) ? null : d.getTime();
   }
 
+  // ★ v3.49.4：编辑弹窗里的「日期 / 时间」= 【真实】日期时间
+  //   营业日由它自动算出来，并在弹窗里实时显示「→ 归入 X 营业日」
+  //   （用户反馈：以前要自己按营业日填时间，填 11/8 05:00 却算进 11/8）
+  function dayHintText(date, time) {
+    var ts = snackIndexToTs(date, time);
+    if (ts == null) return "";
+    var bs = String(state.bizStart || "08:00");
+    return "按真实时间归入 → " + bizDate(ts).replace(/-/g, "/") + " 营业日（营业日 " + bs + " 起算）";
+  }
+  function refreshEditDayHint(hintId, dateId, timeId) {
+    var el = document.getElementById(hintId);
+    if (!el) return;
+    var dEl = document.getElementById(dateId), tEl = document.getElementById(timeId);
+    el.textContent = dayHintText(dEl ? dEl.value : "", tEl ? tEl.value : "");
+  }
+  function refreshSnackEditDayHint() { refreshEditDayHint("seDayHint", "seDate", "seTime"); }
+  function refreshVapeEditDayHint() { refreshEditDayHint("veDayHint", "veDate", "veTime"); }
+
   // ★ v3.41.0：修改记录弹窗里的渠道（打开时从记录带出、保存时写回）
   var seCashChannel = "cash", seRmbChannel = "wx";
   var veCashChannel = "cash", veRmbChannel = "wx";
@@ -14113,8 +14154,11 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     var h = state.snackHistory[idx];
     if (!h) return;
     snackEditIndex = idx;
-    seEl("seDate").value = h.date || fmtDate(Date.now());
-    seEl("seTime").value = h.time || fmtHM(Date.now());
+    // ★ v3.49.4：日期 / 时间按【真实发生时间】回填（例：营业日 11/7 的 05:00 → 显示 11/8 05:00）
+    var rts = realTsOfRecord(h);
+    seEl("seDate").value = rts != null ? fmtDate(rts) : (h.date || fmtDate(Date.now()));
+    seEl("seTime").value = rts != null ? fmtHM(rts) : (h.time || fmtHM(Date.now()));
+    refreshSnackEditDayHint();
     seRenderItems(h.items || []);
     seEl("seSubtotal").value = h.subtotal != null ? h.subtotal : 0;
     var pt = h.payType || "card";
@@ -14136,6 +14180,10 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     snackEditIndex = null;
   }
   maskTime(document.getElementById("seTime"));
+  // ★ v3.49.4：改日期 / 时间 → 实时刷新「归入哪个营业日」
+  seEl("seDate").addEventListener("input", refreshSnackEditDayHint);
+  seEl("seDate").addEventListener("change", refreshSnackEditDayHint);
+  seEl("seTime").addEventListener("input", refreshSnackEditDayHint);
   // ★ v3.41.0：修改记录里的现金形式 / 人民币渠道按钮
   (function () {
     var cw = document.getElementById("seCashChWrap");
@@ -14189,8 +14237,9 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     var items = seCollectItems();
     if (!items.length) { err.textContent = "品项不能为空"; err.style.display = "block"; return; }
 
-    h.date = date;
-    h.time = time;
+    h.date = bizDate(ts);            // ★ v3.49.4：营业日由真实时间自动算（不再用你填的日期直接当营业日）
+    h.time = fmtHM(ts);              //   真实时钟
+    h.realDate = fmtDate(ts);        //   真实日期（列表 / 统计明细标注用，以前没更新 → 跨天会错）
     h.ts = ts;
     h.items = items;
     h.subtotal = round2(sub);
@@ -15168,8 +15217,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     var h = state.vapeHistory[idx];
     if (!h) return;
     vapeEditIndex = idx;
-    veEl("veDate").value = h.date || bizDate(Date.now());
-    veEl("veTime").value = h.time || fmtHM(Date.now());
+    // ★ v3.49.4：日期 / 时间按【真实发生时间】回填（和零食弹窗一致）
+    var rts = realTsOfRecord(h);
+    veEl("veDate").value = rts != null ? fmtDate(rts) : (h.date || fmtDate(Date.now()));
+    veEl("veTime").value = rts != null ? fmtHM(rts) : (h.time || fmtHM(Date.now()));
+    refreshVapeEditDayHint();
     veRenderItems(h.items || []);
     veEl("veSubtotal").value = h.subtotal != null ? h.subtotal : 0;
     veEl("veCardAdd").value = h.cardAdd != null ? h.cardAdd : 0;
@@ -15189,6 +15241,10 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   }
   function closeVapeEdit() { vapeEditOverlay.classList.remove("show"); vapeEditIndex = null; }
   maskTime(document.getElementById("veTime"));
+  // ★ v3.49.4：改日期 / 时间 → 实时刷新「归入哪个营业日」
+  veEl("veDate").addEventListener("input", refreshVapeEditDayHint);
+  veEl("veDate").addEventListener("change", refreshVapeEditDayHint);
+  veEl("veTime").addEventListener("input", refreshVapeEditDayHint);
   // ★ v3.41.0：修改记录里的现金形式 / 人民币渠道按钮
   (function () {
     var cw = document.getElementById("veCashChWrap");
@@ -15233,8 +15289,13 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (!items.length) { err.textContent = "品项不能为空"; err.style.display = "block"; return; }
     var sticks = 0;
     for (var k = 0; k < items.length; k++) sticks += items[k].qty;
-    h.date = date;
-    h.time = time;
+    // ★ v3.49.4：弹窗里的日期/时间 = 真实日期时间 → 营业日自动算（和零食弹窗一致）
+    var ts = snackIndexToTs(date, time);
+    if (ts == null) { err.textContent = "日期时间无效"; err.style.display = "block"; return; }
+    h.date = bizDate(ts);
+    h.time = fmtHM(ts);
+    h.realDate = fmtDate(ts);
+    h.ts = ts;
     h.items = items;
     h.sticks = sticks;
     h.subtotal = round2(sub);
