@@ -1098,6 +1098,10 @@
   .history tbody tr.txn-grp .gn { font-size: 11px; color: var(--c-warn); background: var(--c-warn-bg); border: 1px solid #f0c98a;
           border-radius: 8px; padding: 1px 6px; margin-left: 8px; font-weight: 700; }
   .history tbody tr.txn-grp .gs { float: right; font-size: 15px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  /* ★ v3.49.5：分组小计拆成 台费 / 零食 / 罚款 / 应收（罚款只在有罚款时出现） */
+  .history tbody tr.txn-grp .gsub { font-size: 12px; font-weight: 600; color: var(--muted);
+          margin-left: 14px; font-variant-numeric: tabular-nums; }
+  .history tbody tr.txn-grp .gsum { margin-left: 16px; }
   .chip { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 2px 8px;
           margin-right: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .chip.card   { background: var(--c-info-bg); color: var(--c-info); border: 1px solid var(--c-info-line); }
@@ -1705,6 +1709,11 @@
       padding: 7px 12px; margin: 0 0 8px; font-size: 12px;
     }
     .rec-day .gs { margin-left: auto; font-weight: 800; color: var(--ink); }
+    /* ★ v3.49.5：台费 / 零食 / 罚款 / 应收 一行放不下 → 第二行右对齐，别撑出屏幕 */
+    .rec-day .gs { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 8px;
+      flex: 1 0 100%; margin-left: 0; font-size: 12px; padding-top: 2px; }
+    .rec-day .gs .gsub { font-weight: 600; color: var(--muted); }
+    .rec-day .gs .gsum { font-weight: 800; color: var(--ink); }
     .rec-day .gn {
       font-size: 11px; color: var(--c-warn); background: var(--c-warn-bg); border: 1px solid #f0c98a;
       border-radius: 8px; padding: 1px 6px; font-weight: 700;
@@ -5308,8 +5317,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.49.4";
-  var APP_DATE = "2026-11-09";
+  var APP_VER = "v3.49.5";
+  var APP_DATE = "2026-11-10";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -5319,6 +5328,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.49.5", date: "2026-11-10", items: [
+      "📊 结算记录的**分组小计拆开**（用户反馈：原来只有一个金额，看不出是台费还是含了挂账零食）：组标题行改成 `台费 $199.74 · 零食 $34.00 · 罚款 $10.00 · 应收 $244.87`，**没发生罚款的那天不显示「罚款」这一节**",
+      "手机卡片的分组条同样显示，放不下一行就换到第二行右对齐。口径：台费=纯台费（不含罚款，和统计页「台费」卡一致）、零食=挂账零食、罚款=单独列、应收=最终收的钱（含罚款与手续费）。界面测试新增 6 条断言（四项都有 / 没罚款不显示 / 分组应收＝明细应收相加 / 手机分组条）"
+    ] },
     { ver: "v3.49.4", date: "2026-11-09", items: [
       "🕐 编辑零食 / 鸭嘴兽记录改成**按真实时间算营业日**（用户反馈：填真实的 11/8 05:00，却算进了 11/8 的统计）：弹窗里的「日期 / 时间」现在就是**真实发生时间**（不再是营业日），保存时用 `bizDate(ts)` 自动换算营业日，并顺手补上 `realDate`（以前改时间不更新，跨天记录的「真实日期」会留着旧值）。弹窗里**实时显示「→ 归入 2026/11/07 营业日」**，填的时候就能看出落到哪一天，不用自己换算。老记录打开回填真实时间（营业日 11/7 的 05:00 → 显示 11/8 05:00），**原样保存不会把营业日改坏**（幂等）",
       "列表仍按营业日分组、跨天时间照旧标「次日 05:00」。界面测试新增 12 条断言（回填 / 提示 / 换算 / 幂等 / 鸭嘴兽 / 统计落 11/7 不落 11/8）"
@@ -5391,15 +5404,6 @@
       "长按「实时」填数字 = 固定加点、填 `auto` = 恢复自动",
       "📊 弹窗顶部显示当前加点 / 样本数 / 平均差值",
       "加点状态跟云端同步（`fxMarkupAuto`）"
-    ] },
-    { ver: "v3.42.0", date: "2026-11-06", items: [
-      "🎨 界面优化 7 条（用户确认全做）：① **顶部 4 个营业参数收进下拉面板**（默认只显示一行摘要 `$16/小时 · 手续费1.2% · 汇率 · 营业日`，点一下才展开编辑）→ 桌面省 95px、手机省 105px",
-      "② **手机标签页改单行横向滑动**（原来 6 个占两行）→ 再省 110px",
-      "③ **手机顶部只留 4 个常用图标**（预约 / 夜间 / 字号 / ⋯），其余收进「⋯」菜单",
-      "④ 结算按钮不再和「单独结算」同名 → 零食、鸭嘴兽统一成「✓ 确认收款」，零食页上面加「结算方式」小标题",
-      "⑤ 统计页「总额」升成**通栏主卡**，其余 6 张降为次级卡，不再 7 张一样大",
-      "⑥ 桌面卡片加 **hover 微反馈**",
-      "⑦ 顶部工具栏 + 标签页图标从 emoji 换成**内联 SVG**（Mac / 安卓 / Windows 长得一样）。首屏效果：桌面 6 张桌台一屏看全，手机多出半张卡。测试同步更新（图标断言改成查 SVG、参数面板先展开再测失焦）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6030,12 +6034,26 @@
     return combineToTs(day, ("0" + Math.floor(mins / 60)).slice(-2) + ":" + ("0" + (mins % 60)).slice(-2));
   }
 
-  function dayGroupRow(icon, date, count, sum, cols) {
+  // ★ v3.49.5：结算记录的分组小计拆成「台费 / 零食 / 罚款 / 应收」
+  //   用户反馈：原来只显示一个金额，看不出是台费还是含了挂账零食；
+  //   罚款只在当天有罚款时才出现（没罚款不加这一节）
+  function daySubTxt(fee, snack, fine, sum) {
+    var out = '<span class="gsub">台费 ' + fmtMoney(round2(fee)) + "</span>" +
+              '<span class="gsub">零食 ' + fmtMoney(round2(snack)) + "</span>";
+    if (round2(fine) > 0.005) out += '<span class="gsub">罚款 ' + fmtMoney(round2(fine)) + "</span>";
+    out += '<span class="gsum">应收 ' + fmtMoney(round2(sum)) + "</span>";
+    return out;
+  }
+  function dayGroupRow(icon, date, count, sum, cols, fee, snack, fine) {
+    // fee == null → 老写法（零食 / 鸭嘴兽列表仍只显示一个金额）
+    var money = (fee == null)
+      ? '<span class="gs">' + fmtMoney(round2(sum)) + "</span>"
+      : '<span class="gs">' + daySubTxt(fee, snack, fine, sum) + "</span>";
     return '<tr class="txn-grp"><td colspan="' + cols + '">' +
       '<span class="gi">' + icon + "</span> " +
       '<span style="font-weight:700;">' + esc(date) + "</span>" +
       '<span class="gc">周' + weekdayCn(date) + "　·　" + count + " 笔</span>" +
-      '<span class="gs">' + fmtMoney(round2(sum)) + "</span>" +
+      money +
       "</td></tr>";
   }
 
@@ -6082,11 +6100,17 @@
 
     var rows = "", cards = "", gi, i, j;
     for (gi = 0; gi < groups.length; gi++) {
-      var g = groups[gi], daySum = 0;
-      for (i = 0; i < g.items.length; i++) daySum += Number(g.items[i].h.grand != null ? g.items[i].h.grand : g.items[i].h.total) || 0;
-      rows += dayGroupRow("📅", g.date, g.items.length, daySum, 8);
+      var g = groups[gi], daySum = 0, dayFee = 0, daySnack = 0, dayFine = 0;
+      for (i = 0; i < g.items.length; i++) {
+        var gh = g.items[i].h;
+        daySum += Number(gh.grand != null ? gh.grand : gh.total) || 0;
+        dayFee += Number(gh.tableFee != null ? gh.tableFee : gh.total) || 0;
+        daySnack += Number(gh.other) || 0;
+        dayFine += Number(gh.fine) || 0;
+      }
+      rows += dayGroupRow("📅", g.date, g.items.length, daySum, 8, dayFee, daySnack, dayFine);
       cards += '<div class="rec-day">📅 <b>' + esc(g.date) + "</b> 周" + weekdayCn(g.date) +
-               ' · ' + g.items.length + ' 笔 <span class="gs">' + fmtMoney(round2(daySum)) + "</span></div>";
+               ' · ' + g.items.length + ' 笔 <span class="gs">' + daySubTxt(dayFee, daySnack, dayFine, daySum) + "</span></div>";
 
       for (i = 0; i < g.items.length; i++) {
         var h = g.items[i].h, idx = g.items[i].idx;
