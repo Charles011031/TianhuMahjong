@@ -5397,8 +5397,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.52.0";
-  var APP_DATE = "2026-11-10";
+  var APP_VER = "v3.52.1";
+  var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -5408,6 +5408,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.52.1", date: "2026-11-11", items: [
+      "🐛 修**结算记录列表点「编辑 / 删除」命中别的单**（用户反馈「点开桌台记录，显示的不是本桌的数据」）：列表是「排序 + 搜索 + 只显示前 100 条」之后的副本，原来直接拿副本里的下标去 `state.history` 取记录 → **永远错位**（点第 1 条最新单，打开的是最老那条",
+      "删除也会删错单、会员余额退给错的人）。改成排「位置」并记住每条在 `state.history` 里的原下标，编辑 / 删除 / 搜索结果全部命中被点的那一条。界面测试新增 `case_history_edit_hits_right_record` 8 条断言（3 条记录逐行核对桌号+日期、删第 1 条只删它且会员只退这单的 $20、搜索「2号桌」后再点仍对）",
+      "顺手修界面测试里「预约同步」用例写死日期的问题（台只显示最近 30 天，2026-11-11 起 10-11 那条被筛掉 → 发布门禁会红，改成跟着今天走）"
+    ] },
     { ver: "v3.52.0", date: "2026-11-10", items: [
       "🔘 **收款的「付款方式」从下拉框改成胶囊按钮**（用户要求：修改界面也要用按钮改支付方式）：`💵现金 / 💳刷卡 / 🇨🇳人民币 / 🎫会员扣款` 一排按钮点一下换，现金再点 `纸币/转账`、人民币点 `微信/支付宝`（也是按钮）。一套组件同时改到 4 个地方：结算弹窗「高级：按笔改金额」、修改结算记录、会员充值「分成几笔收」、「修改流水」，以后不会出现「这里能点、那里要下拉」的不一致",
       "手机端每笔排成 `金额 → 小计 → ✕` 一行 + `怎么收` 按钮行 + 渠道行，不再挤。顺手修：夜间规则漏写 `body.dark` 前缀导致白天收款卡片也变深色",
@@ -5473,14 +5478,6 @@
       "现在固定分 4 块，**每块显示条数 + 盘盈 / 盘亏小计**",
       "**每类各自取最近 12 条**（老记录按名字前缀自动归位，不用迁移数据）",
       "顶部加一行总览「共 N 条 · 总盘盈 +x / 总盘亏 -y」，空的类别不占地方。数据结构和表格同步完全没动"
-    ] },
-    { ver: "v3.44.0", date: "2026-11-06", items: [
-      "🎨 视觉系统升级（用户确认 6 项全做）：① **结算弹窗「实收合计 + 确认结算」吸底** —— 手机上不用滚到底才够得着，金额永远可见",
-      "② **状态色语义化**：新增 `--s-idle/running/paused/due/debt` 一组变量，桌卡边框、大数字、徽章统一走这套（**「已暂停」的数字原来是最不显眼的黑色，现在改成琥珀色**）",
-      "③ **金额全部带千分位**（`$1,297.80`）：界面 149 处手拼金额改走 `fmtMoney()`，群文案走 `wxNum()`，**导出的 Excel 也加了 `#,##0.00` 格式**（仍是可求和的数字，不是文本）",
-      "④ **表格可读性**：隔行浅底 + 行高亮更明显，全站数字用 `tabular-nums` 等宽（时长/金额列不再串行）",
-      "⑤ **品牌 logo**：顶部换成卡通麻将角色圆形头像（64px 内联 base64，离线可用）+ 浏览器标签页 favicon",
-      "⑥ **设计令牌收敛**：圆角 **15 种 → 7 种**、字号 **31 种 → 15 种**、散落的颜色收进语义变量（品牌绿 / 状态色 / 提示色 / 夜间底层色）。桌面、手机、夜间模式全部截图核对"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6043,10 +6040,13 @@
   // 按日期把记录分组（三个结算记录列表共用）
   //   dateOf(h)     → 日期字符串
   //   timeKeyOf(h)  → 当天内的排序键（数字，越大越晚）
+  //   srcIdx        → 可选：list[k] 在【原始数组】里的位置（列表被过滤/排序过时必须传）
   // 返回 [{date, items: [{h, idx}]}]，日期从新到旧，同一天内从晚到早
-  function groupByDate(list, dateOf, timeKeyOf) {
+  // ⚠️ idx 默认 = list 里的位置 ✗ 结算记录列表是「排序 + 搜索 + 分页」后的副本 ✗
+  //    直接用这个 idx 去 state.history 取记录会取到别的单（v3.52.1 修的）
+  function groupByDate(list, dateOf, timeKeyOf, srcIdx) {
     var order = [], k;
-    for (k = 0; k < list.length; k++) order.push({ h: list[k], idx: k });
+    for (k = 0; k < list.length; k++) order.push({ h: list[k], idx: (srcIdx ? srcIdx[k] : k) });
     order.sort(function (a, b) {
       var ad = dateOf(a.h) || "", bd = dateOf(b.h) || "";
       if (ad !== bd) return ad < bd ? 1 : -1;
@@ -6148,14 +6148,20 @@
     // 搜索：按日期 / 桌号 / 时间 / 金额 模糊匹配
     var kw = String(histFilter || "").trim().toLowerCase();
     var list0 = state.history;
+    // ★ v3.52.1：srcIdx 记住「list0 里每条对应 state.history 的第几条」✗
+    //   列表后面要【排序 + 只取前 100 条】✗ 那时的下标已经不是 state.history 的下标了
+    //   （用户反馈：点 3 号桌那条的「编辑」，打开的是 1 号桌的单 —— 编辑/删除都会错位）
+    var srcIdx = [], qi;
     if (kw) {
       list0 = [];
-      for (var qi = 0; qi < state.history.length; qi++) {
+      for (qi = 0; qi < state.history.length; qi++) {
         var qh = state.history[qi];
         var hay = [qh.date, qh.tableNo, qh.tableNo + "号桌", qh.start, qh.end,
                    qh.hours, qh.grand, qh.collected, qh.memberName, qh.payType].join(" ").toLowerCase();
-        if (hay.indexOf(kw) >= 0) list0.push(qh);
+        if (hay.indexOf(kw) >= 0) { list0.push(qh); srcIdx.push(qi); }
       }
+    } else {
+      for (qi = 0; qi < state.history.length; qi++) srcIdx.push(qi);
     }
     var histCountEl = document.getElementById("histCount");
     if (histCountEl) histCountEl.textContent = kw ? ("筛出 " + list0.length + " / " + state.history.length + " 条") : "";
@@ -6164,16 +6170,25 @@
       return;
     }
     // ★ v3.47.0（A）：先按「日期倒序 + 结束时间倒序」排，再只取前 histShown 条
-    var sortedAll = list0.slice().sort(function (a, b) {
+    //   ★ v3.52.1：排「位置」而不是直接排记录 ✗ 这样原始下标（srcIdx）能跟着走 ✓
+    var order = [], oi;
+    for (oi = 0; oi < list0.length; oi++) order.push(oi);
+    order.sort(function (ai, bi) {
+      var a = list0[ai], b = list0[bi];
       var ad = showDateOf(a), bd = showDateOf(b);
       if (ad !== bd) return ad < bd ? 1 : -1;
       return timeMinutes(b.end || b.start) - timeMinutes(a.end || a.start);
     });
-    var shownList = sortedAll.slice(0, histShown);
-    var moreCount = sortedAll.length - shownList.length;
+    var shownList = [], shownIdx = [];
+    for (oi = 0; oi < order.length && oi < histShown; oi++) {
+      shownList.push(list0[order[oi]]);
+      shownIdx.push(srcIdx[order[oi]]);
+    }
+    var moreCount = order.length - shownList.length;
     var groups = groupByDate(shownList,
       function (h) { return showDateOf(h); },
-      function (h) { return timeMinutes(h.end || h.start); });   // ★ 按【结束时间】排（用户要求）
+      function (h) { return timeMinutes(h.end || h.start); },   // ★ 按【结束时间】排（用户要求）
+      shownIdx);                                                // ★ 原始下标（编辑/删除要用）
 
     var rows = "", cards = "", gi, i, j;
     for (gi = 0; gi < groups.length; gi++) {
@@ -6239,7 +6254,7 @@
     var moreHtml = moreCount > 0
       ? '<div class="hist-more"><button type="button" id="histMoreBtn">显示更早的 ' +
         Math.min(HIST_PAGE, moreCount) + " 条</button><span>还有 " + moreCount +
-        " 条没显示（共 " + sortedAll.length + " 条）</span></div>"
+        " 条没显示（共 " + order.length + " 条）</span></div>"
       : "";
     wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
       '<table><thead><tr>' +
