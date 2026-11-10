@@ -1956,7 +1956,7 @@
   #splitPanel .sp-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center; }
   #splitPanel .sp-adv { margin-top:8px; }
   /* ★ 夜间：收款卡片用深面（以前写 var(--ink)，夜间 --ink 是浅色文字色 → 卡片变成浅灰，看不清文字） */
-  body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person, #memPayCard .sp-person {
+  body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person, body.dark #memPayCard .sp-person {
     background: var(--dk-deep) !important; border-color: var(--line) !important;
   }
   body.dark #splitPanel .sp-feehint, body.dark #memPayCard .sp-feehint { color: #e0b463 !important; }
@@ -2008,15 +2008,32 @@
   #splitPanel #sMoreBtn { margin-top: 8px; }
   #splitPanel #sMoreWrap { margin-top: 8px; }
 
-  /* ★ 收款明细行：手机上按格子排（以前被零食购物车的 flex-wrap 规则带歪，
-      金额 / 方式 / 删除 / 小计各占一行）。结算 / 改记录 / 会员充值三处共用 */
+  /* ===== 收款明细行（结算高级 / 改记录 / 会员充值 · 修改流水共用） =====
+     ★ v3.52.0：付款方式改成胶囊按钮，不再用下拉框（用户要求：和充值卡片、零食结算一致） */
+  .cart-row.pay-head { display: flex; align-items: center; gap: 8px; padding: 8px 0 2px; border-bottom: none; }
+  .cart-row.pay-head .ph-label { min-width: 18px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .cart-row.pay-head input.ph-amount { width: 96px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; text-align: right; font-size: 14px; }
+  .cart-row.pay-head .part-due { margin-left: auto; font-weight: 700; }
+  .cart-row.pay-method { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 2px 0 6px; border-bottom: none; }
+  .cart-row.pay-detail { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap;
+                         padding: 2px 0 8px; border-bottom: 1px dashed var(--line); }
+  .pay-pick { font-family: inherit; cursor: pointer; font-size: 12px; font-weight: 700; border-radius: 999px;
+              padding: 7px 10px; min-height: 32px; border: 1px solid #e3e8e5; background: #fff; color: var(--muted); }
+  .pay-pick.on { border-color: var(--green); background: var(--green); color: #fff; }
+  .pay-pick.ch-wx.on { border-color: #07C160; background: #07C160; color: #fff; }
+  .pay-pick.ch-ali.on { border-color: #1677FF; background: #1677FF; color: #fff; }
+  .pay-pick.ch-wx:not(.on) { color: #07a04f; border-color: #a7e3c3; }
+  .pay-pick.ch-ali:not(.on) { color: #1677FF; border-color: #a9c8ff; }
+  .pm-k { font-size: 12px; color: var(--muted); }
+  body.dark .pay-pick { background: var(--dk-sunken); color: #d1d5db; border-color: var(--c-ink-2); }
+  body.dark .pay-pick.on { background: var(--green); color: #fff; border-color: var(--green); }
+  body.dark .pay-pick.ch-wx.on { background: #07C160; border-color: #07C160; color: #fff; }
+  body.dark .pay-pick.ch-ali.on { background: #1677FF; border-color: #1677FF; color: #fff; }
   @media (max-width: 640px) {
-    .cart-row.pay-head { display: grid; grid-template-columns: auto minmax(72px, 92px) minmax(0, 1fr) 32px auto;
+    .cart-row.pay-head { display: grid; grid-template-columns: auto minmax(72px, 92px) minmax(0, 1fr) auto;
                          gap: 6px 8px; align-items: center; }
     .cart-row.pay-head .part-due { margin-left: 0; justify-self: end; }
-    .cart-row.pay-head select { width: 100%; min-width: 0; }
-    .cart-row.pay-detail { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
-    .cart-row.pay-detail > select { max-width: 62%; }
+    .cart-row.pay-method, .cart-row.pay-detail { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
     .cart-row.pay-detail > input[type="number"] { max-width: 44%; }
   }
 
@@ -5380,7 +5397,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.51.0";
+  var APP_VER = "v3.52.0";
   var APP_DATE = "2026-11-10";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5391,6 +5408,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.52.0", date: "2026-11-10", items: [
+      "🔘 **收款的「付款方式」从下拉框改成胶囊按钮**（用户要求：修改界面也要用按钮改支付方式）：`💵现金 / 💳刷卡 / 🇨🇳人民币 / 🎫会员扣款` 一排按钮点一下换，现金再点 `纸币/转账`、人民币点 `微信/支付宝`（也是按钮）。一套组件同时改到 4 个地方：结算弹窗「高级：按笔改金额」、修改结算记录、会员充值「分成几笔收」、「修改流水」，以后不会出现「这里能点、那里要下拉」的不一致",
+      "手机端每笔排成 `金额 → 小计 → ✕` 一行 + `怎么收` 按钮行 + 渠道行，不再挤。顺手修：夜间规则漏写 `body.dark` 前缀导致白天收款卡片也变深色",
+      "「修改流水」里不该出现「会员扣款」（充值不能用余额）。测试：界面测试把读下拉的断言改成读按钮，顺手修好 2 条**躺了很久的旧失败**（「点会员余额 → 台费走会员、零食走现金」原来没选会员就断言、「只把改的那一笔拆开」格式过时），已知失败清单 3 条 → 2 条"
+    ] },
     { ver: "v3.51.0", date: "2026-11-10", items: [
       "🌙 修**夜间模式下充值收款卡片变成浅灰、字看不清**：原来 `body.dark ... .sp-person` 写的是 `background: var(--ink)`，而夜间 `--ink` 是**浅色文字色** → 卡片浅灰、标题白字看不见（结算弹窗的整单收款卡片同样中招）。改成深面 `var(--dk-deep)` + 深边，手续费小字夜间提亮，卡片里的标题 / 金额统一用亮色。✏️ **「修改流水」也能改收款的付款方式了**（用户要求：和别的结算记录修改一样）：充值的流水里多一块「收款明细」，可加笔 / 删笔 / 换方式（现金·刷卡·人民币混着付），改金额时实付跟着等于明细合计、改实付时各笔自动对齐（和「修改结算记录」同一套组件）",
       "保存时把 `parts`（含纸币/转账、微信/支付宝渠道）和 `cashSum/cardSum/rmbSum/fee/collected/payType` 一起写回流水，扣款 / 余额调整没有收款方式 → 自动隐藏这块。界面测试：`case_recharge_pay_ui` 补 2 条夜间断言（卡片深色 / 标题可见），新增 `case_txn_edit_pay_method` 8 条断言（还原分笔 / 改金额联动 / 混着付保存 / 渠道落库）"
@@ -5459,11 +5481,6 @@
       "④ **表格可读性**：隔行浅底 + 行高亮更明显，全站数字用 `tabular-nums` 等宽（时长/金额列不再串行）",
       "⑤ **品牌 logo**：顶部换成卡通麻将角色圆形头像（64px 内联 base64，离线可用）+ 浏览器标签页 favicon",
       "⑥ **设计令牌收敛**：圆角 **15 种 → 7 种**、字号 **31 种 → 15 种**、散落的颜色收进语义变量（品牌绿 / 状态色 / 提示色 / 夜间底层色）。桌面、手机、夜间模式全部截图核对"
-    ] },
-    { ver: "v3.43.2", date: "2026-11-06", items: [
-      "🐛 修：**手机顶部又高又糊**（用户截图反馈「最上面有一条模糊、绿栏贴着状态栏」）。根因不是页面样式，是 **iOS 26+ 状态栏那一条系统的液态玻璃模糊**：网页内容顶进去就会被糊掉，而原来的顶部留白只有 `16px + safe-area`（iPhone 16 Pro Max 约 78pt），绿色标题栏上沿正好压进模糊带（真机截图量出来这条带子到 ~105pt）。修法：**触屏设备（手机 / 平板，≤1024px）顶部额外多留 36px**（纯 CSS 媒体查询，没加新脚本），标题栏整个落到模糊带下面，上面那条只剩页面底色、糊了也看不出来",
-      "**电脑 / 鼠标操作一个像素都不变**。顺手清掉「添加到主屏幕」那套旧的满幅绿带规则（早被 v3.42.0 手机版 `!important` 覆盖、实际没生效），现在全屏和浏览器模式顶部留白一致",
-      "`?debug=1` 探针多显示 `pad-top` / `extra`，以后换机型可以直接量"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -7116,27 +7133,34 @@
   // 单行：刷卡/现金可改金额；人民币锁澳币只改实收 ¥；会员扣款要选会员
   // 每笔收款分两行：第一行金额/方式/应收，第二行才是人民币或会员的细节（内容更清楚）
   function partRowHtml(p, i, noMember) {
-    var head = '<div class="cart-row pay-head" style="border-bottom:none;padding-bottom:2px;">' +
-      '<span style="min-width:' + (p.label ? "34px" : "18px") + ';color:' + (p.label === "零食" ? "#b45309" : "var(--muted)") + ';font-size:' + (p.label ? "13px;font-weight:700;" : "13px;") + '">' + (p.label ? esc(p.label) : (i + 1)) + "</span>" +
-      '<input type="number" min="0" step="0.5" value="' + p.amount + '" data-part="amount" data-idx="' + i + '"' +
-        ' style="width:96px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right;font-size:14px;">' +
-      '<select data-part="pay" data-idx="' + i + '" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;">' +
-        '<option value="card"' + (p.payType === "card" ? " selected" : "") + ">刷卡</option>" +
-        '<option value="cash"' + (p.payType === "cash" ? " selected" : "") + ">现金</option>" +
-        '<option value="rmb"' + (p.payType === "rmb" ? " selected" : "") + ">人民币</option>" +
-        ((noMember || p.label === "零食") ? "" : '<option value="member"' + (p.payType === "member" ? " selected" : "") + ">会员扣款</option>") +
-      "</select>" +
+    // ★ v3.52.0：付款方式从下拉框改成【胶囊按钮】（用户要求：和充值 / 零食结算一样，一眼看得出选了哪个）
+    var PAY_LABELS = [["cash", "💵 现金"], ["card", "💳 刷卡"], ["rmb", "🇨🇳 人民币"]];
+    var head = '<div class="cart-row pay-head" style="border-bottom:none;">' +
+      '<span class="ph-label"' + (p.label ? ' style="font-weight:700;' + (p.label === "零食" ? "color:#b45309;" : "") + '"' : "") + ">" +
+        (p.label ? esc(p.label) : (i + 1)) + "</span>" +
+      '<input type="number" min="0" step="0.5" value="' + p.amount + '" data-part="amount" data-idx="' + i + '" class="ph-amount">' +
+      '<span class="part-due">' + fmtMoney(partDue(p)) + "</span>" +
       '<button type="button" class="mini" data-part="del" data-idx="' + i + '" title="删掉这笔">✕</button>' +
-      '<span style="margin-left:auto;font-weight:700;" class="part-due">' + fmtMoney(partDue(p)) + "</span>" +
       "</div>";
+    var meth = '<div class="cart-row pay-method">' +
+      '<span class="pm-k">怎么收</span>';
+    for (var mi = 0; mi < PAY_LABELS.length; mi++) {
+      meth += '<button type="button" class="pay-pick' + (p.payType === PAY_LABELS[mi][0] ? " on" : "") +
+        '" data-part="pay" data-val="' + PAY_LABELS[mi][0] + '" data-idx="' + i + '">' + PAY_LABELS[mi][1] + "</button>";
+    }
+    if (!(noMember || p.label === "零食")) {
+      meth += '<button type="button" class="pay-pick' + (p.payType === "member" ? " on" : "") +
+        '" data-part="pay" data-val="member" data-idx="' + i + '">🎫 会员扣款</button>';
+    }
+    meth += "</div>";
 
     var detail = "";
     if (p.payType === "card") {
       // 刷卡：可以直接填银行实际收到的那笔钱（含手续费）
       var auto = partDue({ amount: p.amount, payType: "card", dueOverride: null });
       var shown = (p.dueOverride != null && p.dueOverride !== "") ? p.dueOverride : "";
-      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
-        '<span style="min-width:18px;"></span>' +
+      detail = '<div class="cart-row pay-detail">' +
+        '<span class="pm-k">刷卡</span>' +
         '<span style="font-size:13px;color:var(--muted);">实收（含手续费）$</span>' +
         '<input type="number" min="0" step="0.01" value="' + shown + '" placeholder="' + auto.toFixed(2) + '" ' +
           'data-part="due" data-idx="' + i + '" ' +
@@ -7145,12 +7169,10 @@
         "</div>";
     } else if (p.payType === "rmb") {
       // ★ v3.31.0：人民币要分【微信 / 支付宝】（用户需求：群消息里要写清哪个渠道收的）
-      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
-        '<span style="min-width:18px;"></span>' +
-        '<select data-part="rmbch" data-idx="' + i + '" title="收款的渠道（群消息里会写出来）" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
-          '<option value="wx"' + (p.rmbChannel !== "alipay" ? " selected" : "") + ">微信</option>" +
-          '<option value="alipay"' + (p.rmbChannel === "alipay" ? " selected" : "") + ">支付宝</option>" +
-        "</select>" +
+      detail = '<div class="cart-row pay-detail">' +
+        '<span class="pm-k">人民币走</span>' +
+        '<button type="button" class="pay-pick ch-wx' + (p.rmbChannel !== "alipay" ? " on" : "") + '" data-part="rmbch" data-val="wx" data-idx="' + i + '" title="收款的渠道（群消息里会写出来）">微信</button>' +
+        '<button type="button" class="pay-pick ch-ali' + (p.rmbChannel === "alipay" ? " on" : "") + '" data-part="rmbch" data-val="alipay" data-idx="' + i + '" title="收款的渠道（群消息里会写出来）">支付宝</button>' +
         '<span style="font-size:13px;color:var(--muted);">实收 ¥</span>' +
         '<input type="number" min="0" step="1" value="' + (partRmb(p) != null ? partRmb(p) : "") + '" data-part="rmb" data-idx="' + i + '"' +
           ' style="width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right;font-size:15px;font-weight:700;color:#1d4e89;">' +
@@ -7158,21 +7180,18 @@
         "</div>";
     } else if (p.payType === "cash") {
       // ★ v3.31.0：现金分【纸币 / 转账】（用户需求）
-      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
-        '<span style="min-width:18px;"></span>' +
-        '<select data-part="cashch" data-idx="' + i + '" title="收款形式（群消息里会写出来）" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
-          '<option value="cash"' + (p.cashChannel !== "transfer" ? " selected" : "") + ">现金（纸币）</option>" +
-          '<option value="transfer"' + (p.cashChannel === "transfer" ? " selected" : "") + ">转账</option>" +
-        "</select>" +
+      detail = '<div class="cart-row pay-detail">' +
+        '<span class="pm-k">现金</span>' +
+        '<button type="button" class="pay-pick' + (p.cashChannel !== "transfer" ? " on" : "") + '" data-part="cashch" data-val="cash" data-idx="' + i + '" title="收款形式（群消息里会写出来）">纸币</button>' +
+        '<button type="button" class="pay-pick' + (p.cashChannel === "transfer" ? " on" : "") + '" data-part="cashch" data-val="transfer" data-idx="' + i + '" title="收款形式（群消息里会写出来）">转账</button>' +
         '<span style="font-size:12px;color:var(--muted);">澳币，不收手续费</span>' +
         "</div>";
     } else if (p.payType === "member") {
       var m = findMember(p.memberId);
       var bal = m ? (Number(m.balance) || 0) : 0;
       var lack = m && bal < p.amount - 0.005;
-      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
-        '<span style="min-width:18px;"></span>' +
-        '<span style="font-size:13px;color:var(--muted);">搜索</span>' +
+      detail = '<div class="cart-row pay-detail">' +
+        '<span class="pm-k">会员</span>' +
         '<input type="text" placeholder="姓名 / 电话…" value="' + esc(p.memSearch || "") + '" data-part="memsearch" data-idx="' + i + '"' +
           ' style="width:150px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;">' +
         '<select data-part="mem" data-idx="' + i + '" style="flex:1;min-width:220px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
@@ -7181,7 +7200,7 @@
           '">余额 ' + fmtMoney(bal) + (lack ? "（不够，最多扣这些）" : "") + "</span>" : "") +
         "</div>";
     }
-    return head + detail;
+    return head + meth + detail;
   }
 
   function renderPayRows(containerId, parts, noMember) {
@@ -7302,7 +7321,36 @@
       onChange();
     }
   }
+  // ★ v3.52.0：点胶囊按钮换付款方式 / 渠道（以前是下拉框 change）
+  function handlePartPick(e, parts, containerId, onChange) {
+    if (!e.target || !e.target.closest) return false;
+    var btn = e.target.closest('button[data-part="pay"], button[data-part="cashch"], button[data-part="rmbch"]');
+    if (!btn) return false;
+    var idx = parseInt(btn.getAttribute("data-idx"), 10);
+    if (isNaN(idx) || !parts[idx]) return true;
+    var kind = btn.getAttribute("data-part");
+    var val = btn.getAttribute("data-val");
+    var pt = parts[idx];
+    if (kind === "cashch") {
+      pt.cashChannel = val;
+    } else if (kind === "rmbch") {
+      pt.rmbChannel = val;
+    } else {
+      pt.payType = val;
+      pt.rmb = null;
+      pt.dueOverride = null;                       // 换方式 → 实收回到自动按手续费算
+      if (containerId === "memParts" && val === "member") pt.payType = "cash";
+      if (pt.payType !== "member") { pt.memberId = ""; pt.memSearch = ""; }
+      if (pt.payType === "rmb" && !pt.rmbChannel) pt.rmbChannel = "wx";
+      if (pt.payType === "cash" && !pt.cashChannel) pt.cashChannel = "cash";
+    }
+    renderPayRows(containerId, parts);
+    onChange();
+    return true;
+  }
+
   function handlePartDelete(e, parts, containerId, onChange) {
+    if (handlePartPick(e, parts, containerId, onChange)) return;
     var btn = e.target.closest('button[data-part="del"]');
     if (!btn) return;
     var idx = parseInt(btn.getAttribute("data-idx"), 10);
@@ -9568,7 +9616,7 @@
   }
   function teRender(rebuild) {
     if (!document.getElementById("teParts")) return;
-    if (rebuild) renderPayRows("teParts", teParts);
+    if (rebuild) renderPayRows("teParts", teParts, true);   // 充值不能用会员余额 → 不显示「会员扣款」
     else syncPartRowValues("teParts", teParts);
     refreshPartDues("teParts", teParts);
     teUpdateInfo();
