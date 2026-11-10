@@ -914,6 +914,18 @@
     overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     word-break: break-all; min-height: 0;
   }
+  /* ★ v3.53.0：鸭嘴兽 / 商品的英文名（中文大字下面一行灰小字；没填就不渲染这一行） */
+  .snack-card .snack-en {
+    width: 100%; margin-top: 1px; font-size: 10.5px; font-weight: 500; line-height: 1.2;
+    color: var(--muted); letter-spacing: .2px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  /* 点单 / 记录里跟在中文后面的英文（同一行，小一号灰字） */
+  .vape-en { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: .2px; }
+  /* 商品菜单编辑：鸭嘴兽「中文名 + 英文名」上下两行（不动表头列宽） */
+  .me-name-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .me-name-cell input { width: 100%; min-width: 0; }
+  .me-name-cell .me-en { font-size: 12.5px; color: var(--muted); padding: 5px 8px; }
   .snack-card .snack-x { color: var(--green-dark); font-weight: 800; }
   .snack-card .snack-pr {
     font-size: 16px; font-weight: 800; color: var(--green-dark); margin-top: 4px;
@@ -2478,6 +2490,49 @@
   }
   body.dark .settle-foot { background: var(--card); border-top-color: var(--line); box-shadow: 0 -10px 22px rgba(0,0,0,.35); }
 
+  /* ============================================================
+     ★ v3.53.0：结算弹窗 PC 两栏（左：账单信息/罚款/明细，右：收款+实收合计+确认）
+       手机端两个包裹层 display:contents → 顺序、样式、吸底和原来完全一样
+       所有规则都带 #settleOverlay 作用域（.modal 是 21 个弹窗共用的）
+     ============================================================ */
+  .settle-left, .settle-right { display: contents; }
+  @media (min-width: 900px) {
+    #settleOverlay .modal#settleModal {
+      display: flex; align-items: stretch; text-align: left;
+      width: min(94vw, 1000px); padding: 0; overflow: hidden;
+    }
+    #settleOverlay .settle-left {
+      display: block; flex: 1 1 auto; min-width: 0;
+      overflow-y: auto; padding: 22px 22px 20px 26px;
+      text-align: center;
+    }
+    #settleOverlay .settle-right {
+      display: flex; flex-direction: column;
+      flex: 0 0 44%; min-width: 350px; max-width: 460px;
+      overflow: hidden; padding: 22px 26px 0 20px;
+      border-left: 1px solid var(--line); background: var(--c-surface-2);
+    }
+    #settleOverlay .settle-right #sSplitWrap {
+      flex: 0 1 auto; min-height: 0; overflow-y: auto;
+      margin-bottom: 0; padding-right: 4px;
+    }
+    /* 右栏底部：实收合计 + 确认永远可见，不用滚 */
+    #settleOverlay .settle-foot {
+      position: static; flex: 0 0 auto;
+      margin: 10px -26px 0 -20px; padding: 10px 26px 14px 20px;
+      border-radius: 0; box-shadow: none;
+      background: #fff;
+    }
+    #settleOverlay .settle-foot .modal-btns { flex-direction: row; }
+    #settleOverlay .settle-foot .modal-btns button { flex: 1 1 0; width: auto; }
+    /* 左栏标题 / 信息保持居中，字段块保持左对齐（和原来一致） */
+    #settleOverlay .settle-left .field,
+    #settleOverlay .settle-left #sEditTime { text-align: left; }
+  }
+  body.dark #settleOverlay .settle-right { background: var(--dk-deep); border-left-color: var(--line); }
+  body.dark #settleOverlay .settle-foot { background: var(--card); }
+
+
   /* ---------- ⑤ 表格可读性：隔行底色 + 行高亮更明显 ---------- */
   .history tbody tr:nth-child(even):not(.txn-grp) { background: #fbfdfc; }
   .history tbody tr:hover { background: #f1f8f3; }
@@ -3264,8 +3319,30 @@
 
   <!-- 结算确认弹窗 -->
   <div class="overlay" id="settleOverlay">
-    <div class="modal">
+    <div class="modal" id="settleModal">
+      <div class="settle-left">
       <h3 id="sTitle">结算</h3>
+      <!-- ★ v3.53.0：修改结算记录 = 同一个弹窗的编辑模式（桌号 / 时间 / 单价可改，罚款/收款明细和结算一模一样） -->
+      <div id="sEditTime" style="display:none;text-align:left;margin:0 0 12px;padding:10px 12px;
+                  border:1px solid var(--line);border-radius:10px;background:var(--c-surface-2);">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:700;color:#92400e;">✎ 修改这条记录</span>
+          <label style="font-size:13px;color:var(--muted);margin-left:6px;">桌号</label>
+          <select id="sEditTable" style="width:112px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;"></select>
+          <label style="font-size:13px;color:var(--muted);">单价</label>
+          <input type="number" id="sEditRate" min="0" step="0.5"
+                 style="width:84px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
+          <span style="font-size:12px;color:var(--muted);">$/小时（当时的单价）</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+          <input type="date" id="sEditDate" style="width:150px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
+          <input type="text" id="sEditStart" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
+          <span style="color:var(--muted);">–</span>
+          <input type="text" id="sEditEnd" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
+        </div>
+        <div class="hint" id="sEditHint" style="margin:6px 0 0;"></div>
+        <div class="error" id="sEditError" style="display:none;"></div>
+      </div>
       <div class="rows" id="sInfo"></div>
       <button type="button" class="btn-ghost sm" id="sRmbBillBtn" style="margin-top:6px;">📄 看人民币账单</button>
       <div class="divider"></div>
@@ -3296,6 +3373,13 @@
           <span style="font-size:12px;color:var(--muted);">按【台费】算，会跟着台费一起平摊 ✓　会员余额也能抵 ✓</span>
         </div>
       </div>
+      <button type="button" class="btn-ghost sm" id="sDetailToggle" style="margin-top:4px;">▸ 账单明细 / 汇率</button>
+      <div id="sDetailWrap" style="display:none;">
+        <div class="rows" id="sBreakdown"></div>
+        <div class="rmb-line" id="sRmb"></div>
+      </div>
+      </div><!-- /settle-left -->
+      <div class="settle-right">
       <div class="field" id="sSplitWrap" style="display:none;">
         <label style="font-weight:400;font-size:13px;color:var(--muted);">收款明细</label>
         <div id="sParts"></div>
@@ -3351,11 +3435,6 @@
           <div class="hint" id="sShortHint" style="display:none;margin:6px 0 0;color:#8a5a00;"></div>
         </div>
       </div>
-      <button type="button" class="btn-ghost sm" id="sDetailToggle" style="margin-top:4px;">▸ 账单明细 / 汇率</button>
-      <div id="sDetailWrap" style="display:none;">
-        <div class="rows" id="sBreakdown"></div>
-        <div class="rmb-line" id="sRmb"></div>
-      </div>
       <!-- ★ v3.44.0：实收合计 + 确认结算 吸底（手机上不用滚到底才够得着） -->
       <div class="settle-foot">
         <div class="sf-k">实收合计</div>
@@ -3366,68 +3445,9 @@
           <button id="sConfirm" class="btn-settle">确认结算</button>
           <button id="sCancel" class="btn-ghost">取消</button>
         </div>
+        <button id="sEditDel" data-armkey="rec-del" class="btn-ghost" style="display:none;margin-top:8px;color:#b91c1c;border-color:#fca5a5;">删除这条记录</button>
       </div>
-    </div>
-  </div>
-
-  <!-- 修改结算记录弹窗 -->
-  <div class="overlay" id="editOverlay">
-    <div class="modal">
-      <h3>修改结算记录</h3>
-      <div class="field">
-        <label>桌号</label>
-        <select id="eTableNo">
-          <option value="1">1 号桌</option>
-          <option value="2">2 号桌</option>
-          <option value="3">3 号桌</option>
-          <option value="4">4 号桌</option>
-          <option value="5">5 号桌</option>
-          <option value="6">6 号桌</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>开始时间（24 小时制）</label>
-        <div class="row">
-          <input type="date" id="eStartDate">
-          <input type="text" id="eStartTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
-        </div>
-      </div>
-      <div class="field">
-        <label>结束时间（24 小时制）</label>
-        <div class="row">
-          <input type="date" id="eEndDate">
-          <input type="text" id="eEndTime" class="time-input" placeholder="HH:MM" maxlength="5" inputmode="numeric">
-        </div>
-      </div>
-      <div class="field">
-        <label>零食饮料等其它费用（澳币）</label>
-        <input type="number" id="eOther" min="0" step="0.5">
-      </div>
-      <div class="preview" id="ePreview"></div>
-
-      <div class="divider"></div>
-      <div class="field">
-        <label>收款明细（可分成好几笔，金额自己填；也能一个人用不同方式混着付）</label>
-        <div id="eParts"></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-          <button type="button" class="btn-ghost sm" id="eAddRow">+ 再加一笔</button>
-          <button type="button" class="btn-ghost sm" id="eEven">平分台费（按现有笔数）</button>
-          <button type="button" class="btn-ghost sm" id="eFour">台费按 4 人分</button>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
-          <button type="button" class="btn-start sm" id="eReSettle" title="丢掉旧的分账，按当前时间/费用重新起一笔">♻️ 当作重新结算</button>
-          <button type="button" class="btn-ghost sm" id="eFillAll">全部走现金</button>
-          <button type="button" class="btn-ghost sm" id="eFillCard">全部走刷卡</button>
-        </div>
-        <div class="hint" id="ePartsInfo" style="margin:8px 0 0;"></div>
-      </div>
-
-      <div class="error" id="eError" style="display:none;"></div>
-      <div class="modal-btns">
-        <button id="eSave" class="btn-start">保存修改</button>
-        <button id="eCancel" class="btn-ghost">取消</button>
-        <button id="eDelete" class="btn-settle" data-armkey="rec-del">删除这条记录</button>
-      </div>
+      </div><!-- /settle-right -->
     </div>
   </div>
 
@@ -5397,7 +5417,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.52.1";
+  var APP_VER = "v3.53.0";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5408,6 +5428,15 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.53.0", date: "2026-11-11", items: [
+      "🖥 **PC 结算弹窗改成左右两栏 + 「修改结算记录」就是结算界面 + 鸭嘴兽中英双语**（用户提的 3 件事一起做）：① 窗口 ≥900px 时结算弹窗变两栏（左：账单信息 / 罚款 / 账单明细",
+      "右：整单收款 / 实收合计 / 确认结算），一屏看全、确认按钮永远可见",
+      "手机端用 `display:contents` 保持原样",
+      "② 编辑结算记录不再用另一套弹窗，直接开**同一个结算弹窗的编辑模式**：桌号 / 单价 / 日期 / 开始–结束时间可改，罚款 / 收款明细 / 会员抵扣 / 平分全部复用，底部变「保存修改」+「删除这条记录」，**原地替换**不多出一条",
+      "顺手修掉旧编辑弹窗会吞罚款（保存后 `fine/tableAll` 没写）、合并桌金额丢失、`carryIn` 不同步 3 个坑",
+      "③ 鸭嘴兽口味可填**英文名**，「中文大字 + 灰色英文小字」显示在菜单卡片、点单、销售记录、统计明细，跟着商品库存同步（`.gs`/`代码.js` 脚本 v31：商品库存表追加「英文名」列 + `idCol:5`）。测试：界面测试新增 3 个用例（两栏+编辑模式 18 条断言、老表格没英文列不清本机英文、预约同步用例改成动态日期），集成测试场景 7/8/12/13 跟着旧编辑弹窗换成新编辑模式",
+      "`已知失败.txt` 仍 2 条"
+    ] },
     { ver: "v3.52.1", date: "2026-11-11", items: [
       "🐛 修**结算记录列表点「编辑 / 删除」命中别的单**（用户反馈「点开桌台记录，显示的不是本桌的数据」）：列表是「排序 + 搜索 + 只显示前 100 条」之后的副本，原来直接拿副本里的下标去 `state.history` 取记录 → **永远错位**（点第 1 条最新单，打开的是最老那条",
       "删除也会删错单、会员余额退给错的人）。改成排「位置」并记住每条在 `state.history` 里的原下标，编辑 / 删除 / 搜索结果全部命中被点的那一条。界面测试新增 `case_history_edit_hits_right_record` 8 条断言（3 条记录逐行核对桌号+日期、删第 1 条只删它且会员只退这单的 $20、搜索「2号桌」后再点仍对）",
@@ -5472,12 +5501,6 @@
       "③ 分类合成两大类：**零食 + 饮料 = 零食饮料**、**一代 + 二代 = 鸭嘴兽**",
       "④ 每类各自最近 12 条，块头保留盘盈 / 盘亏小计，选「全部」时顶部是两类合计，选某一类时只看这一类",
       "老记录按名字前缀归位，不用迁移数据"
-    ] },
-    { ver: "v3.44.1", date: "2026-11-06", items: [
-      "📋 **盘点记录按类别分开**（用户要求）：弹窗里原来四类（零食 / 饮料 / 鸭嘴兽一代 / 二代）混成一串、总共只取 30 条，一类盘得多就会把另一类挤没",
-      "现在固定分 4 块，**每块显示条数 + 盘盈 / 盘亏小计**",
-      "**每类各自取最近 12 条**（老记录按名字前缀自动归位，不用迁移数据）",
-      "顶部加一行总览「共 N 条 · 总盘盈 +x / 总盘亏 -y」，空的类别不占地方。数据结构和表格同步完全没动"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -5784,7 +5807,8 @@
     armRegister("att-del", function () { renderAttRecords(); });
     armRegister("emp-del", function () { renderAttendance(); });
     armRegister("rec-del", function () {
-      var b = document.getElementById("eDelete");
+      // ★ v3.53.0：删除按钮挪进结算弹窗的编辑模式（#sEditDel）
+      var b = document.getElementById("sEditDel");
       if (b) { b.removeAttribute("data-arming"); b.textContent = "删除这条记录"; }
     });
     armRegister("se-del", function () {
@@ -6488,7 +6512,8 @@
     var btn = e.target.closest("button.row-edit");
     if (!btn) return;
     var idx = parseInt(btn.getAttribute("data-idx"), 10);
-    openEditModal(idx);
+    // ★ v3.53.0：不再打开「另一套」编辑弹窗 ☞ 直接用结算弹窗的编辑模式（用户要求：和结算界面一模一样）
+    openRecordEdit(idx);
   });
 
   document.getElementById("globalRate").addEventListener("input", function () {
@@ -6900,6 +6925,21 @@
   var settleOverlay = document.getElementById("settleOverlay");
   var settleData = null;
 
+  // ★ v3.53.0：同一个弹窗两种模式 —— "settle" 正常结算 / "edit" 修改历史记录
+  //   差别只在【数据来源】和【确认按钮干什么】：
+  //     · 台费按「记录当时的单价」算（单价可在编辑块里改），carry = 0，不合并另一桌
+  //     · 「确认结算」→「保存修改」；底部多一个「删除这条记录」
+  //   收款方式 / 分笔 / 会员抵扣 / 平分 / 按人分账 全都复用同一套组件（用户要求：一模一样）
+  var billMode = "settle";
+  var editBillIdx = null;      // 正在改哪条历史记录（state.history 的下标）
+  var editBillRate = 0;        // 编辑模式的台费单价（$/小时，默认取记录当时的）
+
+  function billRate() {
+    if (billMode === "edit" && editBillRate > 0) return editBillRate;
+    return Number(state.globalRate) || 0;
+  }
+  function billFeeOf(ms) { return ceil2(billRate() * hoursOf(ms)); }
+
   function payLabel(v) { return v === "cash" ? "现金" : (v === "rmb" ? "人民币" : (v === "mixed" ? "混合支付" : "刷卡")); }
 
   function fillSettleSelects(curId) {
@@ -6916,6 +6956,7 @@
   }
 
   function mergeInfo() {
+    if (billMode === "edit") return null;      // 改历史记录不合并别的桌
     var v = document.getElementById("sMerge").value;
     if (!v) return null;
     var no = parseInt(v, 10);
@@ -6937,7 +6978,10 @@
 
   function openSettleModal(id, startTs, endTs) {
     var t = state.tables[id];
-    settleData = { id: id, startTs: startTs, endTs: endTs, shortChoice: "", shortTouched: false };
+    billMode = "settle";
+    editBillIdx = null;
+    editBillRate = 0;
+    settleData = { id: id, startTs: startTs, endTs: endTs, shortChoice: "", shortTouched: false, _extras: null };
     document.getElementById("sTitle").textContent = t.name + " · 结算";
     var extraLine = "";
     var exSum = 0;
@@ -6967,11 +7011,45 @@
     var qw = document.getElementById("sSplitWrap"), qt = document.getElementById("sSplitToggle");
     if (qw) qw.style.display = "block";
     try { spOnSettleOpen(); } catch (e) { try { console.log(e); } catch (x) {} }
+    resetSettleChrome();
+    autoDetailForDesktop();
+    settleOverlay.classList.add("show");
+  }
+
+  // ★ v3.53.0：桌面端两栏时左栏默认展开「账单明细 / 汇率」
+  //   （左栏空着也是空着；手机上保持收起，和原来一样）
+  function autoDetailForDesktop() {
+    if (!(window.innerWidth >= 900)) return;
+    var dw = document.getElementById("sDetailWrap"), dt = document.getElementById("sDetailToggle");
+    if (dw && dt) { dw.style.display = "block"; dt.textContent = "▾ 账单明细 / 汇率"; }
+  }
+
+  // 把弹窗上「编辑模式专属」的东西全部复位（每次打开都从干净状态开始）
+  function resetSettleChrome() {
+    var et = document.getElementById("sEditTime");
+    if (et) et.style.display = "none";
+    var rb = document.getElementById("sRmbBillBtn");
+    if (rb) rb.style.display = "";
+    var cf = document.getElementById("sConfirm");
+    if (cf) cf.textContent = "确认结算";
+    var del = document.getElementById("sEditDel");
+    if (del) {
+      del.style.display = "none";
+      del.removeAttribute("data-arming");
+      del.textContent = "删除这条记录";
+    }
+    var er = document.getElementById("sEditError");
+    if (er) { er.style.display = "none"; er.textContent = ""; }
     var dw = document.getElementById("sDetailWrap"), dt = document.getElementById("sDetailToggle");
     if (dw && dt) { dw.style.display = "none"; dt.textContent = "▸ 账单明细 / 汇率"; }
     var mw = document.getElementById("sMoreWrap"), mb2 = document.getElementById("sMoreBtn");
     if (mw && mb2) { mw.style.display = "none"; mb2.textContent = "⋯ 更多选项"; }
-    settleOverlay.classList.add("show");
+    // 编辑模式留下的东西：按笔明细 / 隐藏的整单卡片 / 隐藏的高级按钮，全部复位
+    settleOverlay.classList.remove("sp-advanced");
+    var spS = document.getElementById("spSingle");
+    if (spS) spS.style.display = "";
+    var advBtn = document.getElementById("spSharedAdv");
+    if (advBtn) advBtn.style.display = "";
   }
 
   function closeSettleModal() {
@@ -6980,6 +7058,11 @@
     settleOverlay.classList.remove("sp-advanced");
     settleData = null;
     settleParts = [];
+    billMode = "settle";
+    editBillIdx = null;
+    var del = document.getElementById("sEditDel");
+    if (del) { del.removeAttribute("data-arming"); del.textContent = "删除这条记录"; }
+    armSet("rec-del", null);
   }
 
   // 当前账单：总价、余额抵扣、待收
@@ -6990,7 +7073,7 @@
     if (other < 0) other = 0;
     var mg = mergeInfo();
     var mgSum = mg ? mg.sum : 0;
-    var tableFee = tableFeeOf(ms);
+    var tableFee = billFeeOf(ms);       // ★ v3.53.0：编辑模式按记录当时的单价
     // ★ 罚款：按【台费】算 ✗ 不是"其它费用"✓
     //   所以它会跟着台费一起被平分（「台费 4 人分」/ 按人分账 都自动带上 ✓）
     //   会员余额抵台费时也会把它一起抵掉 ✓
@@ -6999,7 +7082,8 @@
     if (fine < 0) fine = 0;
     var tableAll = round2(tableFee + mgSum + fine);     // 台费总额（含合并桌 + 罚款）
     var full = round2(tableAll + other);                // 这一场的全额
-    var carry = round2(Number(state.tables[settleData.id].carry) || 0);  // 这张桌上次没付的
+    // 编辑历史记录时不再叠加「这张桌上次没付」（那笔钱属于现在的桌台状态，不是这条记录）
+    var carry = (billMode === "edit") ? 0 : round2(Number(state.tables[settleData.id].carry) || 0);
     var total = round2(full + carry);                   // 本次一共要收（含上次未付）
 
     return {
@@ -7020,15 +7104,14 @@
     if (!b) b = settleBill();
     var fx = Number(state.fxRate) || 0;
     if (!(fx > 0)) return 0;
-    var t = state.tables[settleData.id];
-    if (!t) return round2(b.due * fx);
     var fee = b.tableFee;
     // 台费：账单写「人均 ¥x × 4 = ¥合计」（人均先四舍五入）
     var perFee = round2(fee / 4);
     var feeRmb = round2(round2(perFee * fx) * 4);
     // 零食：账单写「¥单价 × 数量」（单价先四舍五入）
+    // ★ v3.53.0：用 splitItems()（编辑模式下 = 这条记录当时的零食明细）
     var snackRmb = 0, snackAud = 0;
-    (t.extras || []).forEach(function (ex) {
+    splitItems().forEach(function (ex) {
       var qty = Number(ex.qty) || 0;
       if (qty <= 0) return;
       var price = Number(ex.price) || 0;
@@ -7459,13 +7542,19 @@
               : '　<span class="warn-note">超出 ' + fmtMoney(overBy) + "</span>"));
     }
     document.getElementById("sPartsInfo").innerHTML = partsInfoHtml +
-      "<br>共收 <b>" + fmtMoney(t.collected) + "</b>（刷卡 " + fmtMoney(t.card) + " · 现金 " + fmtMoney(t.cash) + " · 人民币 " + fmtMoney(t.rmb) + (t.member > 0 ? " · 会员扣款 " + fmtMoney(t.member) : "") + "）";
+      "<br>共收 <b>" + fmtMoney(t.collected) + "</b>（刷卡 " + fmtMoney(t.card) + " · 现金 " + fmtMoney(t.cash) + " · 人民币 " + fmtMoney(t.rmb) + (t.member > 0 ? " · 会员扣款 " + fmtMoney(t.member) : "") + "）" +
+      (billMode === "edit"
+        ? '<br><span style="color:var(--muted);">✎ 这是这条记录原来的收款明细：可改金额 / 换方式 / 点「+ 加一笔」拆开；改完点底部「保存修改」</span>'
+        : "");
 
     // 还差钱 → 让员工选「记在桌上」还是「免除」，小额默认免除
     // ★ v3.25.0：纯现金少收时多给一句说明（是抹零就选免除，不是就记在桌上）
     var sw = document.getElementById("sShortWrap");
     var cashOnly = t.cash > 0.005 && t.card < 0.005 && t.member < 0.005 && t.rmb < 0.005;
-    if (shortBy > 0.005) {
+    if (billMode === "edit") {
+      // 改历史记录：不涉及「桌台上还欠多少」→ 这块不显示（差额只提示、不阻塞保存）
+      sw.style.display = "none";
+    } else if (shortBy > 0.005) {
       document.getElementById("sShortAmt").textContent = "" + fmtMoney(shortBy);
       sw.style.display = "block";
       if (!settleData.shortTouched) {
@@ -7679,6 +7768,8 @@
 
   document.getElementById("sConfirm").addEventListener("click", function () {
     if (!settleData) return;
+    // ★ v3.53.0：编辑模式走「保存修改」，其余完全复用正常结算这套
+    if (billMode === "edit") { confirmRecordEdit(); return; }
     var ms = Math.max(0, settleData.endTs - settleData.startTs);
     var b = settleBill();
     var other = b.other;
@@ -7874,6 +7965,394 @@
   });
 
   // ============================================================
+  //  ✎ v3.53.0：修改结算记录 = 打开同一个结算弹窗（编辑模式）
+  // ------------------------------------------------------------
+  //  用户要求：编辑界面要和正常结算界面一模一样，目的有两个——
+  //    ① 重新结算一遍（改时间/单价/零食/罚款后重算）
+  //    ② 只改某一部分（换个付款方式、拆一笔、改桌号…）
+  //  所以这里不另做一套 UI：把记录还原成 settleData + 收款明细，整套结算组件原样复用；
+  //  确认时【原地替换】这条记录（id 不变，表格按 id 更新那一行），不新增记录。
+  // ============================================================
+  function hideBillEditError() {
+    var el = document.getElementById("sEditError");
+    if (!el) return;
+    el.textContent = "";
+    el.style.display = "none";
+  }
+  function showBillEditError(msg) {
+    var el = document.getElementById("sEditError");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    try { el.scrollIntoView({ block: "nearest" }); } catch (e) {}
+  }
+
+  // 把「日期 + 开始/结束时间」写回 settleData（结束早于开始 = 次日，夜班常见）
+  function syncEditTime() {
+    if (!settleData) return false;
+    var dstr = document.getElementById("sEditDate").value;
+    var sTxt = document.getElementById("sEditStart").value;
+    var eTxt = document.getElementById("sEditEnd").value;
+    var s = combineToTs(dstr, sTxt);
+    var e = combineToTs(dstr, eTxt);
+    var nextDay = false;
+    if (s != null && e != null && e <= s) {
+      e = combineToTs(fmtDate(s + 86400000), eTxt);
+      nextDay = true;
+    }
+    var hint = document.getElementById("sEditHint");
+    var r = parseFloat(document.getElementById("sEditRate").value);
+    editBillRate = (isNaN(r) || r < 0) ? 0 : r;
+    if (s == null || e == null || e <= s) {
+      if (hint) hint.innerHTML = "⚠️ 时间没填全：日期 + 开始/结束时间（结束早于开始时按<b>次日</b>算）";
+      return false;
+    }
+    settleData.startTs = s;
+    settleData.endTs = e;
+    if (hint) {
+      hint.innerHTML = "小时数 <b>" + fmtHours(e - s) + "</b> · 台费 <b>" + fmtMoney(billFeeOf(e - s)) + "</b>" +
+        " <span style=\"color:var(--muted);\">（单价 " + fmtMoney(billRate()) + "/小时）</span>" +
+        (nextDay ? "　<span style=\"color:#b45309;\">结束按次日 " + esc(eTxt) + " 算</span>" : "");
+    }
+    return true;
+  }
+
+  function openRecordEdit(idx) {
+    var rec = state.history[idx];
+    if (!rec) return;
+    var sTs = recordStartTs(rec), eTs = recordEndTs(rec);
+    if (!sTs || !eTs || eTs <= sTs) { sTs = Date.now() - 3600000; eTs = Date.now(); }
+
+    billMode = "edit";
+    editBillIdx = idx;
+    var tableNo = parseInt(rec.tableNo, 10) || 1;
+    settleData = {
+      id: tableNo, startTs: sTs, endTs: eTs,
+      shortChoice: "", shortTouched: false,
+      // 这条记录当时的零食明细（按人分账 / 账单明细 / 人民币默认值都用它）
+      _extras: (rec.extras && rec.extras.length) ? rec.extras.map(function (x) {
+        return { name: x.name, price: x.price, qty: x.qty, gen: x.gen };
+      }) : []
+    };
+
+    // ---- 桌号 ----
+    var sel = document.getElementById("sEditTable");
+    var opts = "";
+    for (var i = 1; i <= TABLE_COUNT; i++) opts += '<option value="' + i + '">' + i + " 号桌</option>";
+    if (sel) { sel.innerHTML = opts; sel.value = String(tableNo); }
+
+    // ---- 时间 / 单价（默认取这条记录当时的单价，避免改了时间金额悄悄变）----
+    document.getElementById("sEditDate").value = fmtDate(sTs);
+    document.getElementById("sEditStart").value = fmtHM(sTs);
+    document.getElementById("sEditEnd").value = fmtHM(eTs);
+    var hrs = hoursOf(Math.max(0, eTs - sTs));
+    editBillRate = (hrs > 0 && Number(rec.tableFee) > 0)
+      ? Math.round(Number(rec.tableFee) / hrs * 100) / 100
+      : (Number(state.globalRate) || 0);
+    document.getElementById("sEditRate").value = editBillRate;
+
+    // ---- 其它费用 / 罚款：按记录原样回填 ----
+    document.getElementById("sOther").value = Number(rec.other) || 0;
+    document.getElementById("sFine").value = Number(rec.fine) || 0;
+
+    // ---- 标题 / 提示 ----
+    document.getElementById("sTitle").textContent = (rec.name || (tableNo + " 号桌")) + " · 修改结算";
+    document.getElementById("sInfo").innerHTML =
+      "⚠️ 正在修改 <b>" + esc(rec.date || "") + "</b> 这条记录：保存后<b>原地替换</b>（不会新增一条）<br>" +
+      (settleData._extras.length
+        ? "含零食：" + settleData._extras.map(function (x) { return esc(x.name) + "×" + x.qty; }).join("、") + "<br>"
+        : "") +
+      "<span style=\"font-size:12px;color:var(--muted);\">改完点下面「保存修改」；要重新算就改时间/单价，只改某一部分就只动那一项。</span>";
+
+    // ---- 收款明细：把记录里的 parts 还原（老记录没有 parts 就按收款方式拼一笔）----
+    settleParts = [];
+    var k;
+    if (rec.parts && rec.parts.length) {
+      for (k = 0; k < rec.parts.length; k++) {
+        var rp = rec.parts[k];
+        settleParts.push({
+          amount: Number(rp.amount != null ? rp.amount : rp.due) || 0,
+          payType: rp.payType || "card",
+          rmb: rp.rmb != null ? rp.rmb : null,
+          memberId: rp.memberId || "",
+          memSearch: rp.memberName || "",
+          label: rp.label || "",
+          item: rp.item || "",
+          dueOverride: rp.dueOverride != null ? rp.dueOverride : null,
+          rmbChannel: rp.rmbChannel || "",
+          cashChannel: rp.cashChannel || ""
+        });
+      }
+    } else {
+      var total0 = Number(rec.collected != null ? rec.collected : (rec.grand != null ? rec.grand : rec.total)) || 0;
+      var bu0 = Number(rec.balanceUsed) || 0;
+      var rest0 = round2(total0 - bu0);
+      if (bu0 > 0.005) {
+        var oldMem = null;
+        for (var mi2 = 0; mi2 < state.members.length; mi2++) {
+          if (state.members[mi2].name === rec.memberName) { oldMem = state.members[mi2]; break; }
+        }
+        settleParts.push({ amount: bu0, payType: "member", rmb: null,
+                           memberId: oldMem ? oldMem.id : "", memSearch: rec.memberName || "", label: "" });
+      }
+      var pt0 = (rec.payType === "mixed") ? "card" : (rec.payType || "card");
+      if (rest0 > 0.005 || !settleParts.length) {
+        settleParts.push({ amount: Math.max(0, rest0), payType: pt0,
+                           rmb: (pt0 === "rmb" ? (rec.rmbActual || null) : null), memberId: "", memSearch: "", label: "" });
+      }
+    }
+
+    // ---- 合并桌：历史记录不重建合并明细 → 下拉只留「不合并」----
+    var mgSel = document.getElementById("sMerge");
+    if (mgSel) { mgSel.innerHTML = '<option value="">不合并（修改历史记录）</option>'; mgSel.value = ""; }
+
+    // ---- 编辑模式专属 UI ----
+    var et = document.getElementById("sEditTime");
+    if (et) et.style.display = "block";
+    var rb = document.getElementById("sRmbBillBtn");
+    if (rb) rb.style.display = "none";          // 人民币账单读的是桌台实时数据，编辑模式先不显示
+    var cf = document.getElementById("sConfirm");
+    if (cf) cf.textContent = "保存修改";
+    var del = document.getElementById("sEditDel");
+    if (del) { del.style.display = "block"; del.removeAttribute("data-arming"); del.textContent = "删除这条记录"; }
+    armSet("rec-del", null);
+    hideBillEditError();
+    var qw2 = document.getElementById("sSplitWrap");
+    if (qw2) qw2.style.display = "block";
+
+    syncEditTime();
+    refreshSettle();
+    var dw = document.getElementById("sDetailWrap"), dt = document.getElementById("sDetailToggle");
+    if (dw && dt) { dw.style.display = "none"; dt.textContent = "▸ 账单明细 / 汇率"; }
+    var mw = document.getElementById("sMoreWrap"), mb2 = document.getElementById("sMoreBtn");
+    if (mw && mb2) { mw.style.display = "none"; mb2.textContent = "⋯ 更多选项"; }
+
+    // ★ 先把记录原来的收款明细存一份：spOnSettleOpen() 会按「整单收款」重建 settleParts
+    var parts0 = settleParts.map(function (p0) {
+      var o = {};
+      for (var kk in p0) if (p0.hasOwnProperty(kk)) o[kk] = p0[kk];
+      return o;
+    });
+    try { spOnSettleOpen(); } catch (e3) { try { console.log(e3); } catch (x3) {} }
+    // 编辑模式：直接展开「按笔明细」，用记录原来的分笔（不再用整单卡片覆盖）
+    settleParts = parts0;
+    renderPayRows("sParts", settleParts);
+    settleOverlay.classList.add("sp-advanced");
+    var spS = document.getElementById("spSingle");
+    if (spS) spS.style.display = "none";                    // 整单收款卡片是「收一笔」的概念，编辑时用不上
+    var advBtn = document.getElementById("spSharedAdv");
+    if (advBtn) advBtn.style.display = "none";              // 已经在按笔模式了，不用再点「高级」
+    var piEl = document.getElementById("sPartsInfo");
+    if (piEl) piEl.innerHTML = '<span style="color:var(--muted);">✎ 下面是这条记录原来的收款明细：可以改金额 / 换方式 / 点「+ 加一笔」拆开；改完点底部「保存修改」</span>';
+    refreshSettle();
+    autoDetailForDesktop();
+    settleOverlay.classList.add("show");
+  }
+
+  // 「保存修改」：把弹窗里的结果原地写回这条记录（不新增、不动桌台状态）
+  function confirmRecordEdit() {
+    var idx = editBillIdx;
+    var rec = (idx != null) ? state.history[idx] : null;
+    if (!rec) return;
+    if (!syncEditTime()) { showBillEditError("请填写有效的时间（日期 + 开始/结束；结束早于开始时按次日算）"); return; }
+    var b = settleBill();
+    var t = partsTotals(settleParts);
+    if (!settleParts.length || t.amountSum <= 0.005) {
+      showBillEditError("请至少填一笔收款（金额要大于 0）");
+      return;
+    }
+    var i, mp;
+    for (i = 0; i < settleParts.length; i++) {
+      mp = settleParts[i];
+      if (mp.payType === "member" && !mp.memberId) { showBillEditError("有一笔「会员扣款」还没选会员"); return; }
+    }
+    var memberSum = 0;
+    for (i = 0; i < settleParts.length; i++) {
+      if (settleParts[i].payType === "member") memberSum = round2(memberSum + (Number(settleParts[i].amount) || 0));
+    }
+    if (memberSum > round2(b.tableAll) + 0.005) {
+      showBillEditError("会员余额只能抵台费：会员扣款 " + fmtMoney(memberSum) + " 超过了台费 " + fmtMoney(b.tableAll));
+      return;
+    }
+    var shortBy = round2(b.due - t.amountSum);
+
+    // ① 先把这条记录原来扣的会员余额退回去（顺带删掉对应的扣款流水）
+    refundRecordMembers(rec);
+
+    // ② 按新的收款明细逐笔算钱 + 扣会员余额（余额和流水都记上，和正常结算同一套口径）
+    var now = Date.now();
+    var collected = 0, feeSum = 0, cashSum = 0, cardSum = 0, rmbSum = 0, rmbActual = 0, memUsed = 0;
+    var partsRec = [], paySet = {}, memberNames = [], memBal = {};
+    for (i = 0; i < settleParts.length; i++) {
+      var pt = settleParts[i];
+      var due = partDue(pt), f = partFee(pt);
+      var rv = partRmb(pt);
+      var paid = partPaid(pt);          // 会员笔 = min(金额, 当前余额)
+      collected = round2(collected + paid);
+      feeSum = round2(feeSum + f);
+      var balAfter = null;
+      if (pt.payType === "cash") cashSum = round2(cashSum + paid);
+      else if (pt.payType === "rmb") {
+        rmbSum = round2(rmbSum + paid);
+        if (rv != null) rmbActual = round2(rmbActual + rv);
+      } else if (pt.payType === "member") {
+        var mm = findMember(pt.memberId);
+        if (mm) {
+          var prevBal = (memBal[mm.id] != null) ? memBal[mm.id] : (Number(mm.balance) || 0);
+          var use = round2(Math.min(round2(Number(pt.amount) || 0), Math.max(0, prevBal)));
+          balAfter = round2(prevBal - use);
+          memBal[mm.id] = balAfter;
+          memUsed = round2(memUsed + use);
+          mm.balance = balAfter;
+          if (use > 0.005) {
+            var txn = {
+              id: genId(), type: "deduct", amount: use, payAmount: 0, bonus: 0,
+              balanceAfter: balAfter, date: fmtDate(now), time: fmtHM(now), ts: now,
+              note: "台费 - " + (rec.name || "")
+            };
+            mm.txns = mm.txns || [];
+            mm.txns.push(txn);
+            logOp("会员扣台费", mm.name + "　" + fmtMoney(use) + "　（" + (rec.name || "") + " 修改记录）");
+            postToGoogle("memberRows", [memberTxnRow(mm, txn)]);
+          }
+          if (memberNames.indexOf(mm.name) < 0) memberNames.push(mm.name);
+        }
+      } else cardSum = round2(cardSum + paid);
+      paySet[pt.payType] = true;
+      partsRec.push({
+        amount: round2(pt.amount), payType: pt.payType,
+        fee: f, due: due, rmb: (pt.payType === "rmb" ? rv : null),
+        memberId: (pt.payType === "member" ? (pt.memberId || "") : ""),
+        memberName: (pt.payType === "member" ? ((findMember(pt.memberId) || {}).name || "") : ""),
+        balanceAfter: balAfter,
+        rmbChannel: pt.payType === "rmb" ? (pt.rmbChannel || "wx") : "",
+        cashChannel: pt.payType === "cash" ? (pt.cashChannel || "cash") : "",
+        label: pt.label || "",
+        item: wxPartItem(pt, { other: b.other }),
+        dueOverride: pt.dueOverride != null ? pt.dueOverride : null
+      });
+    }
+    var payKeys = [];
+    for (var pk in paySet) if (paySet.hasOwnProperty(pk)) payKeys.push(pk);
+    var payType = payKeys.length === 0 ? "cash" : (payKeys.length === 1 ? payKeys[0] : "mixed");
+
+    // ③ 原地写回这条记录（id / 麻将种类 / 零食明细 / 合并信息 / 上次未付 原样保留）
+    var tableNo = parseInt(document.getElementById("sEditTable").value, 10) || 1;
+    var s = settleData.startTs, e = settleData.endTs;
+    if (!rec.id) rec.id = genId();
+    rec.tableNo = tableNo;
+    rec.name = (state.tables[tableNo] && state.tables[tableNo].name) || (tableNo + " 号桌");
+    if (!rec.mahjongType) {
+      var ttn = state.tables[tableNo];
+      if (ttn && ttn.mahjongType) rec.mahjongType = String(ttn.mahjongType);
+    }
+    rec.startTs = s;
+    rec.endTs = e;
+    rec.date = bizDate(s);                                // 营业日（统计用）
+    rec.realDate = fmtDate(s);                            // 真实发生日期（列表显示用）
+    rec.start = fmtHM(s);
+    rec.end = fmtEndHM(e, s);
+    rec.hours = fmtHours(e - s);
+    rec.range = fmtHM(s) + " – " + fmtHM(e);
+    rec.tableFee = b.tableFee;
+    rec.tableAll = b.tableAll;
+    rec.fine = b.fine;
+    rec.other = b.other;
+    rec.total = b.full;
+    rec.fee = feeSum;
+    rec.grand = round2(b.full + feeSum);
+    rec.collected = collected;
+    rec.cashSum = cashSum;
+    rec.cardSum = cardSum;
+    rec.rmbSum = rmbSum;
+    rec.rmbActual = rmbActual;
+    rec.perTable = b.perTable;
+    rec.unpaid = shortBy > 0.005 ? shortBy : 0;
+    rec.parts = partsRec;
+    rec.payType = payType;
+    rec.memberName = memberNames.join("、");
+    var firstMem = null;
+    for (i = 0; i < partsRec.length; i++) if (partsRec[i].payType === "member" && partsRec[i].memberId) { firstMem = partsRec[i].memberId; break; }
+    rec.memberId = firstMem || "";
+    rec.balanceUsed = memUsed;
+    rec.memberUsed = memUsed;
+    rec.time = new Date().toLocaleString("zh-CN");
+
+    save();
+    render();
+    renderStats();
+    renderMembers();
+    closeSettleModal();
+    logOp("修改结算记录", rec.date + " " + rec.name + "　" + rec.range + "　应收 " + fmtMoney(rec.grand) +
+          "　实收 " + fmtMoney(rec.collected) + (shortBy > 0.005 ? "（未收 " + fmtMoney(shortBy) + "）" : ""));
+    postToGoogle("records", [recordPayload(rec)]);
+    try {
+      toast("已保存修改：" + rec.name + " " + rec.range + " · 实收 " + fmtMoney(rec.collected), "var(--green-dark)");
+    } catch (e4) {}
+  }
+
+  // 「删除这条记录」（两下确认；和原来一样：先进回收站、会员余额退回）
+  function deleteRecordAt(idx) {
+    var rec = state.history[idx];
+    if (!rec) return;
+    var recId = rec.id;
+    state.trash = state.trash || [];
+    state.trash.unshift({ kind: "record", at: Date.now(), data: JSON.parse(JSON.stringify(rec)) });
+    if (state.trash.length > 20) state.trash.length = 20;
+    var refunded = refundRecordMembers(rec);
+    state.history.splice(idx, 1);
+    logOp("删除结算记录", ((rec && rec.date) || "") + " " + ((rec && rec.name) || "") +
+          "　" + fmtMoney((rec && rec.grand) || 0));
+    if (recId) postDelete("records", recId);
+    if (refunded > 0.005) {
+      try { toast("已退回会员余额 " + fmtMoney(refunded) + " ✓", "var(--green-dark)"); } catch (e) {}
+    }
+    save();
+    render();
+    renderStats();
+    closeSettleModal();
+  }
+
+  // 编辑弹窗里的输入框：改时间/单价 → 重算台费；改桌号 → 只改桌号
+  ["sEditDate", "sEditStart", "sEditEnd", "sEditRate"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", function () {
+      hideBillEditError();
+      syncEditTime();
+      refreshSettle();
+    });
+  });
+  maskTime(document.getElementById("sEditStart"));
+  maskTime(document.getElementById("sEditEnd"));
+  (function () {
+    var selT = document.getElementById("sEditTable");
+    if (selT) selT.addEventListener("change", function () {
+      if (!settleData) return;
+      var no = parseInt(this.value, 10) || 1;
+      settleData.id = no;
+      var tname = (state.tables[no] && state.tables[no].name) || (no + " 号桌");
+      document.getElementById("sTitle").textContent = tname + " · 修改结算";
+      refreshSettle();
+    });
+  })();
+  (function () {
+    var delBtn = document.getElementById("sEditDel");
+    if (!delBtn) return;
+    delBtn.addEventListener("click", function () {
+      if (billMode !== "edit" || editBillIdx == null) return;
+      if (armGet("rec-del") !== "1") {
+        armSet("rec-del", "1");
+        delBtn.setAttribute("data-arming", "1");
+        delBtn.textContent = "再点一次确认删除";
+        return;
+      }
+      armSet("rec-del", null);
+      deleteRecordAt(editBillIdx);
+    });
+  })();
+
+  // ============================================================
   //  👥 按人分账：台费平分 + 每样零食指定谁吃的 → 直接算每人该付多少
   //  （用户需求：台费每人10刀、零食总共23刀，谁吃了哪样，心算小数很容易错）
   // ============================================================
@@ -7883,8 +8362,9 @@
   var splitFeePayer = {};      // 几号 → 他的台费由谁付（默认自己）
   function splitItems() {
     var id = settleData && settleData.id;
+    // ★ v3.53.0：编辑模式用这条记录当时的零食明细（不再读桌台当前挂的零食）
+    if (settleData && settleData._extras) return settleData._extras;
     var t = (id != null) ? state.tables[id] : null;
-    if (!t && settleData && settleData._extras) return settleData._extras;
     return (t && t.extras) ? t.extras : [];
   }
   function splitCurrentN() {
@@ -7971,7 +8451,7 @@
   function renderSplitResult() {
     var n = splitCurrentN(), items = splitItems();
     var ms = Math.max(0, settleData.endTs - settleData.startTs);
-    var fee = tableFeeOf(ms);
+    var fee = billFeeOf(ms);
     var per = {}, p2;
     for (p2 = 1; p2 <= n; p2++) per[p2] = 0;
     var cents = Math.round(fee * 100), fbase = Math.floor(cents / n), frem = cents - fbase * n;
@@ -8654,8 +9134,16 @@
     ["sFine", "sMerge"].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener("input", function () { spRenderCurrent(); spBuildParts(); });
-      el.addEventListener("change", function () { spRenderCurrent(); spBuildParts(); });
+      // ★ v3.53.0：编辑历史记录时，罚款变了只重算金额 ✗
+      //   不能走 spBuildParts（那会按「整单收款」把记录原来的分笔冲成一笔）
+      el.addEventListener("input", function () {
+        if (billMode === "edit") { refreshSettle(); return; }
+        spRenderCurrent(); spBuildParts();
+      });
+      el.addEventListener("change", function () {
+        if (billMode === "edit") { refreshSettle(); return; }
+        spRenderCurrent(); spBuildParts();
+      });
     });
     var mg = document.getElementById("splitMerge");
     if (mg) mg.addEventListener("change", function () { spRenderCurrent(); spBuildParts(); });
@@ -9043,7 +9531,7 @@
   if (sa) sa.addEventListener("click", function () {
     var n = splitCurrentN(), items = splitItems();
     var ms = Math.max(0, settleData.endTs - settleData.startTs);
-    var fee = tableFeeOf(ms);
+    var fee = billFeeOf(ms);
     var p2;
     var cents = Math.round(fee * 100), fbase = Math.floor(cents / n), frem = cents - fbase * n;
     // ★ 台费和零食【两套独立的账】，绝对不要事后相减 ✗
@@ -9115,329 +9603,8 @@
     if (e.target === settleOverlay) closeSettleModal();
   });
 
-  // ---------- 修改结算记录弹窗 ----------
-  var editOverlay = document.getElementById("editOverlay");
-  var editIndex = null;
-
-  var editParts = [];        // 编辑弹窗里的收款明细
-  var editPartsDirty = false; // 用户是否手动改过明细（改过就不再自动同步总额）
-
-  function openEditModal(idx) {
-    var rec = state.history[idx];
-    if (!rec) return;
-    editIndex = idx;
-    document.getElementById("eTableNo").value = String(rec.tableNo != null ? rec.tableNo : 1);
-    var sTs = recordStartTs(rec);
-    var eTs = recordEndTs(rec);
-    if (!sTs || !eTs) {
-      sTs = Date.now() - 3600000;
-      eTs = Date.now();
-    }
-    document.getElementById("eStartDate").value = fmtDate(sTs);
-    document.getElementById("eStartTime").value = fmtHM(sTs);
-    document.getElementById("eEndDate").value = fmtDate(eTs);
-    document.getElementById("eEndTime").value = fmtHM(eTs);
-    document.getElementById("eOther").value = rec.other != null ? rec.other : 0;
-
-    // 把这条记录还原成「收款明细」——有分账明细就直接用，没有就按老字段拼一份
-    editParts = [];
-    if (rec.parts && rec.parts.length) {
-      for (var i = 0; i < rec.parts.length; i++) {
-        var rp = rec.parts[i];
-        editParts.push({
-          amount: Number(rp.amount != null ? rp.amount : rp.due) || 0,
-          payType: rp.payType || "card",
-          rmb: rp.rmb != null ? rp.rmb : null,
-          memberId: rp.memberId || "",
-          memSearch: rp.memSearch || "",
-          label: rp.label || "",
-          item: rp.item || "",                                 // ★ v3.40.0：编辑后群文案还能分清台费/零食
-          dueOverride: rp.dueOverride != null ? rp.dueOverride : null,
-          // ★ v3.31.0：编辑时把人民币渠道 / 现金形式也带回来
-          rmbChannel: rp.rmbChannel || "",
-          cashChannel: rp.cashChannel || ""
-        });
-      }
-    } else {
-      var total0 = Number(rec.total) || 0;
-      var bu0 = Number(rec.balanceUsed) || 0;
-      var rest0 = round2(total0 - bu0);
-      var oldMem = null;
-      for (var mi = 0; mi < state.members.length; mi++) {
-        if (state.members[mi].name === rec.memberName) { oldMem = state.members[mi]; break; }
-      }
-      if (bu0 > 0.005) {
-        editParts.push({ amount: bu0, payType: "member", rmb: null,
-                         memberId: oldMem ? oldMem.id : "", memSearch: rec.memberName || "" });
-      }
-      var pt0 = (rec.payType === "mixed") ? "card" : (rec.payType || "card");
-      if (rest0 > 0.005 || !editParts.length) {
-        editParts.push({ amount: Math.max(0, rest0), payType: pt0,
-                         rmb: (pt0 === "rmb" ? (rec.rmbActual || null) : null), memberId: "", memSearch: "" });
-      }
-    }
-    editPartsDirty = false;
-
-    hideEditError();
-    updateEditPreview(true);
-    editOverlay.classList.add("show");
-  }
-
-  function closeEditModal() {
-    editOverlay.classList.remove("show");
-    editIndex = null;
-    var del = document.getElementById("eDelete");
-    del.removeAttribute("data-arming");
-    del.textContent = "删除这条记录";
-  }
-
-  function showEditError(msg) {
-    var el = document.getElementById("eError");
-    el.textContent = msg;
-    el.style.display = "block";
-  }
-
-  function hideEditError() {
-    var el = document.getElementById("eError");
-    el.textContent = "";
-    el.style.display = "none";
-  }
-
-  // rebuild=true 才重建收款明细的 DOM；普通输入走 false，避免失焦
-  function updateEditPreview(rebuild) {
-    var s = combineToTs(document.getElementById("eStartDate").value, document.getElementById("eStartTime").value);
-    var e = combineToTs(document.getElementById("eEndDate").value, document.getElementById("eEndTime").value);
-    var other = parseFloat(document.getElementById("eOther").value) || 0;
-    if (other < 0) other = 0;
-    var p = document.getElementById("ePreview");
-    if (!s || !e || e <= s) {
-      p.innerHTML = "";
-      return;
-    }
-    var tableFee = tableFeeOf(e - s);
-    var total = round2(tableFee + other);
-
-    // 用户没手动改过明细时，跟着「合计」自动调整各笔金额
-    if (!editPartsDirty) syncParts(editParts, total, 0);
-    if (rebuild) {
-      renderPayRows("eParts", editParts);        // 只有加/删行、改付款方式时才重建
-    } else {
-      syncPartRowValues("eParts", editParts);    // 平时只改数字 → 输入框不会失焦
-    }
-    refreshPartDues("eParts", editParts);
-    var t = partsTotals(editParts);
-
-    p.innerHTML = "小时数 <b>" + fmtHours(e - s) + " 小时</b> · 台费 <b>" + fmtMoney(tableFee) + "</b>" +
-      (other > 0.005 ? " ＋ 零食 <b>" + fmtMoney(other) + "</b>" : "") +
-      " · <b>合计 " + fmtMoney(total) + "</b>";
-
-    var diff = round2(total - t.amountSum);
-    document.getElementById("ePartsInfo").innerHTML =
-      "明细合计 <b>" + fmtMoney(t.amountSum) + "</b> ／ 合计 <b>" + fmtMoney(total) + "</b>" +
-      (Math.abs(diff) < 0.005 ? '　<span style="color:var(--green-dark);">✔ 一致</span>'
-        : '　<span class="warn-note">' + (diff > 0 ? "还差 " + fmtMoney(diff) : "超出 " + fmtMoney((-diff))) + "</span>") +
-      "<br>应收（刷卡已含手续费）<b>" + fmtMoney(t.collected) + "</b>　现金 " + fmtMoney(t.cash) +
-      " · 刷卡 " + fmtMoney(t.card) + " · 人民币 " + fmtMoney(t.rmb) +
-      (t.member > 0.005 ? ' · <b style="color:#6b21a8;">会员扣款 ' + fmtMoney(t.member) + "</b>" : "") +
-      (t.rmbActual > 0.005 ? "　人民币实收 ¥" + t.rmbActual.toFixed(2) : "");
-
-    // 会员余额会怎么变，提前说清楚
-    var oldUse = 0, rec0 = state.history[editIndex];
-    if (rec0 && rec0.memberName) {
-      for (var m0 = 0; m0 < state.members.length; m0++) {
-        if (state.members[m0].name === rec0.memberName) { oldUse = Number(rec0.balanceUsed) || 0; break; }
-      }
-    }
-    if (oldUse > 0.005 || t.member > 0.005) {
-      document.getElementById("ePartsInfo").innerHTML +=
-        '<br><span style="color:#6b21a8;">会员余额：先把原来扣的 ' + fmtMoney(oldUse) +
-        " 还回去，再按新明细扣 " + fmtMoney(t.member) + "</span>";
-    }
-  }
-
-  maskTime(document.getElementById("eStartTime"));
-  maskTime(document.getElementById("eEndTime"));
-  ["eStartDate", "eStartTime", "eEndDate", "eEndTime", "eOther"].forEach(function (id) {
-    document.getElementById(id).addEventListener("input", function () {
-      hideEditError();
-      updateEditPreview(false);      // 只更新数字，不重建明细（避免失焦）
-    });
-  });
-
-  // 输入金额/人民币/搜索：不重建 DOM（否则每打一个字就失焦）
-  document.getElementById("eParts").addEventListener("input", function (e) {
-    handlePartEvent(e, editParts, "eParts", function () { editPartsDirty = true; updateEditPreview(false); });
-  });
-  // 改付款方式 / 选会员：handlePartEvent 内部已经重建过了，这里不用再建
-  document.getElementById("eParts").addEventListener("change", function (e) {
-    handlePartEvent(e, editParts, "eParts", function () { editPartsDirty = true; updateEditPreview(false); });
-  });
-  // 删掉一笔：行数变了 → 要重建
-  document.getElementById("eParts").addEventListener("click", function (e) {
-    handlePartDelete(e, editParts, "eParts", function () { editPartsDirty = true; updateEditPreview(true); });
-  });
-  // 按当前的时间/其它费用算出「合计」（不依赖明细，所以随时能重算）
-  function editTotal() {
-    var s0 = combineToTs(document.getElementById("eStartDate").value, document.getElementById("eStartTime").value);
-    var e0 = combineToTs(document.getElementById("eEndDate").value, document.getElementById("eEndTime").value);
-    var o0 = parseFloat(document.getElementById("eOther").value) || 0;
-    if (o0 < 0) o0 = 0;
-    if (!s0 || !e0 || e0 <= s0) return 0;
-    return round2(tableFeeOf(e0 - s0) + o0);
-  }
-  // 平分：只分「台费」那部分；零食饮料单独算一笔（不平分）
-  function editSplitEven(n) {
-    var s0 = combineToTs(document.getElementById("eStartDate").value, document.getElementById("eStartTime").value);
-    var e0 = combineToTs(document.getElementById("eEndDate").value, document.getElementById("eEndTime").value);
-    var other = parseFloat(document.getElementById("eOther").value) || 0;
-    if (other < 0) other = 0;
-    if (!s0 || !e0 || e0 <= s0) { showEditError("请先填好开始/结束时间"); return; }
-    var tableFee = tableFeeOf(e0 - s0);
-    if (tableFee <= 0 && other <= 0) { showEditError("台费和零食都是 0，没什么可分"); return; }
-    if (n < 1) n = 1;
-
-    var next = [], i, acc = 0;
-    var each = Math.floor(tableFee / n * 100) / 100;
-    for (i = 0; i < n; i++) {
-      var amt = (i === n - 1) ? round2(tableFee - acc) : each;
-      acc = round2(acc + amt);
-      var old = editParts[i];
-      next.push({ amount: amt, payType: (old && old.payType) || "card", rmb: null,
-                  memberId: (old && old.memberId) || "", memSearch: (old && old.memSearch) || "",
-                  label: "台费" });
-    }
-    // 零食饮料不平分，单独一笔（默认现金，自己改）
-    if (other > 0.005) {
-      next.push({ amount: round2(other), payType: "cash", rmb: null,
-                  memberId: "", memSearch: "", label: "零食" });
-    }
-    editParts = next;
-    editPartsDirty = true;
-    hideEditError();
-    updateEditPreview(true);
-  }
-
-  document.getElementById("eAddRow").addEventListener("click", function () {
-    editPartsDirty = true;
-    var left = round2(editTotal() - partsTotals(editParts).amountSum);
-    editParts.push({ amount: left > 0.005 ? left : 0, payType: "cash", rmb: null, memberId: "", memSearch: "" });
-    updateEditPreview(true);
-  });
-  document.getElementById("eEven").addEventListener("click", function () {
-    editSplitEven(editParts.length || 1);
-  });
-  document.getElementById("eFour").addEventListener("click", function () { editSplitEven(4); });
-  document.getElementById("eReSettle").addEventListener("click", function () {
-    // 当作重新结算：丢掉旧分账，从「一笔刷卡 = 全部合计」重新开始
-    var total = editTotal();
-    if (total <= 0) { showEditError("请先填好开始/结束时间"); return; }
-    editParts = [{ amount: total, payType: "card", rmb: null, memberId: "", memSearch: "" }];
-    editPartsDirty = false;      // 之后跟着时间/费用自动走
-    hideEditError();
-    updateEditPreview(true);
-  });
-  document.getElementById("eFillAll").addEventListener("click", function () {
-    editPartsDirty = true;
-    var total = round2(partsTotals(editParts).amountSum);
-    editParts = [{ amount: total, payType: "cash", rmb: null, memberId: "", memSearch: "" }];
-    updateEditPreview(true);
-  });
-  document.getElementById("eFillCard").addEventListener("click", function () {
-    editPartsDirty = true;
-    var total = round2(partsTotals(editParts).amountSum);
-    editParts = [{ amount: total, payType: "card", rmb: null, memberId: "", memSearch: "" }];
-    updateEditPreview(true);
-  });
-  document.getElementById("eSave").addEventListener("click", function () {
-    var idx = editIndex;
-    var rec = state.history[idx];
-    if (!rec) return;
-    var tableNo = parseInt(document.getElementById("eTableNo").value, 10) || 1;
-    var s = combineToTs(document.getElementById("eStartDate").value, document.getElementById("eStartTime").value);
-    var e = combineToTs(document.getElementById("eEndDate").value, document.getElementById("eEndTime").value);
-    if (!s || !e || e <= s) {
-      showEditError("请填写有效的开始/结束时间（24 小时制，结束须晚于开始）");
-      return;
-    }
-    var other = parseFloat(document.getElementById("eOther").value) || 0;
-    if (other < 0) other = 0;
-    var tableFee = tableFeeOf(e - s);
-    var total = round2(tableFee + other);
-    var t = partsTotals(editParts);
-    if (!editParts.length || t.amountSum <= 0.005) {
-      showEditError("请至少填一笔收款（金额要大于 0）");
-      return;
-    }
-
-    // ---- 会员余额：先把这条记录原来扣的还回去，再按新明细扣 ----
-    var i2, m2;
-    if (rec.memberName && (Number(rec.balanceUsed) || 0) > 0.005) {
-      for (i2 = 0; i2 < state.members.length; i2++) {
-        if (state.members[i2].name === rec.memberName) {
-          state.members[i2].balance = round2((Number(state.members[i2].balance) || 0) + (Number(rec.balanceUsed) || 0));
-          break;
-        }
-      }
-    }
-    var memNames = [], memTotal = 0;
-    for (i2 = 0; i2 < editParts.length; i2++) {
-      if (editParts[i2].payType !== "member") continue;
-      var pMem = findMember(editParts[i2].memberId);
-      if (!pMem) { showEditError("有一笔「会员扣款」还没选会员"); return; }
-      var use = Math.min(partPaid(editParts[i2]), Number(pMem.balance) || 0);
-      pMem.balance = round2((Number(pMem.balance) || 0) - use);
-      memNames.push(pMem.name);
-      memTotal = round2(memTotal + use);
-    }
-
-    if (!rec.id) rec.id = genId();
-    rec.tableNo = tableNo;
-    rec.name = tableNo + " 号桌";
-    // ★ v3.32.5：老记录没存麻将种类 → 保存时用这张桌当前的种类补上
-    //   （用户想补历史记录的种类，编辑一下直接保存就行，不用真改别的）
-    if (!rec.mahjongType) {
-      var ttn = state.tables[tableNo];
-      if (ttn && ttn.mahjongType) rec.mahjongType = String(ttn.mahjongType);
-    }
-    rec.startTs = s;
-    rec.endTs = e;
-    rec.date = bizDate(s);                       // 日期按营业日算
-    rec.start = fmtHM(s);
-    rec.end = fmtEndHM(e, s);
-    rec.hours = fmtHours(e - s);
-    rec.tableFee = tableFee;
-    rec.other = other;
-    rec.total = total;
-    rec.fee = t.feeSum;
-    rec.grand = t.collected;
-    rec.range = fmtHM(s) + " – " + fmtHM(e);
-    // 收款明细
-    rec.parts = editParts.map(function (pp) {
-      var pr = { amount: round2(pp.amount), payType: pp.payType,
-               rmb: pp.payType === "rmb" ? partRmb(pp) : null, due: partPaid(pp),
-               label: pp.label || "", dueOverride: pp.dueOverride != null ? pp.dueOverride : null,
-               memberId: pp.memberId || "", memberName: (findMember(pp.memberId) || {}).name || "",
-               // ★ v3.31.0：保存人民币渠道 / 现金形式
-               rmbChannel: pp.payType === "rmb" ? (pp.rmbChannel || "wx") : "",
-               cashChannel: pp.payType === "cash" ? (pp.cashChannel || "cash") : "",
-               // ★ v3.40.0：名目留着，改完记录再发群文案还能分清台费 / 零食
-               item: pp.item || "" };
-      return pr;
-    });
-    rec.payType = (t.card > 0.005 && (t.cash > 0.005 || t.rmb > 0.005 || t.member > 0.005)) ? "mixed"
-                : (t.card > 0.005 ? "card" : (t.rmb > 0.005 ? "rmb" : (t.member > 0.005 && t.cash <= 0.005 ? "member" : "cash")));
-    rec.collected = t.collected;
-    rec.balanceUsed = memTotal;
-    rec.memberName = memNames.join("、");
-    rec.rmbActual = t.rmbActual;
-    save();
-    render();
-    renderMembers();
-    closeEditModal();
-    logOp("修改结算记录", rec.date + " " + rec.name + "　" + rec.range + "　应收 " + fmtMoney(rec.grand) +
-          "　实收 " + fmtMoney(rec.collected));
-    postToGoogle("records", [recordPayload(rec)]);
-  });
+  // ★ v3.53.0：旧「修改结算记录」弹窗（#editOverlay）已删除 —— 现在用结算弹窗的编辑模式
+  //   （openRecordEdit / confirmRecordEdit 在上面结算弹窗那一节里）
 
   // ============================================================
   //  会员资料可改 + 会员流水可改可删（用户提出：充值/扣款填错了改不了）
@@ -9760,8 +9927,6 @@
     try { toast("已删除 ✓ 余额已回滚（数据还留着，可恢复）", "var(--green-dark)"); } catch (e) {}
   });
 
-  document.getElementById("eCancel").addEventListener("click", closeEditModal);
-
   // ★ 删除结算记录时，把它用掉的【会员余额】退回去。
   //   为什么必须有：删记录只是把营业额去掉了，会员被扣的钱如果不退，
   //   会员就白亏了（用户实测反馈："会员扣款的钱没有给我退回去"）。
@@ -9811,47 +9976,6 @@
     }
     return total;
   }
-
-  // 删除这条结算记录
-  document.getElementById("eDelete").addEventListener("click", function () {
-    var idx = editIndex;
-    if (idx == null || !state.history[idx]) return;
-    var btn = this;
-    if (armGet("rec-del") !== "1") {
-      armSet("rec-del", "1");
-      btn.setAttribute("data-arming", "1");
-      btn.textContent = "再点一次确认删除";
-      return;
-    }
-    armSet("rec-del", null);
-    // ★ 必须在 splice 之前先把这条记录抓出来：
-    //   原来这里用 rec，但 rec 只在 openEditModal 里定义过，这个函数里根本没有，
-    //   所以点第二次「确认删除」必然报 "rec is not defined"，记录删不掉。
-    var delRec = state.history[idx];
-    var delId = delRec && delRec.id;
-    // ★ v3.47.0（D）：删掉的记录先放进回收站（最近 20 条），可在这里恢复
-    if (delRec) {
-      state.trash = state.trash || [];
-      state.trash.unshift({ kind: "record", at: Date.now(), data: JSON.parse(JSON.stringify(delRec)) });
-      if (state.trash.length > 20) state.trash.length = 20;
-    }
-    // ★ 先把会员抵扣的钱退回去，再删记录（顺序很重要：退款要用到记录里的明细）
-    var refunded = refundRecordMembers(delRec);
-    state.history.splice(idx, 1);
-    logOp("删除结算记录", ((delRec && delRec.date) || "") + " " + ((delRec && delRec.name) || "") +
-          "　" + fmtMoney((delRec && delRec.grand) || 0));
-    if (delId) postDelete("records", delId);
-    if (refunded > 0.005) {
-      try { toast("已退回会员余额 " + fmtMoney(refunded) + " ✓", "var(--green-dark)"); } catch (e) {}
-    }
-    save();
-    render();
-    renderStats();
-    closeEditModal();
-  });
-  editOverlay.addEventListener("click", function (e) {
-    if (e.target === editOverlay) closeEditModal();
-  });
 
   // ---------- 结算结果弹窗 ----------
   var overlay = document.getElementById("overlay");
@@ -10361,7 +10485,7 @@ function inventoryPayloads() {
     var vph = String(v.photo || "");
     if (vph.length > 46000) vph = "";
     out.push({ id: v.id, cat: v.gen === 2 ? "二代" : "一代",
-               name: v.name, price: 0, stock: Number(v.stock) || 0,
+               name: v.name, en: String(v.en || ""), price: 0, stock: Number(v.stock) || 0,
                photo: vph.length > 40 ? vph : "" });
   }
   // 按 零食 → 饮料 → 一代 → 二代 归位（同类挨在一起，新加的就落在同类下面）
@@ -10519,6 +10643,17 @@ function verifyConfigPush(done) {
     }
     return "";
   }
+  // 老表格没有「英文名」列 → 拉回来时别把本机填好的英文冲掉（和照片同一套兜底）
+  function vapeEnFromLocal(id, name, gen) {
+    var i;
+    for (i = 0; i < state.vapes.length; i++) if (id && state.vapes[i].id === id) return String(state.vapes[i].en || "");
+    for (i = 0; i < state.vapes.length; i++) {
+      if (name && state.vapes[i].name === name && (Number(state.vapes[i].gen) === 2 ? 2 : 1) === gen) {
+        return String(state.vapes[i].en || "");
+      }
+    }
+    return "";
+  }
   function applyInventoryRows(rows) {
     var menu = [], vapes = [];
     for (var i = 0; i < rows.length; i++) {
@@ -10534,7 +10669,9 @@ function verifyConfigPush(done) {
         var vg = cat === "二代" ? 2 : 1;
         var vph2 = String(r.photo || "").trim();
         if (!vph2) vph2 = vapePhotoFromLocal(id, name, vg);
-        vapes.push({ id: id, gen: vg, name: name, stock: stock, photo: vph2 });
+        var ven2 = String(r.en || "").trim();
+        if (!ven2) ven2 = vapeEnFromLocal(id, name, vg);
+        vapes.push({ id: id, gen: vg, name: name, en: ven2, stock: stock, photo: vph2 });
       } else {
         var c2 = cat === "饮料" ? "drink" : "snack";
         var ph2 = String(r.photo || "").trim();
@@ -10565,12 +10702,16 @@ function verifyConfigPush(done) {
           if (state.vapes[v].name === name && state.vapes[v].gen === gen) { hv = state.vapes[v]; break; }
         }
         var vphm = String(r.photo || "").trim();
+        var venm = String(r.en || "").trim();
         if (hv) {
           hv.stock = stock;
           if (vphm) hv.photo = vphm;           // 云端没带照片（老表格）→ 保留本机照片
+          if (venm) hv.en = venm;              // 云端没带英文（老表格）→ 保留本机英文
           updV++;
         } else {
-          state.vapes.push({ id: rid || genId(), gen: gen, name: name, stock: stock, photo: vphm });
+          state.vapes.push({ id: rid || genId(), gen: gen, name: name,
+                             en: venm || vapeEnFromLocal(rid, name, gen),
+                             stock: stock, photo: vphm });
           addV++;
         }
       } else {
@@ -10719,7 +10860,7 @@ function cfgSignature() {
   }).sort(byId);
   var v = state.vapes.map(function (x) {
     var vph = String(x.photo || "");
-    return [x.id, x.gen, x.name, x.stock,
+    return [x.id, x.gen, x.name, String(x.en || ""), x.stock,
             vph ? (vph.length + "|" + vph.slice(0, 8) + "|" + vph.slice(-8)) : ""];
   }).sort(byId);
   var e = state.employees.map(function (x) { return [x.id, x.name, x.color, x.avatar ? 1 : 0]; }).sort(byId);
@@ -12812,7 +12953,8 @@ jsonpGet(t, onRes);
       for (i = 0; i < state.vapes.length; i++) {
         var v = state.vapes[i];
         meRows.push({ id: v.id, gen: Number(v.gen) === 2 ? 2 : 1, name: v.name,
-                      stock: Number(v.stock) || 0, photo: String(v.photo || ""), kill: false });
+                      en: String(v.en || ""), stock: Number(v.stock) || 0,
+                      photo: String(v.photo || ""), kill: false });
       }
     } else {
       for (i = 0; i < state.snackMenu.length; i++) {
@@ -12828,7 +12970,7 @@ jsonpGet(t, onRes);
     var isVape = meKind === "vape";
     document.getElementById("menuEditTitle").textContent = isVape ? "编辑鸭嘴兽口味" : "编辑商品菜单";
     document.getElementById("menuEditHint").innerHTML = isVape
-      ? "这里改<b>口味名称</b>和<b>库存</b>。平时列表里不能改，点「✎ 编辑」才进得来。"
+      ? "这里改<b>口味名称</b>、<b>英文名</b>和<b>库存</b>。英文名填了以后，菜单卡片 / 点单 / 销售记录里都会在中文下面显示一行灰色小字（实物包装上都是英文，方便对货）。平时列表里不能改，点「✎ 编辑」才进得来。"
       : "这里改<b>照片</b>、<b>名称</b>、<b>单价</b>、<b>库存</b>，也能加商品、删商品。平时列表里改不动，点「✎ 编辑」才进得来。";
     document.getElementById("meColCat").textContent = isVape ? "代别" : "分类";
     document.getElementById("meColPhoto").style.display = "";       // 零食 / 电子烟都能传照片
@@ -12866,8 +13008,17 @@ jsonpGet(t, onRes);
       h += '<select data-mf="cat"><option value="snack"' + (r.cat === "drink" ? "" : " selected") + '>零食</option>' +
            '<option value="drink"' + (r.cat === "drink" ? " selected" : "") + '>饮料</option></select>';
     }
-    h += '<input type="text" data-mf="name" value="' + esc(r.name || "") + '" placeholder="名称">';
-    if (!isVape) h += '<input type="number" data-mf="price" min="0" step="0.5" value="' + (Number(r.price) || 0) + '">';
+    if (isVape) {
+      // ★ v3.53.0：中文名 + 英文名（实物包装只有英文，这里填一次，菜单/点单/记录都会显示）
+      h += '<div class="me-name-cell">' +
+             '<input type="text" data-mf="name" value="' + esc(r.name || "") + '" placeholder="中文名">' +
+             '<input type="text" class="me-en" data-mf="en" value="' + esc(r.en || "") +
+               '" placeholder="英文名（可选，实物包装上写的）">' +
+           "</div>";
+    } else {
+      h += '<input type="text" data-mf="name" value="' + esc(r.name || "") + '" placeholder="名称">';
+      h += '<input type="number" data-mf="price" min="0" step="0.5" value="' + (Number(r.price) || 0) + '">';
+    }
     h += '<input type="number" data-mf="stock" min="0" step="1" value="' + (Number(r.stock) || 0) + '">';
     h += '<button type="button" class="me-del" data-mf="del" title="标记删除（保存时生效）">✕</button>';
     h += '</div>';
@@ -12924,11 +13075,13 @@ jsonpGet(t, onRes);
       var g = rows[i].querySelector('[data-mf="gen"]');
       var c = rows[i].querySelector('[data-mf="cat"]');
       var n = rows[i].querySelector('[data-mf="name"]');
+      var en = rows[i].querySelector('[data-mf="en"]');
       var p = rows[i].querySelector('[data-mf="price"]');
       var st = rows[i].querySelector('[data-mf="stock"]');
       if (g) r.gen = String(g.value) === "2" ? 2 : 1;
       if (c) r.cat = String(c.value) === "drink" ? "drink" : "snack";
       if (n) r.name = String(n.value || "").trim();
+      if (en) r.en = String(en.value || "").trim();
       if (p) r.price = Math.max(0, round2(parseFloat(p.value) || 0));
       if (st) r.stock = Math.max(0, Math.floor(parseFloat(st.value) || 0));
     }
@@ -12950,7 +13103,8 @@ jsonpGet(t, onRes);
     if (meKind === "vape") {
       var nv = [];
       for (i = 0; i < keep.length; i++) {
-        nv.push({ id: keep[i].id || genId(), gen: keep[i].gen, name: keep[i].name, stock: keep[i].stock,
+        nv.push({ id: keep[i].id || genId(), gen: keep[i].gen, name: keep[i].name,
+                  en: String(keep[i].en || "").trim(), stock: keep[i].stock,
                   photo: String(keep[i].photo || "") });
       }
       state.vapes = nv;
@@ -12984,7 +13138,7 @@ jsonpGet(t, onRes);
     var stock = Math.max(0, Math.floor(parseFloat(document.getElementById("meAddStock").value) || 0));
     var catV = document.getElementById("meAddCat").value;
     var row = (meKind === "vape")
-      ? { gen: String(catV) === "2" ? 2 : 1, name: name, stock: stock, photo: "", kill: false }
+      ? { gen: String(catV) === "2" ? 2 : 1, name: name, en: "", stock: stock, photo: "", kill: false }
       : { cat: catV === "drink" ? "drink" : "snack", name: name, price: price, stock: stock, photo: "", kill: false };
     // 插到同组第一个之前 → 显示时就在那一组的最上面
     var g = meGroupOf(row), at = meRows.length;
@@ -14786,6 +14940,27 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     for (var i = 0; i < map.length; i++) if (n.indexOf(map[i][0]) >= 0) return map[i][1];
     return "💨";
   }
+  // ★ v3.53.0：鸭嘴兽「英文名」——实物包装上只有英文，系统里中文大字下面配一行灰色小字
+  //   ⚠️ 只用于【显示】✗ 绝不能拼进 name ✗（name 是购物车 / 扣库存 / 历史记录的唯一键）
+  function vapeEnOf(gen, name) {
+    var g = Number(gen) === 2 ? 2 : 1, nm = String(name || ""), i;
+    for (i = 0; i < (state.vapes || []).length; i++) {
+      var v = state.vapes[i];
+      if (String(v.name) === nm && (Number(v.gen) === 2 ? 2 : 1) === g) return String(v.en || "");
+    }
+    // 老记录可能没存代别 → 按名字单独找一次
+    for (i = 0; i < (state.vapes || []).length; i++) {
+      if (String(state.vapes[i].name) === nm) return String(state.vapes[i].en || "");
+    }
+    return "";
+  }
+  // 卡片用：单独一行灰字；点单/记录里用 inline=true（跟在中文后面）
+  function vapeEnHtml(gen, name, inline) {
+    var en = vapeEnOf(gen, name);
+    if (!en) return "";                       // 没填英文 → 不留空行（卡片高度不会跳）
+    return inline ? ' <span class="vape-en">' + esc(en) + "</span>"
+                  : '<div class="snack-en">' + esc(en) + "</div>";
+  }
   // 点单里一共几根（一二代合并 —— 阶梯价按这个总数算）
   function vapeCartSticks() {
     var n = 0;
@@ -14831,7 +15006,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
       '<div class="snack-thumb">' +
         (ph.length > 40 ? '<img src="' + ph + '" alt="">' : '<span class="em">' + vapeEmojiOf(v) + "</span>") +
       "</div>" +
-      '<div class="snack-nm">' + esc(v.name) + "</div>" +
+      '<div class="snack-nm">' + esc(v.name) + "</div>" + vapeEnHtml(gen, v.name) +
       // ★ 阶梯价：按点单里【一二代合计的总根数】自动换档（满3/满5/满10/员工价）
       '<div class="snack-pr">' + price +
         (tier !== "零售" ? '<span class="vape-tier">' + tier + "</span>" : "") + "</div>" +
@@ -14909,7 +15084,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
         var ln = ov.lines[i] || { unit: 0, amount: 0 };
         h += '<div class="cart-row">' +
           '<span class="cart-thumb">' + vapeThumbHtml(gen0, c.name) + "</span>" +
-          '<span class="cname">' + esc(c.name) +
+          '<span class="cname">' + esc(c.name) + vapeEnHtml(gen0, c.name, true) +
             ' <span class="cmeta" style="color:var(--muted);font-size:12px;">' +
             (gen0 === 2 ? "二代" : "一代") + "　" + fmtMoney((Number(ln.unit) || 0)) + "／根　库存 " +
             vapeStockOf(c.gen, c.name) + "</span></span>" +
@@ -14979,7 +15154,9 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
         var items = "";
         for (var j = 0; j < h.items.length; j++) {
           if (j) items += "、";
-          items += (h.items[j].gen === 2 ? "二代" : "一代") + " " + h.items[j].name + "×" + h.items[j].qty;
+          items += (h.items[j].gen === 2 ? "二代" : "一代") + " " + h.items[j].name +
+                   (vapeEnOf(h.items[j].gen, h.items[j].name) ? " " + vapeEnOf(h.items[j].gen, h.items[j].name) : "") +
+                   "×" + h.items[j].qty;
         }
         // 应收下面的小字：刷卡加价 / 手续费
         var notes = [];
@@ -19134,7 +19311,9 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var vitems = "";
       for (var vi = 0; vi < vh.items.length; vi++) {
         if (vi) vitems += "、";
-        vitems += (vh.items[vi].gen === 2 ? "二代" : "一代") + vh.items[vi].name + "×" + vh.items[vi].qty;
+        vitems += (vh.items[vi].gen === 2 ? "二代" : "一代") + vh.items[vi].name +
+                  (vapeEnOf(vh.items[vi].gen, vh.items[vi].name) ? " " + vapeEnOf(vh.items[vi].gen, vh.items[vi].name) : "") +
+                  "×" + vh.items[vi].qty;
       }
       r.txns.push({
         kind: "vape", dt: vh.date, t: txnTimeWithReal(vh, vh.time), d: vitems, a: Number(vh.grand) || 0,
