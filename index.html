@@ -339,6 +339,7 @@
      不然会把整张表撑宽 → 要左右拖动才能看到「编辑」 */
   .history td.pay-cell { white-space: normal; min-width: 190px; max-width: 420px; line-height: 2.1; }
   .history td.pay-cell .chip { margin-bottom: 3px; }
+  .history td.money .cell-pays { margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
   /* ★ v3.19.1：品项那一格太长时换行 ✗ 别把整张表撑到要左右滑 ✓
      用户反馈：零食饮料结算记录里的「操作」列要右划才看得见（品项写了 8 样，表被撑宽） */
   #snackHistoryWrap tbody tr:not(.txn-grp) td:nth-child(2),
@@ -1921,7 +1922,7 @@
   #splitPanel .sp-head input[type=number] { width:64px;padding:4px 8px;border:1px solid var(--line);border-radius:8px; }
   #splitPanel .sp-head .sp-push { margin-left:auto; }
   #splitPanel .sp-tip { font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5; }
-  #splitPanel .sp-item, #splitPanel .sp-person { border:1px solid var(--line);border-radius:12px;padding:9px 10px;margin-top:8px;background:var(--card); }
+  #splitPanel .sp-item, #splitPanel .sp-person, #memPayCard .sp-person { border:1px solid var(--line);border-radius:12px;padding:9px 10px;margin-top:8px;background:var(--card); }
   #splitPanel .sp-item-head { display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:14px; }
   #splitPanel .sp-price { color:var(--muted);font-size:13px; }
   #splitPanel .sp-assigned { margin-left:auto;font-size:12px;font-weight:700; }
@@ -1936,28 +1937,28 @@
   #splitPanel .sp-chip.sp-chip-fused .sp-chip-del { padding:9px 10px; display:inline-flex; align-items:center; border-left:1px solid #cfe8d7; color:var(--c-warn); font-weight:900; }
   body.dark #splitPanel .sp-chip.sp-chip-fused .sp-chip-del { border-left-color:var(--c-ink-2); color:#fbbf24; }
   #splitPanel .sp-mini { font-family:inherit;cursor:pointer;font-size:12px;border-radius:999px;padding:6px 10px;border:1px solid var(--line);background:#fff;color:var(--muted); }
-  #splitPanel .sp-person-top { display:flex;align-items:baseline;gap:8px;font-size:15px; }
-  #splitPanel .sp-due { margin-left:auto;color:var(--green-dark); }
-  #splitPanel .sp-line { font-size:13px;color:var(--muted);margin-top:3px; }
-  #splitPanel .sp-payline { display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px; }
+  #splitPanel .sp-person-top, #memPayCard .sp-person-top { display:flex;align-items:baseline;gap:8px;font-size:15px; }
+  #splitPanel .sp-due, #memPayCard .sp-due { margin-left:auto;color:var(--green-dark); }
+  #splitPanel .sp-line, #memPayCard .sp-line { font-size:13px;color:var(--muted);margin-top:3px; }
+  #splitPanel .sp-payline, #memPayCard .sp-payline { display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px; }
   /* v3.36.3：结算弹窗顶部「怎么收」也套用同一套胶囊按钮（只在按人分账模式显示） */
-  #splitPanel .sp-pay, #sQuickPay .sp-pay { font-family:inherit;cursor:pointer;font-size:12px;font-weight:700;border-radius:999px;padding:8px 10px;min-height:36px;border:1px solid #e3e8e5;background:#fff;color:var(--muted); }
-  #splitPanel .sp-pay.on, #sQuickPay .sp-pay.on { border-color:var(--green);background:var(--green);color:#fff; }
+  #splitPanel .sp-pay, #sQuickPay .sp-pay, #memPayCard .sp-pay { font-family:inherit;cursor:pointer;font-size:12px;font-weight:700;border-radius:999px;padding:8px 10px;min-height:36px;border:1px solid #e3e8e5;background:#fff;color:var(--muted); }
+  #splitPanel .sp-pay.on, #sQuickPay .sp-pay.on, #memPayCard .sp-pay.on { border-color:var(--green);background:var(--green);color:#fff; }
   /* v3.32.2：渠道按钮配色（微信绿 / 支付宝蓝） */
-  #splitPanel .sp-pay.sp-ch-wx.on { border-color:#07C160;background:#07C160;color:#fff; }
-  #splitPanel .sp-pay.sp-ch-ali.on { border-color:#1677FF;background:#1677FF;color:#fff; }
-  #splitPanel .sp-pay.sp-ch-wx:not(.on) { color:#07a04f;border-color:#a7e3c3; }
-  #splitPanel .sp-pay.sp-ch-ali:not(.on) { color:#1677FF;border-color:#a9c8ff; }
-  #splitPanel .sp-note { font-size:12px;color:var(--c-warn);margin-top:3px; }
+  #splitPanel .sp-pay.sp-ch-wx.on, #memPayCard .sp-pay.sp-ch-wx.on { border-color:#07C160;background:#07C160;color:#fff; }
+  #splitPanel .sp-pay.sp-ch-ali.on, #memPayCard .sp-pay.sp-ch-ali.on { border-color:#1677FF;background:#1677FF;color:#fff; }
+  #splitPanel .sp-pay.sp-ch-wx:not(.on), #memPayCard .sp-pay.sp-ch-wx:not(.on) { color:#07a04f;border-color:#a7e3c3; }
+  #splitPanel .sp-pay.sp-ch-ali:not(.on), #memPayCard .sp-pay.sp-ch-ali:not(.on) { color:#1677FF;border-color:#a9c8ff; }
+  #splitPanel .sp-note, #memPayCard .sp-note { font-size:12px;color:var(--c-warn);margin-top:3px; }
   #splitPanel .sp-sum { font-size:14px;margin-top:10px; }
   #splitPanel .sp-sum .ok { color:var(--green-dark);font-weight:700; }
   #splitPanel .sp-sum .warn { color:var(--c-warn);font-weight:700; }
   #splitPanel .sp-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center; }
   #splitPanel .sp-adv { margin-top:8px; }
-  body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person { background:var(--ink); }
-  body.dark #splitPanel .sp-chip, body.dark #splitPanel .sp-pay, body.dark #splitPanel .sp-mini, body.dark #sQuickPay .sp-pay { background:var(--dk-sunken);color:#d1d5db;border-color:var(--c-ink-2); }
+  body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person, body.dark #memPayCard .sp-person { background:var(--ink); }
+  body.dark #splitPanel .sp-chip, body.dark #splitPanel .sp-pay, body.dark #splitPanel .sp-mini, body.dark #sQuickPay .sp-pay, body.dark #memPayCard .sp-pay { background:var(--dk-sunken);color:#d1d5db;border-color:var(--c-ink-2); }
   body.dark #splitPanel .sp-chip.on { background:var(--green-dark);color:#fff;border-color:var(--green); }
-  body.dark #splitPanel .sp-pay.on, body.dark #sQuickPay .sp-pay.on { background:var(--green);color:#fff; }
+  body.dark #splitPanel .sp-pay.on, body.dark #sQuickPay .sp-pay.on, body.dark #memPayCard .sp-pay.on { background:var(--green);color:#fff; }
   /* 应收旁边的小字说明：刷卡含手续费 / 人民币折澳币（v3.18.0） */
   #splitPanel .sp-due-sub { margin-left:5px;font-size:12px;color:var(--muted);font-weight:400; }
   /* 会员搜索选择（v3.18.0）：会员多时下拉太难找，改成打字筛选 + 点选 */
@@ -1995,11 +1996,23 @@
   #settleOverlay.sp-carry #splitPanel { display: none !important; }
   #settleOverlay.sp-advanced #sParts, #settleOverlay.sp-advanced #sAddRow { display: block !important; }
   #settleOverlay.sp-advanced #sSplitWrap > label { display: block !important; }
-  #splitPanel .sp-methodline { margin-top: 5px; }
+  #splitPanel .sp-methodline, #memPayCard .sp-methodline { margin-top: 5px; }
   #splitPanel .sp-methodline select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; max-width: 190px; }
-  #splitPanel .sp-feehint { font-size: 12px; color: var(--c-warn-deep); margin-top: 3px; }
+  #splitPanel .sp-feehint, #memPayCard .sp-feehint { font-size: 12px; color: var(--c-warn-deep); margin-top: 3px; }
   #splitPanel #sMoreBtn { margin-top: 8px; }
   #splitPanel #sMoreWrap { margin-top: 8px; }
+
+  /* ★ 收款明细行：手机上按格子排（以前被零食购物车的 flex-wrap 规则带歪，
+      金额 / 方式 / 删除 / 小计各占一行）。结算 / 改记录 / 会员充值三处共用 */
+  @media (max-width: 640px) {
+    .cart-row.pay-head { display: grid; grid-template-columns: auto minmax(72px, 92px) minmax(0, 1fr) 32px auto;
+                         gap: 6px 8px; align-items: center; }
+    .cart-row.pay-head .part-due { margin-left: 0; justify-self: end; }
+    .cart-row.pay-head select { width: 100%; min-width: 0; }
+    .cart-row.pay-detail { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+    .cart-row.pay-detail > select { max-width: 62%; }
+    .cart-row.pay-detail > input[type="number"] { max-width: 44%; }
+  }
 
   /* ===== 人民币账单（只读展示） ===== */
   #rmbBillOverlay { z-index: 90; }
@@ -3575,19 +3588,54 @@
         <div class="hint">默认「自动」= 按「充值那一刻谁在上班」猜。猜不到、或想改就自己选一个人 ✓（选「不算提成」就不进工资）</div>
       </div>
       <div class="field" id="memPayField">
-        <label>收款明细（可混着付：现金 / 刷卡 / 人民币；刷卡 +1.2% 手续费）</label>
-        <div id="memParts"></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-          <button type="button" class="btn-ghost sm" id="memAddRow">+ 再加一笔</button>
-          <button type="button" class="btn-ghost sm" id="memFillAll">全部走现金</button>
+        <label>收款</label>
+        <div id="memPayCard">
+          <div class="sp-person">
+            <div class="sp-person-top">
+              <b id="memPayTitle">整单收款</b>
+              <b class="sp-due" id="memPayDue">$0.00</b>
+            </div>
+            <div class="sp-line" id="memPayLine"></div>
+            <div class="sp-payline sp-methodline"><span>怎么收</span>
+              <button type="button" class="sp-pay" data-memmethod="cash">💵 现金</button>
+              <button type="button" class="sp-pay" data-memmethod="card">💳 刷卡</button>
+              <button type="button" class="sp-pay" data-memmethod="rmb">🇨🇳 人民币</button>
+            </div>
+            <div class="sp-payline" id="memActualRow" style="margin-top:6px;">
+              <span id="memActualLabel">实收 $</span>
+              <input type="number" id="memActual" min="0" step="0.01"
+                     style="width:110px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-weight:700;text-align:right;">
+              <span class="sp-feehint" id="memActualHint" style="margin:0;"></span>
+              <span id="memChannelBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></span>
+            </div>
+            <div class="sp-note" id="memPayNote" hidden></div>
+            <div class="sp-payline" style="margin-top:8px;">
+              <button type="button" class="btn-ghost sm" id="memSplitToggle">👥 分成几笔收</button>
+              <span class="hint" style="margin:0;">要混着付（现金＋刷卡＋人民币）才点这里</span>
+            </div>
+          </div>
         </div>
-        <div class="hint" id="memPartsInfo" style="margin:6px 0 0;"></div>
+        <div id="memSplitWrap" hidden style="margin-top:8px;">
+          <div id="memParts"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            <button type="button" class="btn-ghost sm" id="memAddRow">+ 加一笔</button>
+            <button type="button" class="btn-ghost sm" id="memFillAll">全部走现金</button>
+            <button type="button" class="btn-ghost sm" id="memBackSingle">← 回到整单</button>
+          </div>
+          <div class="hint" id="memPartsInfo" style="margin:6px 0 0;"></div>
+        </div>
       </div>
-      <div class="preview" id="memPreview"></div>
       <div class="error" id="memError" style="display:none;"></div>
-      <div class="modal-btns">
-        <button id="memConfirm" class="btn-start">确认</button>
-        <button id="memCancel" class="btn-ghost">取消</button>
+      <!-- ★ 到账/扣款结果 + 吸底按钮（和结算弹窗同一套） -->
+      <div class="settle-foot" id="memFoot">
+        <div class="sf-k" id="memFootK">到账金额</div>
+        <div class="big" id="memGrand">$0.00</div>
+        <div class="sf-sub" id="memFootSub1"></div>
+        <div class="sf-sub" id="memFootSub2"></div>
+        <div class="modal-btns">
+          <button id="memConfirm" class="btn-settle">确认充值</button>
+          <button id="memCancel" class="btn-ghost">取消</button>
+        </div>
       </div>
     </div>
   </div>
@@ -5317,7 +5365,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.49.5";
+  var APP_VER = "v3.50.0";
   var APP_DATE = "2026-11-10";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5328,6 +5376,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.50.0", date: "2026-11-10", items: [
+      "💳 会员充值的收款 UI 改成和结算弹窗**同一套「整单收款」卡片**（用户要求：充值这的支付 UI 也和别的 UI 一样）：默认就是 `怎么收：💵现金 / 💳刷卡 / 🇨🇳人民币` 一排胶囊，点一下整单按这个方式收，刷卡自动带出含手续费的实收、可手改",
+      "现金分纸币/转账、人民币分微信/支付宝（和结算一致）。要混着付才点「👥 分成几笔收」（原来的分笔明细收进去当高级选项，顺手修了手机上金额/方式/✕/小计各占一行的错位）。底部改成**吸底合计**：大字「到账金额」+ 实付＋赠送 / 实收 / 充值后余额 + 「确认充值」（扣款、余额调整共用，按钮字随之变）。会员交易明细里的**充值行补上收款方式色块**（现金/刷卡/人民币，和结算记录、统计明细一致）",
+      "老数据没存分笔时按现金/刷卡/人民币汇总兜底。界面测试新增 `case_recharge_pay_ui` 14 条断言（整单默认 / 换方式 / 实收含手续费 / 分笔展开 / 到账与流水 / 色块）"
+    ] },
     { ver: "v3.49.5", date: "2026-11-10", items: [
       "📊 结算记录的**分组小计拆开**（用户反馈：原来只有一个金额，看不出是台费还是含了挂账零食）：组标题行改成 `台费 $199.74 · 零食 $34.00 · 罚款 $10.00 · 应收 $244.87`，**没发生罚款的那天不显示「罚款」这一节**",
       "手机卡片的分组条同样显示，放不下一行就换到第二行右对齐。口径：台费=纯台费（不含罚款，和统计页「台费」卡一致）、零食=挂账零食、罚款=单独列、应收=最终收的钱（含罚款与手续费）。界面测试新增 6 条断言（四项都有 / 没罚款不显示 / 分组应收＝明细应收相加 / 手机分组条）"
@@ -5398,12 +5451,6 @@
       "② **「⋯」菜单每项带文字**（店铺待办 / 汇率对照 / 夜间模式 / 字号）—— 抽象图标认不出，写了字点之前就知道是什么",
       "③ **标签页改回两行（3+3）**，不再横向滑动，6 个页签一眼看全",
       "行高和字号一起放大（11px 高 / 14px 字），手指更好点。桌面端图标顺序、大小完全不变"
-    ] },
-    { ver: "v3.43.0", date: "2026-11-06", items: [
-      "📊 汇率加点改成**自动学习**（用户要求：看 16 天对照的平均差值调整）：`📊 汇率对照` 16 天实测支付宝真实加点中位 **0.45%**、平均 0.49%，而原来固定 0.33%，自动价平均比支付宝**低 0.161%**（¥1000 少收 ¥1.6）。现在自动价 = 市场价 × (1 + 加点)，加点取最近 30 条对照记录「支付宝价 ÷ 市场价 − 1」的中位数（不足 5 条用默认 0.45%，离群值过滤）",
-      "长按「实时」填数字 = 固定加点、填 `auto` = 恢复自动",
-      "📊 弹窗顶部显示当前加点 / 样本数 / 平均差值",
-      "加点状态跟云端同步（`fxMarkupAuto`）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -7056,7 +7103,7 @@
   // 单行：刷卡/现金可改金额；人民币锁澳币只改实收 ¥；会员扣款要选会员
   // 每笔收款分两行：第一行金额/方式/应收，第二行才是人民币或会员的细节（内容更清楚）
   function partRowHtml(p, i, noMember) {
-    var head = '<div class="cart-row" style="border-bottom:none;padding-bottom:2px;">' +
+    var head = '<div class="cart-row pay-head" style="border-bottom:none;padding-bottom:2px;">' +
       '<span style="min-width:' + (p.label ? "34px" : "18px") + ';color:' + (p.label === "零食" ? "#b45309" : "var(--muted)") + ';font-size:' + (p.label ? "13px;font-weight:700;" : "13px;") + '">' + (p.label ? esc(p.label) : (i + 1)) + "</span>" +
       '<input type="number" min="0" step="0.5" value="' + p.amount + '" data-part="amount" data-idx="' + i + '"' +
         ' style="width:96px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right;font-size:14px;">' +
@@ -7075,7 +7122,7 @@
       // 刷卡：可以直接填银行实际收到的那笔钱（含手续费）
       var auto = partDue({ amount: p.amount, payType: "card", dueOverride: null });
       var shown = (p.dueOverride != null && p.dueOverride !== "") ? p.dueOverride : "";
-      detail = '<div class="cart-row" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
+      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
         '<span style="min-width:18px;"></span>' +
         '<span style="font-size:13px;color:var(--muted);">实收（含手续费）$</span>' +
         '<input type="number" min="0" step="0.01" value="' + shown + '" placeholder="' + auto.toFixed(2) + '" ' +
@@ -7085,7 +7132,7 @@
         "</div>";
     } else if (p.payType === "rmb") {
       // ★ v3.31.0：人民币要分【微信 / 支付宝】（用户需求：群消息里要写清哪个渠道收的）
-      detail = '<div class="cart-row" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
+      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
         '<span style="min-width:18px;"></span>' +
         '<select data-part="rmbch" data-idx="' + i + '" title="收款的渠道（群消息里会写出来）" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
           '<option value="wx"' + (p.rmbChannel !== "alipay" ? " selected" : "") + ">微信</option>" +
@@ -7098,7 +7145,7 @@
         "</div>";
     } else if (p.payType === "cash") {
       // ★ v3.31.0：现金分【纸币 / 转账】（用户需求）
-      detail = '<div class="cart-row" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
+      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
         '<span style="min-width:18px;"></span>' +
         '<select data-part="cashch" data-idx="' + i + '" title="收款形式（群消息里会写出来）" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;font-weight:700;">' +
           '<option value="cash"' + (p.cashChannel !== "transfer" ? " selected" : "") + ">现金（纸币）</option>" +
@@ -7110,7 +7157,7 @@
       var m = findMember(p.memberId);
       var bal = m ? (Number(m.balance) || 0) : 0;
       var lack = m && bal < p.amount - 0.005;
-      detail = '<div class="cart-row" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
+      detail = '<div class="cart-row pay-detail" style="border-bottom:1px dashed var(--line);padding-top:0;flex-wrap:wrap;">' +
         '<span style="min-width:18px;"></span>' +
         '<span style="font-size:13px;color:var(--muted);">搜索</span>' +
         '<input type="text" placeholder="姓名 / 电话…" value="' + esc(p.memSearch || "") + '" data-part="memsearch" data-idx="' + i + '"' +
@@ -15528,7 +15575,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         document.getElementById("memAmount").value = Number(state.rechargeTiers[i].pay) || 0;
         document.getElementById("memBonus").value = Number(state.rechargeTiers[i].bonus) || 0;
         memBonusTouched = false;
-        memSyncParts(); renderMemParts(); updateMemPreview();
+        memActual = null; memRmbActual = null;
+        refreshMemPay();
         break;
       }
     }
@@ -15675,6 +15723,30 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     renderMemberTxns();
   }
 
+  // ★ 充值那几行的「收款方式」色块：和结算记录 / 统计明细用同一套 chip
+  function memTxnChips(t) {
+    var chips = [], i, p;
+    if (t && t.parts && t.parts.length) {
+      for (i = 0; i < t.parts.length; i++) {
+        p = t.parts[i] || {};
+        if (p.payType === "member") continue;            // 充值不收会员余额
+        chips.push(payChip(chipCls(p.payType), payLabelOf(p.payType),
+          (p.due != null ? p.due : p.amount), p.payType === "rmb" ? p.rmb : null, ""));
+      }
+      return chips;
+    }
+    // 老数据没存 parts → 用汇总字段兜底
+    var cash = Number(t.cashSum) || 0, card = Number(t.cardSum) || 0, rmb = Number(t.rmbSum) || 0;
+    var fee = Number(t.fee) || 0;
+    if (cash > 0.005) chips.push(payChip("cash", "现金", cash));
+    if (card > 0.005) chips.push(payChip("card", "刷卡", round2(card + fee)));
+    if (rmb > 0.005) chips.push(payChip("rmb", "人民币", rmb, Number(t.rmbActual) || null));
+    if (!chips.length && Number(t.payAmount) > 0.005) {
+      chips.push(payChip(chipCls(t.payType || "cash"), payLabelOf(t.payType || "cash"), Number(t.payAmount)));
+    }
+    return chips;
+  }
+
   function renderMemberTxns() {
     var wrap = document.getElementById("memberTxnWrap");
     var title = document.getElementById("memTxnTitle");
@@ -15703,6 +15775,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var x = list[n];
       var isRe = (x.t.type === "recharge");
       var isAdj = (x.t.type === "adjust");
+      // ★ 充值行补上收款方式色块（和结算记录 / 统计明细一致）
+      var chipHtml = "", chipList = isRe ? memTxnChips(x.t) : [];
+      for (var ch = 0; ch < chipList.length; ch++) {
+        chipHtml += '<span class="chip ' + esc(chipList[ch].cls) + '">' + esc(chipList[ch].txt) + "</span>";
+      }
       // 📱 手机摘要卡：会员 · 时间 · 金额（充值 + / 消费 −）
       var amtTxt;
       if (isRe) amtTxt = "+" + fmtMoney(Number(x.t.payAmount != null ? x.t.payAmount : (Number(x.t.amount) || 0)));
@@ -15719,7 +15796,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
           (isRe ? "到账 " + fmtMoney((Number(x.t.amount) || 0)) + " · " : "") +
           "余额 " + fmtMoney((Number(x.t.balanceAfter) || 0)) +
           (x.t.note ? " · " + esc(x.t.note) : "") + "</div>" +
-        '<div class="rec-bottom"><span></span><span class="rec-acts">' +
+        '<div class="rec-bottom"><span class="rec-pays">' + chipHtml + "</span>" +
+          '<span class="rec-acts">' +
           '<button class="btn-ghost sm" data-txnedit="' + esc(x.mid) + "|" + esc(x.t.id) + '">改</button>' +
           '<button class="btn-ghost sm" data-txndel="' + esc(x.mid) + "|" + esc(x.t.id) + '" style="color:#b91c1c;">删</button>' +
         "</span></div></div>";
@@ -15734,7 +15812,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         "</div></td>" +
         '<td><span style="font-weight:700;color:' + (isRe ? "var(--green-dark)" : (isAdj ? "#1d4e89" : "#8a5a00")) + ';">' +
           (isRe ? "充值" : (isAdj ? "余额调整" : "扣款")) + "</span></td>" +
-        '<td class="money">' + (isRe && x.t.payAmount != null ? "" + fmtMoney(Number(x.t.payAmount)) : "—") + '</td>' +
+        '<td class="money">' + (isRe && x.t.payAmount != null ? "" + fmtMoney(Number(x.t.payAmount)) : "—") +
+          (chipHtml ? '<div class="cell-pays">' + chipHtml + "</div>" : "") + '</td>' +
         '<td class="money">' + (isAdj
           ? '<span style="color:' + ((x.t.adjust || 0) >= 0 ? "var(--green-dark)" : "var(--red)") + ';">' +
             ((x.t.adjust || 0) >= 0 ? "+" : "−") + "" + fmtMoney(Math.abs(Number(x.t.adjust) || 0)) + "</span>"
@@ -15831,10 +15910,35 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   var memTarget = null, memMode = "recharge";
 
   var memParts = [];
+  // ★ 收款 UI 和结算弹窗同一套：默认「整单收款」，要混着付才点「分成几笔收」
+  var memPayMode = "single";           // single = 整单收款；split = 分成几笔
+  var memPayMethod = "cash";           // 整单时的方式：cash / card / rmb
+  var memActual = null;                // 刷卡实收（含手续费），手改过才有值
+  var memRmbActual = null;             // 人民币实收 ¥，手改过才有值
+  var memRmbChannel = "wx";            // 人民币渠道：wx 微信 / alipay 支付宝
+  var memCashChannel = "cash";         // 现金形式：cash 纸币 / transfer 转账
 
-  // 充值时的收款明细：明细合计 = 实付金额
+  function memAmountVal() {
+    return round2(Math.max(0, parseFloat(document.getElementById("memAmount").value) || 0));
+  }
+  // 整单收款：按当前方式生成那一笔（金额 = 实付）
+  function memSinglePart() {
+    var amt = memAmountVal();
+    var p = { amount: amt, payType: memPayMethod, rmb: null };
+    if (memPayMethod === "rmb") {
+      p.rmbChannel = memRmbChannel;
+      p.rmb = (memRmbActual != null && memRmbActual !== "") ? round2(memRmbActual)
+            : (state.fxRate > 0 ? round2(amt * state.fxRate) : null);
+    } else if (memPayMethod === "cash") {
+      p.cashChannel = memCashChannel;
+    } else if (memActual != null && memActual !== "") {
+      p.dueOverride = round2(memActual);
+    }
+    return p;
+  }
+  // 分笔模式：把各笔金额对齐到实付（前面几笔保留，最后一笔补差）
   function memSyncParts() {
-    var amt = round2(Math.max(0, parseFloat(document.getElementById("memAmount").value) || 0));
+    var amt = memAmountVal();
     if (!memParts.length) { memParts.push({ amount: amt, payType: "cash", rmb: null }); }
     var sum = 0, i;
     for (i = 0; i < memParts.length; i++) sum = round2(sum + (Number(memParts[i].amount) || 0));
@@ -15849,9 +15953,14 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       acc = round2(acc + v);
     }
   }
+  function memBuildParts() {
+    if (memPayMode === "single") { memParts = [memSinglePart()]; return; }
+    if (!memParts.length) memParts = [memSinglePart()];
+    memSyncParts();
+  }
   function updateMemPartsInfo() {
     var t = partsTotals(memParts);
-    var amt = round2(Math.max(0, parseFloat(document.getElementById("memAmount").value) || 0));
+    var amt = memAmountVal();
     var short = round2(amt - t.amountSum);
     document.getElementById("memPartsInfo").innerHTML =
       "明细合计 <b>" + fmtMoney(t.amountSum) + "</b> ／ 实付 <b>" + fmtMoney(amt) + "</b>" +
@@ -15865,6 +15974,137 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     renderPayRows("memParts", memParts, true);
     refreshPartDues("memParts", memParts);
     updateMemPartsInfo();
+  }
+
+  // 收款卡片（整单）：和结算弹窗「整单收款」一样的排版
+  // rebuildRows：分笔模式下要不要重画明细行（输入过程中不能重画，否则丢焦点）
+  function renderMemPayCard(rebuildRows) {
+    var amt = memAmountVal();
+    var split = (memPayMode === "split");
+    var t = partsTotals(memParts);
+    var title = document.getElementById("memPayTitle");
+    var due = document.getElementById("memPayDue");
+    var line = document.getElementById("memPayLine");
+    var methodRow = document.querySelector("#memPayCard .sp-methodline");
+    if (methodRow) methodRow.style.display = split ? "none" : "";
+    var btns = document.querySelectorAll("#memPayCard [data-memmethod]");
+    for (var bi = 0; bi < btns.length; bi++) {
+      var mth = btns[bi].getAttribute("data-memmethod");
+      if (!split && mth === memPayMethod) btns[bi].classList.add("on");
+      else btns[bi].classList.remove("on");
+    }
+    title.textContent = split ? ("分成 " + memParts.length + " 笔收") : "整单收款";
+    if (split) {
+      due.innerHTML = fmtMoney(t.amountSum) +
+        '　<span class="sp-due-sub">实收 ' + fmtMoney(t.collected) + "</span>";
+      line.innerHTML = "实付 <b>" + fmtMoney(amt) + "</b>" +
+        (Math.abs(round2(amt - t.amountSum)) < 0.005
+          ? '　<span style="color:var(--green-dark);">✔ 和明细一致</span>'
+          : '　<span class="warn-note">' + (amt > t.amountSum ? "还差 " + fmtMoney(round2(amt - t.amountSum)) : "超出 " + fmtMoney(round2(t.amountSum - amt))) + "</span>");
+    } else {
+      var fee = partFee(memParts[0]);
+      var dueTxt = fmtMoney(amt) + (fee > 0.005 ? '　<span class="sp-due-sub">含手续费 ' + fmtMoney(fee) + "</span>" : "");
+      due.innerHTML = dueTxt;
+      line.innerHTML = "实付 <b>" + fmtMoney(amt) + "</b>" +
+        (memPayMethod === "cash" ? "　·　现金不收手续费"
+          : (memPayMethod === "card" ? "　·　刷卡 +" + state.feeRate + "% 手续费"
+            : (state.fxRate > 0 ? "　·　汇率 ¥" + state.fxRate + "/澳币" : "")));
+    }
+    // 实收输入框（整单才显示；分笔时改下面的明细）
+    var actRow = document.getElementById("memActualRow");
+    actRow.style.display = split ? "none" : "";
+    if (!split) {
+      var lab = document.getElementById("memActualLabel");
+      var inp = document.getElementById("memActual");
+      var hint = document.getElementById("memActualHint");
+      var chBox = document.getElementById("memChannelBtns");
+      var p0 = memParts[0];
+      if (memPayMethod === "rmb") {
+        lab.textContent = "实收 ¥";
+        inp.step = "1";
+        inp.value = (partRmb(p0) != null ? Number(partRmb(p0)).toFixed(2) : "");
+        inp.readOnly = false;
+        hint.textContent = state.fxRate > 0 ? ("按汇率 ¥" + state.fxRate + "/澳币，可改") : "请先在顶部设置汇率";
+        chBox.innerHTML = '<button type="button" class="sp-pay sp-ch-wx' + (memRmbChannel !== "alipay" ? " on" : "") + '" data-memchan="rmb|wx">微信</button>' +
+          '<button type="button" class="sp-pay sp-ch-ali' + (memRmbChannel === "alipay" ? " on" : "") + '" data-memchan="rmb|alipay">支付宝</button>';
+      } else if (memPayMethod === "card") {
+        lab.textContent = "实收 $";
+        inp.step = "0.01";
+        inp.value = partDue(p0).toFixed(2);
+        inp.readOnly = false;
+        hint.textContent = "含手续费，可改";
+        chBox.innerHTML = "";
+      } else {
+        lab.textContent = "实收 $";
+        inp.step = "0.01";
+        inp.value = amt.toFixed(2);
+        inp.readOnly = true;
+        hint.textContent = "澳币，不收手续费";
+        chBox.innerHTML = '<button type="button" class="sp-pay' + (memCashChannel !== "transfer" ? " on" : "") + '" data-memchan="cash|cash">纸币</button>' +
+          '<button type="button" class="sp-pay' + (memCashChannel === "transfer" ? " on" : "") + '" data-memchan="cash|transfer">转账</button>';
+      }
+    }
+    // 分笔面板
+    document.getElementById("memSplitWrap").hidden = !split;
+    document.getElementById("memSplitToggle").textContent = split ? "👥 正在分成 " + memParts.length + " 笔收" : "👥 分成几笔收";
+    if (split) {
+      if (rebuildRows) renderMemParts();
+      else { refreshPartDues("memParts", memParts); updateMemPartsInfo(); }
+    }
+  }
+
+  // 底部吸底：到账 / 扣款金额 + 按钮
+  function updateMemPreview() {
+    if (!memTarget) return;
+    var amt = memAmountVal();
+    var bal = Number(memTarget.balance) || 0;
+    var footK = document.getElementById("memFootK");
+    var grand = document.getElementById("memGrand");
+    var s1 = document.getElementById("memFootSub1");
+    var s2 = document.getElementById("memFootSub2");
+    var btn = document.getElementById("memConfirm");
+    if (memMode === "recharge") {
+      var bonus = parseFloat(document.getElementById("memBonus").value) || 0;
+      if (bonus < 0) bonus = 0;
+      var credited = round2(amt + bonus);
+      var t = partsTotals(memParts);
+      footK.textContent = "到账金额";
+      grand.textContent = fmtMoney(credited);
+      s1.innerHTML = (bonus > 0.005 ? "实付 " + fmtMoney(amt) + " ＋ 赠送 " + fmtMoney(bonus) + "　·　" : "")
+        + "实收 " + fmtMoney(t.collected) +
+        (t.feeSum > 0.005 ? "（含手续费 " + fmtMoney(t.feeSum) + "）" : "") +
+        (t.rmbActual > 0.005 ? "　·　人民币 ¥" + fmtMoney(t.rmbActual).replace("$", "") : "");
+      s2.innerHTML = "充值后余额 <b>" + fmtMoney(round2(bal + credited)) + "</b>";
+      btn.textContent = "确认充值";
+    } else if (memMode === "adjust") {
+      var sign = (memDirVal() === "sub") ? -1 : 1;
+      var delta = round2(sign * amt);
+      var after2 = round2(bal + delta);
+      footK.textContent = "调整后余额";
+      grand.textContent = fmtMoney(after2);
+      s1.innerHTML = "余额 " + fmtMoney(bal) + " → " + fmtMoney(after2) +
+        "　<b style='color:" + (delta >= 0 ? "var(--green-dark)" : "var(--red)") + ";'>" +
+        (delta >= 0 ? "+" : "") + delta.toFixed(2) + "</b>";
+      s2.innerHTML = after2 < 0 ? '<span class="warn-note">注意：调整后余额会变成负数</span>' : "";
+      btn.textContent = "确认调整";
+    } else {
+      var use = Math.min(amt, bal);
+      var after = round2(bal - use);
+      var short = round2(amt - use);
+      footK.textContent = "从余额扣";
+      grand.textContent = fmtMoney(use);
+      s1.innerHTML = "扣后余额 <b>" + fmtMoney(after) + "</b>";
+      s2.innerHTML = short > 0 ? '<span class="warn-note">余额不足，剩余 ' + fmtMoney(short) + " 需用现金/刷卡另付</span>" : "";
+      btn.textContent = "确认扣款";
+    }
+  }
+  // 刷新整张收款卡片 + 吸底（金额一变就走这里）
+  function refreshMemPay() {
+    if (memMode === "recharge") {
+      memBuildParts();
+      renderMemPayCard(true);
+    }
+    updateMemPreview();
   }
 
   function openMemModal(m, mode) {
@@ -15890,7 +16130,13 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     document.getElementById("memError").style.display = "none";
     memParts = [];
     memBonusTouched = false;
-    if (isRe) { renderMemTiers(); memSyncParts(); renderMemParts(); }
+    memPayMode = "single";
+    memPayMethod = "cash";
+    memActual = null;
+    memRmbActual = null;
+    memRmbChannel = "wx";
+    memCashChannel = "cash";
+    if (isRe) { renderMemTiers(); refreshMemPay(); }
     updateMemPreview();
     // ★ 提成归谁：默认"自动"，可手动指定员工，或选"不算提成"
     (function fillCommWho() {
@@ -15915,35 +16161,6 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     return el ? el.value : "add";
   }
   function closeMemModal() { memOverlay.classList.remove("show"); memTarget = null; }
-  function updateMemPreview() {
-    if (!memTarget) return;
-    var amt = parseFloat(document.getElementById("memAmount").value) || 0;
-    if (amt < 0) amt = 0;
-    var bal = Number(memTarget.balance) || 0;
-    var p = document.getElementById("memPreview");
-    if (memMode === "recharge") {
-      var bonus = parseFloat(document.getElementById("memBonus").value) || 0;
-      if (bonus < 0) bonus = 0;
-      var credited = round2(amt + bonus);
-      p.innerHTML = "到账金额：<b>" + fmtMoney(credited) + "</b>" +
-        (bonus > 0 ? "（实付 " + fmtMoney(amt) + " ＋ 赠送 " + fmtMoney(bonus) + "）" : "") +
-        "<br>充值后余额：<b>" + fmtMoney(round2(bal + credited)) + "</b>";
-    } else if (memMode === "adjust") {
-      var sign = (memDirVal() === "sub") ? -1 : 1;
-      var delta = round2(sign * amt);
-      var after2 = round2(bal + delta);
-      p.innerHTML = "余额调整：<b style='color:" + (delta >= 0 ? "var(--green-dark)" : "var(--red)") + ";'>" +
-        (delta >= 0 ? "+" : "") + delta.toFixed(2) + "</b><br>" +
-        "调整后余额：<b>" + fmtMoney(bal) + " → " + fmtMoney(after2) + "</b>" +
-        (after2 < 0 ? '<br><span class="warn-note">注意：调整后余额会变成负数</span>' : "");
-    } else {
-      var use = Math.min(amt, bal);
-      var after = round2(bal - use);
-      var short = round2(amt - use);
-      p.innerHTML = "从余额扣：<b>" + fmtMoney(use) + "</b>　扣后余额：<b>" + fmtMoney(after) + "</b>" +
-        (short > 0 ? '<br><span class="warn-note">余额不足，剩余 ' + fmtMoney(short) + " 需用现金/刷卡另付</span>" : "");
-    }
-  }
   var memBonusTouched = false;
   document.getElementById("memAmount").addEventListener("input", function () {
     if (memMode === "recharge") {
@@ -15955,28 +16172,65 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       } else if (!memBonusTouched) {          // 没命中且没手动改过 → 归零
         document.getElementById("memBonus").value = 0;
       }
-      memSyncParts(); renderMemParts();
+      memActual = null;                       // 金额改了 → 实收回到自动算
+      memRmbActual = null;
+      refreshMemPay();
+    } else {
+      updateMemPreview();
     }
-    updateMemPreview();
   });
   document.getElementById("memBonus").addEventListener("input", function () { memBonusTouched = true; updateMemPreview(); });
   document.querySelectorAll('input[name="memDir"]').forEach(function (el) {
     el.addEventListener("change", updateMemPreview);
   });
+  // 怎么收：现金 / 刷卡 / 人民币（整单模式，和结算弹窗一样点一下换）
+  document.getElementById("memPayCard").addEventListener("click", function (e) {
+    var mb = e.target.closest("[data-memmethod]");
+    if (mb) {
+      memPayMethod = mb.getAttribute("data-memmethod");
+      memActual = null; memRmbActual = null;
+      refreshMemPay();
+      return;
+    }
+    var cb = e.target.closest("[data-memchan]");
+    if (cb) {
+      var parts2 = String(cb.getAttribute("data-memchan")).split("|");
+      if (parts2[0] === "rmb") memRmbChannel = parts2[1];
+      else if (parts2[0] === "cash") memCashChannel = parts2[1];
+      refreshMemPay();
+    }
+  });
+  document.getElementById("memActual").addEventListener("input", function () {
+    if (memPayMethod === "rmb") memRmbActual = this.value;
+    else memActual = this.value;
+    refreshMemPay();
+  });
+  // 分成几笔 / 回到整单
+  document.getElementById("memSplitToggle").addEventListener("click", function () {
+    memPayMode = "split";
+    if (!memParts.length) memParts = [memSinglePart()];
+    refreshMemPay();
+  });
+  document.getElementById("memBackSingle").addEventListener("click", function () {
+    memPayMode = "single";
+    if (memParts.length) memPayMethod = memParts[0].payType || "cash";
+    memActual = null; memRmbActual = null;
+    refreshMemPay();
+  });
   document.getElementById("memAddRow").addEventListener("click", function () {
-    var amt = round2(Math.max(0, parseFloat(document.getElementById("memAmount").value) || 0));
+    var amt = memAmountVal();
     var left = round2(amt - partsTotals(memParts).amountSum);
     memParts.push({ amount: left > 0.005 ? left : 0, payType: "cash", rmb: null });
-    renderMemParts();
+    refreshMemPay();
   });
   document.getElementById("memFillAll").addEventListener("click", function () {
-    var amt = round2(Math.max(0, parseFloat(document.getElementById("memAmount").value) || 0));
-    memParts = [{ amount: amt, payType: "cash", rmb: null }];
-    renderMemParts();
+    memParts = [{ amount: memAmountVal(), payType: "cash", rmb: null }];
+    refreshMemPay();
   });
-  document.getElementById("memParts").addEventListener("input", function (e) { handlePartEvent(e, memParts, "memParts", updateMemPartsInfo); });
-  document.getElementById("memParts").addEventListener("change", function (e) { handlePartEvent(e, memParts, "memParts", updateMemPartsInfo); });
-  document.getElementById("memParts").addEventListener("click", function (e) { handlePartDelete(e, memParts, "memParts", updateMemPartsInfo); });
+  function afterMemPartEdit() { renderMemPayCard(false); updateMemPreview(); }
+  document.getElementById("memParts").addEventListener("input", function (e) { handlePartEvent(e, memParts, "memParts", afterMemPartEdit); });
+  document.getElementById("memParts").addEventListener("change", function (e) { handlePartEvent(e, memParts, "memParts", afterMemPartEdit); });
+  document.getElementById("memParts").addEventListener("click", function (e) { handlePartDelete(e, memParts, "memParts", function () { renderMemParts(); renderMemPayCard(false); updateMemPreview(); }); });
   document.getElementById("memConfirm").addEventListener("click", function () {
     if (!memTarget) return;
     var amt = parseFloat(document.getElementById("memAmount").value) || 0;
@@ -16003,7 +16257,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         fee: mtt.feeSum, collected: mtt.collected, cashSum: mtt.cash, cardSum: mtt.card,
         rmbSum: mtt.rmb, rmbActual: mtt.rmbActual,
         parts: memParts.map(function (pp) {
-          return { amount: round2(pp.amount), payType: pp.payType, rmb: pp.payType === "rmb" ? partRmb(pp) : null, due: partPaid(pp) };
+          return { amount: round2(pp.amount), payType: pp.payType,
+                   rmb: pp.payType === "rmb" ? partRmb(pp) : null,
+                   rmbChannel: pp.payType === "rmb" ? (pp.rmbChannel || "wx") : "",
+                   cashChannel: pp.payType === "cash" ? (pp.cashChannel || "cash") : "",
+                   due: partPaid(pp) };
         }),
         note: bonus > 0 ? ("充 " + amt + " 送 " + bonus) : "",
         commWho: (function () {
