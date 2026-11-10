@@ -1215,17 +1215,42 @@
     .attach-tb .tb-name { font-size: 13px; }
     .attach-panel { padding: 11px; }
     .attach-go { font-size: 14px; padding: 11px; }
-    /* 电子烟「价格设置」在手机上别被挤出屏幕：标签 + 输入框竖着排，自动换行 */
-    .vp-grid { grid-template-columns: 44px repeat(3, minmax(0, 1fr)); gap: 7px 7px; }
-    .vp-grid2 { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 7px 7px; }
-    .vp-gen { font-size: 12px; }
-    .vp-cell { flex-wrap: wrap; white-space: normal; font-size: 11px; gap: 3px; }
-    .vp-grid .vp-cell { flex-direction: column; align-items: stretch; }
+    /* ★ v3.56.2：鸭嘴兽「价格设置」手机重排
+       旧写法是 4 列塞 5 个格（代别 + 零售/满3/满5/满10）→「满10根」被挤到下一行，
+       于是标签和输入框错位、整块又高又乱（用户截图反馈）。
+       新写法：阶梯价 = 代别单独一行 + 4 个价格格 2×2；员工价/刷卡 = 标签一行 + 两格并排。 */
+    .vp-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 6px 10px; justify-content: stretch;
+    }
+    .vp-grid .vp-gen { grid-column: 1 / -1; font-size: 13px; margin-top: 4px; }
+    .vp-grid .vp-gen:first-child { margin-top: 0; }
+    .vp-grid .vp-cell {
+      flex-direction: row; align-items: center; gap: 6px; white-space: nowrap;
+      font-size: 12px; padding: 6px 8px;
+      background: var(--c-surface); border: 1px solid var(--line); border-radius: 10px;
+    }
+    .vp-grid .vp-cell input {
+      width: 100% !important; flex: 1 1 auto; min-width: 0;
+      padding: 5px 4px; font-size: 15px; font-weight: 700; text-align: right;
+    }
+    .vp-grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; }
+    .vp-grid2 .vp-gen { grid-column: 1 / -1; font-size: 13px; }
+    .vp-grid2 .vp-cell {
+      flex-direction: row; align-items: center; flex-wrap: wrap; gap: 6px;
+      font-size: 12px; padding: 6px 8px;
+      background: var(--c-surface); border: 1px solid var(--line); border-radius: 10px;
+    }
+    .vp-grid2 .vp-cell input[type="number"] {
+      width: 64px !important; flex: 0 0 64px; min-width: 0;
+      padding: 5px 4px; font-size: 15px; font-weight: 700; text-align: right;
+    }
+    .vp-grid2 > .vp-cell:last-child { grid-column: auto; }
     .vp-cell label { white-space: nowrap; }
-    /* 刷卡的「每根 / 每单」那一格占满后两列，别把字挤成竖排 */
-    .vp-grid2 > .vp-cell:last-child { grid-column: 2 / -1; }
-    .vp-cell input,
     #tierList .vp-cell input { width: 100% !important; min-width: 0; padding: 6px 5px; font-size: 13px; }
+    body.dark .vp-grid .vp-cell, body.dark .vp-grid2 .vp-cell {
+      background: var(--dk-sunken) !important; border-color: var(--dk-border) !important;
+    }
     .snack-card .snack-step { gap: 5px; }
     .snack-card .snack-step button { width: 28px; height: 26px; font-size: 16px; }
     .snack-card .snack-step .n { min-width: 14px; font-size: 13px; }
@@ -5662,7 +5687,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.1";
+  var APP_VER = "v3.56.2";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5673,6 +5698,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.2", date: "2026-11-11", items: [
+      "📱 修手机上的「鸭嘴兽 · 价格设置」排版（用户截图：又高又乱）：旧 CSS 给阶梯价排了 4 列，但每代有 5 个格（代别 + 零售/满3/满5/满10），「满10根」被挤到下一行 → 标签和输入框错位。现在手机上改成 **代别单独一行 + 4 个价格格 2×2**（每格浅底卡片、标签和输入框同行），员工价/刷卡改成 **标签一行 + 两格并排**",
+      "整块高度和错位都没了，夜间也配了深色卡片。新增界面测试 `case_vape_price_mobile_layout`（CDP 模拟 430×932：2 列 / 代别占满行 / 8 格都在视口内 / 无横滚 / 格子不超高）"
+    ] },
     { ver: "v3.56.1", date: "2026-11-11", items: [
       "📱 折叠屏/宽屏触屏也能用「电脑排版」的弹窗：结算 / 编辑记录弹窗的两栏门槛从 **900 → 860（并要求高度 ≥560）**，iPhone Duo 展开 **890×626** 现在一屏就能看到「实收合计 + 确认结算」，不用再滚",
       "高度太矮的横屏手机（<560）仍保持单列，避免挤成两团。左栏「账单明细」默认展开也跟着改成同一断点。记录列表**保持不变**（890 宽仍用 3 列摘要卡 —— 桌面表格最小 920px，硬转会横向滚动）。新增界面测试 `case_foldable_two_col_layout`：用 CDP 模拟 890×626 / 820×700 真机尺寸，验证「两栏 + 确认按钮可见 + 无横向滚动 / 820 仍单列」"
@@ -5748,10 +5777,6 @@
     { ver: "v3.49.5", date: "2026-11-10", items: [
       "📊 结算记录的**分组小计拆开**（用户反馈：原来只有一个金额，看不出是台费还是含了挂账零食）：组标题行改成 `台费 $199.74 · 零食 $34.00 · 罚款 $10.00 · 应收 $244.87`，**没发生罚款的那天不显示「罚款」这一节**",
       "手机卡片的分组条同样显示，放不下一行就换到第二行右对齐。口径：台费=纯台费（不含罚款，和统计页「台费」卡一致）、零食=挂账零食、罚款=单独列、应收=最终收的钱（含罚款与手续费）。界面测试新增 6 条断言（四项都有 / 没罚款不显示 / 分组应收＝明细应收相加 / 手机分组条）"
-    ] },
-    { ver: "v3.49.4", date: "2026-11-09", items: [
-      "🕐 编辑零食 / 鸭嘴兽记录改成**按真实时间算营业日**（用户反馈：填真实的 11/8 05:00，却算进了 11/8 的统计）：弹窗里的「日期 / 时间」现在就是**真实发生时间**（不再是营业日），保存时用 `bizDate(ts)` 自动换算营业日，并顺手补上 `realDate`（以前改时间不更新，跨天记录的「真实日期」会留着旧值）。弹窗里**实时显示「→ 归入 2026/11/07 营业日」**，填的时候就能看出落到哪一天，不用自己换算。老记录打开回填真实时间（营业日 11/7 的 05:00 → 显示 11/8 05:00），**原样保存不会把营业日改坏**（幂等）",
-      "列表仍按营业日分组、跨天时间照旧标「次日 05:00」。界面测试新增 12 条断言（回填 / 提示 / 换算 / 幂等 / 鸭嘴兽 / 统计落 11/7 不落 11/8）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
