@@ -1955,7 +1955,13 @@
   #splitPanel .sp-sum .warn { color:var(--c-warn);font-weight:700; }
   #splitPanel .sp-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center; }
   #splitPanel .sp-adv { margin-top:8px; }
-  body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person, body.dark #memPayCard .sp-person { background:var(--ink); }
+  /* ★ 夜间：收款卡片用深面（以前写 var(--ink)，夜间 --ink 是浅色文字色 → 卡片变成浅灰，看不清文字） */
+  body.dark #splitPanel .sp-item, body.dark #splitPanel .sp-person, #memPayCard .sp-person {
+    background: var(--dk-deep) !important; border-color: var(--line) !important;
+  }
+  body.dark #splitPanel .sp-feehint, body.dark #memPayCard .sp-feehint { color: #e0b463 !important; }
+  body.dark #splitPanel .sp-item-head b, body.dark #splitPanel .sp-person-top b,
+  body.dark #memPayCard .sp-person-top b { color: var(--ink) !important; }
   body.dark #splitPanel .sp-chip, body.dark #splitPanel .sp-pay, body.dark #splitPanel .sp-mini, body.dark #sQuickPay .sp-pay, body.dark #memPayCard .sp-pay { background:var(--dk-sunken);color:#d1d5db;border-color:var(--c-ink-2); }
   body.dark #splitPanel .sp-chip.on { background:var(--green-dark);color:#fff;border-color:var(--green); }
   body.dark #splitPanel .sp-pay.on, body.dark #sQuickPay .sp-pay.on, body.dark #memPayCard .sp-pay.on { background:var(--green);color:#fff; }
@@ -3667,6 +3673,15 @@
         <input type="number" id="tePay" min="0" step="0.01"></div>
       <div class="field"><label>到账 / 扣款金额</label>
         <input type="number" id="teAmount" min="0" step="0.01"></div>
+      <div class="field" id="tePayField">
+        <label>收款明细（可混着付：现金 / 刷卡 / 人民币；充值才有）</label>
+        <div id="teParts"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button type="button" class="btn-ghost sm" id="teAddRow">+ 加一笔</button>
+          <button type="button" class="btn-ghost sm" id="teFillAll">全部走现金</button>
+        </div>
+        <div class="hint" id="tePartsInfo" style="margin:6px 0 0;"></div>
+      </div>
       <div class="field"><label>日期</label>
         <input type="text" id="teDate" placeholder="2026-10-10"></div>
       <div class="field"><label>备注</label>
@@ -5365,7 +5380,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.50.0";
+  var APP_VER = "v3.51.0";
   var APP_DATE = "2026-11-10";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5376,6 +5391,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.51.0", date: "2026-11-10", items: [
+      "🌙 修**夜间模式下充值收款卡片变成浅灰、字看不清**：原来 `body.dark ... .sp-person` 写的是 `background: var(--ink)`，而夜间 `--ink` 是**浅色文字色** → 卡片浅灰、标题白字看不见（结算弹窗的整单收款卡片同样中招）。改成深面 `var(--dk-deep)` + 深边，手续费小字夜间提亮，卡片里的标题 / 金额统一用亮色。✏️ **「修改流水」也能改收款的付款方式了**（用户要求：和别的结算记录修改一样）：充值的流水里多一块「收款明细」，可加笔 / 删笔 / 换方式（现金·刷卡·人民币混着付），改金额时实付跟着等于明细合计、改实付时各笔自动对齐（和「修改结算记录」同一套组件）",
+      "保存时把 `parts`（含纸币/转账、微信/支付宝渠道）和 `cashSum/cardSum/rmbSum/fee/collected/payType` 一起写回流水，扣款 / 余额调整没有收款方式 → 自动隐藏这块。界面测试：`case_recharge_pay_ui` 补 2 条夜间断言（卡片深色 / 标题可见），新增 `case_txn_edit_pay_method` 8 条断言（还原分笔 / 改金额联动 / 混着付保存 / 渠道落库）"
+    ] },
     { ver: "v3.50.0", date: "2026-11-10", items: [
       "💳 会员充值的收款 UI 改成和结算弹窗**同一套「整单收款」卡片**（用户要求：充值这的支付 UI 也和别的 UI 一样）：默认就是 `怎么收：💵现金 / 💳刷卡 / 🇨🇳人民币` 一排胶囊，点一下整单按这个方式收，刷卡自动带出含手续费的实收、可手改",
       "现金分纸币/转账、人民币分微信/支付宝（和结算一致）。要混着付才点「👥 分成几笔收」（原来的分笔明细收进去当高级选项，顺手修了手机上金额/方式/✕/小计各占一行的错位）。底部改成**吸底合计**：大字「到账金额」+ 实付＋赠送 / 实收 / 充值后余额 + 「确认充值」（扣款、余额调整共用，按钮字随之变）。会员交易明细里的**充值行补上收款方式色块**（现金/刷卡/人民币，和结算记录、统计明细一致）",
@@ -5445,12 +5464,6 @@
       "🐛 修：**手机顶部又高又糊**（用户截图反馈「最上面有一条模糊、绿栏贴着状态栏」）。根因不是页面样式，是 **iOS 26+ 状态栏那一条系统的液态玻璃模糊**：网页内容顶进去就会被糊掉，而原来的顶部留白只有 `16px + safe-area`（iPhone 16 Pro Max 约 78pt），绿色标题栏上沿正好压进模糊带（真机截图量出来这条带子到 ~105pt）。修法：**触屏设备（手机 / 平板，≤1024px）顶部额外多留 36px**（纯 CSS 媒体查询，没加新脚本），标题栏整个落到模糊带下面，上面那条只剩页面底色、糊了也看不出来",
       "**电脑 / 鼠标操作一个像素都不变**。顺手清掉「添加到主屏幕」那套旧的满幅绿带规则（早被 v3.42.0 手机版 `!important` 覆盖、实际没生效），现在全屏和浏览器模式顶部留白一致",
       "`?debug=1` 探针多显示 `pad-top` / `extra`，以后换机型可以直接量"
-    ] },
-    { ver: "v3.43.1", date: "2026-11-06", items: [
-      "📱 手机端按实际使用习惯再调（用户要求）：① **右上角常用改成「复制文案 💬 / 预约 📅 / 刷新 ↻」**（原来直接显示的是 预约 / 夜间 / 字号），待办、汇率对照、夜间模式、字号收进「⋯」",
-      "② **「⋯」菜单每项带文字**（店铺待办 / 汇率对照 / 夜间模式 / 字号）—— 抽象图标认不出，写了字点之前就知道是什么",
-      "③ **标签页改回两行（3+3）**，不再横向滑动，6 个页签一眼看全",
-      "行高和字号一起放大（11px 高 / 14px 字），手指更好点。桌面端图标顺序、大小完全不变"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -9484,7 +9497,87 @@
     document.getElementById("teInfo").innerHTML =
       "现在：<b>" + (f.t.type === "recharge" ? "充值" : (f.t.type === "adjust" ? "余额调整" : "扣款")) +
       "</b>　金额 <b>" + fmtMoney((Number(f.t.amount) || 0)) + "</b>　余额 <b>" + fmtMoney((Number(f.t.balanceAfter) || 0)) + "</b>";
+    // ★ v3.51.0：充值那条也能像「修改结算记录」一样改收款方式（现金/刷卡/人民币，可混着付）
+    teInitParts(f.t);
+    teShowPayField();
     document.getElementById("txnEditOverlay").classList.add("show");
+  }
+
+  // ============================================================
+  //  ★ v3.51.0：修改流水的「收款明细」（和「修改结算记录」同一套组件）
+  //    · 充值的流水才能改；扣款 / 余额调整没有收款方式 → 隐藏
+  //    · 改「实付金额」→ 各笔金额自动跟着对（前面几笔保留，最后一笔补差）
+  //    · 改某笔金额 / 方式 → 实付金额自动等于明细合计（两边永远一致，不用手对账）
+  // ============================================================
+  var teParts = [];
+  function teTypeNow() { return document.getElementById("teType").value; }
+  function teInitParts(t) {
+    teParts = [];
+    if (t && t.parts && t.parts.length) {
+      for (var i = 0; i < t.parts.length; i++) {
+        var rp = t.parts[i] || {};
+        teParts.push({
+          amount: Number(rp.amount != null ? rp.amount : rp.due) || 0,
+          payType: rp.payType || "cash",
+          rmb: rp.rmb != null ? rp.rmb : null,
+          rmbChannel: rp.rmbChannel || "",
+          cashChannel: rp.cashChannel || "",
+          dueOverride: rp.dueOverride != null ? rp.dueOverride : null
+        });
+      }
+    } else if (t) {
+      // 老流水没存分笔 → 用 cashSum / cardSum / rmbSum 兜底，再不行就用实付金额
+      var cash = Number(t.cashSum) || 0, card = Number(t.cardSum) || 0, rmb = Number(t.rmbSum) || 0;
+      if (cash > 0.005) teParts.push({ amount: cash, payType: "cash", rmb: null, cashChannel: t.cashChannel || "cash" });
+      if (card > 0.005) teParts.push({ amount: card, payType: "card", rmb: null });
+      if (rmb > 0.005) teParts.push({ amount: rmb, payType: "rmb", rmb: Number(t.rmbActual) || null, rmbChannel: "wx" });
+      if (!teParts.length) {
+        var pa = Number(t.payAmount != null && t.payAmount !== "" ? t.payAmount : t.amount) || 0;
+        var pt = (t.payType === "card" || t.payType === "rmb") ? t.payType : "cash";
+        teParts.push({ amount: pa, payType: pt, rmb: null });
+      }
+    }
+  }
+  function tePayVal() {
+    return round2(Math.max(0, parseFloat(document.getElementById("tePay").value) || 0));
+  }
+  function teShowPayField() {
+    var isRe = (teTypeNow() === "recharge");
+    document.getElementById("tePayField").style.display = isRe ? "" : "none";
+    if (!isRe) return;
+    if (!teParts.length) {
+      var v = tePayVal();
+      if (!(v > 0.005)) v = round2(Math.max(0, parseFloat(document.getElementById("teAmount").value) || 0));
+      teParts = [{ amount: v, payType: "cash", rmb: null }];
+    }
+    teRender(true);
+  }
+  function teUpdateInfo() {
+    var t = partsTotals(teParts);
+    var pay = tePayVal();
+    var diff = round2(pay - t.amountSum);
+    var el = document.getElementById("tePartsInfo");
+    if (!el) return;
+    el.innerHTML =
+      "明细合计 <b>" + fmtMoney(t.amountSum) + "</b> ／ 实付 <b>" + fmtMoney(pay) + "</b>" +
+      (Math.abs(diff) < 0.005 ? '　<span style="color:var(--green-dark);">✔ 一致</span>'
+        : '　<span class="warn-note">' + (diff > 0 ? "还差 " + fmtMoney(diff) : "超出 " + fmtMoney((-diff))) + "</span>") +
+      "<br>实际收款（含刷卡手续费）<b>" + fmtMoney(t.collected) + "</b>（现金 " + fmtMoney(t.cash) +
+      " · 刷卡 " + fmtMoney(t.card) + " · 人民币 " + fmtMoney(t.rmb) + "）" +
+      (t.rmbActual > 0.005 ? "　人民币实收 ¥" + t.rmbActual.toFixed(2) : "");
+  }
+  function teRender(rebuild) {
+    if (!document.getElementById("teParts")) return;
+    if (rebuild) renderPayRows("teParts", teParts);
+    else syncPartRowValues("teParts", teParts);
+    refreshPartDues("teParts", teParts);
+    teUpdateInfo();
+  }
+  // 改了一笔 → 实付金额跟着等于明细合计（不重建 DOM，避免丢焦点）
+  function teRowsChanged() {
+    var el = document.getElementById("tePay");
+    if (el && document.activeElement !== el) el.value = round2(partsTotals(teParts).amountSum);
+    teUpdateInfo();
   }
   function closeTxnEdit() {
     document.getElementById("txnEditOverlay").classList.remove("show");
@@ -9508,8 +9601,29 @@
     var base0 = memberBase(f.m);          // ★ 改动之前就把基数取好
     t.type = type;
     t.amount = amt;
-    if (type === "recharge") { t.payAmount = payRaw === "" ? amt : round2(parseFloat(payRaw) || amt); }
-    else { t.payAmount = 0; }
+    if (type === "recharge") {
+      // ★ v3.51.0：收款明细是准的（实付 / 各笔 / 渠道 / 手续费全从它来）
+      var tt = partsTotals(teParts);
+      var paySum = round2(tt.amountSum);
+      var payInput = (payRaw === "") ? 0 : round2(parseFloat(payRaw) || 0);
+      var pay = (teParts.length && paySum > 0.005) ? paySum : (payInput > 0.005 ? payInput : amt);
+      t.payAmount = pay;
+      t.parts = teParts.map(function (pp) {
+        return { amount: round2(pp.amount), payType: pp.payType,
+                 rmb: pp.payType === "rmb" ? partRmb(pp) : null,
+                 rmbChannel: pp.payType === "rmb" ? (pp.rmbChannel || "wx") : "",
+                 cashChannel: pp.payType === "cash" ? (pp.cashChannel || "cash") : "",
+                 due: partPaid(pp) };
+      });
+      t.cashSum = tt.cash; t.cardSum = tt.card; t.rmbSum = tt.rmb; t.rmbActual = tt.rmbActual;
+      t.fee = tt.feeSum; t.collected = tt.collected;
+      t.payType = tt.card > 0.005 ? (tt.cash > 0.005 || tt.rmb > 0.005 ? "mixed" : "card")
+                                 : (tt.rmb > 0.005 ? (tt.cash > 0.005 ? "mixed" : "rmb") : "cash");
+    } else {
+      t.payAmount = 0;
+      t.parts = [];
+      t.cashSum = 0; t.cardSum = 0; t.rmbSum = 0; t.rmbActual = 0; t.fee = 0; t.collected = 0;
+    }
     if (type === "adjust") { t.adjust = (Number(t.adjust) < 0 ? -amt : amt); }
     t.note = note;
     t.date = date;
@@ -9522,6 +9636,38 @@
     closeTxnEdit();
     try { toast("已修改 ✓ 余额跟着重算了", "var(--green-dark)"); } catch (e) {}
   });
+  // ★ v3.51.0：修改流水的收款明细事件（改「实付金额」→ 各笔自动对齐；改某笔 → 实付自动等于合计）
+  (function () {
+    var payEl = document.getElementById("tePay");
+    if (payEl) payEl.addEventListener("input", function () {
+      if (teTypeNow() !== "recharge") return;
+      if (!teParts.length) teParts = [{ amount: tePayVal(), payType: "cash", rmb: null }];
+      syncParts(teParts, tePayVal(), 0);
+      teRender(false);
+    });
+    var typeEl = document.getElementById("teType");
+    if (typeEl) typeEl.addEventListener("change", teShowPayField);
+    var addEl = document.getElementById("teAddRow");
+    if (addEl) addEl.addEventListener("click", function () {
+      var left = round2(tePayVal() - partsTotals(teParts).amountSum);
+      teParts.push({ amount: left > 0.005 ? left : 0, payType: "cash", rmb: null });
+      teRender(true);
+    });
+    var fillEl = document.getElementById("teFillAll");
+    if (fillEl) fillEl.addEventListener("click", function () {
+      teParts = [{ amount: tePayVal(), payType: "cash", rmb: null }];
+      teRender(true);
+      teRowsChanged();
+    });
+    var boxEl = document.getElementById("teParts");
+    if (boxEl) {
+      boxEl.addEventListener("input", function (e) { handlePartEvent(e, teParts, "teParts", teRowsChanged); });
+      boxEl.addEventListener("change", function (e) { handlePartEvent(e, teParts, "teParts", teRowsChanged); });
+      boxEl.addEventListener("click", function (e) {
+        handlePartDelete(e, teParts, "teParts", function () { teRender(true); teRowsChanged(); });
+      });
+    }
+  })();
   var teCancel = document.getElementById("teCancel");
   if (teCancel) teCancel.addEventListener("click", closeTxnEdit);
   var teOv = document.getElementById("txnEditOverlay");
