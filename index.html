@@ -155,6 +155,8 @@
     text-align: right;
   }
   .rate-box .cur { font-size: 13px; opacity: .9; white-space: nowrap; }
+  /* ★ v3.55.0：「我的名字」输入框（待办删掉后挪到营业参数）—— 比数字框宽、文字左对齐 */
+  #actorName { width: 132px !important; text-align: left; }
   .fx-btn { padding: 8px 10px; font-size: 13px; background: #fff; color: var(--green-dark); border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: 600; }
   .fx-btn:active { transform: scale(.96); }
   .grid {
@@ -1407,26 +1409,7 @@
   #nightPop { width: 300px; }
   #nightPop .fp-opts button { font-size: 13px; padding: 11px 4px; white-space: nowrap; }
 
-  /* ===== 店铺待办（v3.15.0） ===== */
-  .note-pop { width: 340px; }
-  .note-pop .note-sub { font-weight: 600; font-size: 11px; color: var(--muted); margin-left: 6px; }
-  .note-add { display: flex; gap: 6px; margin-top: 8px; }
-  .note-add input {
-    flex: 1; min-width: 0; padding: 9px 10px; border: 1px solid var(--line);
-    border-radius: 10px; font-size: 14px;
-  }
-  .note-list { margin-top: 8px; max-height: 38vh; overflow: auto; }
-  .note-item { display: flex; align-items: flex-start; gap: 9px; padding: 9px 0; border-top: 1px dashed var(--line); }
-  .note-item input[type=checkbox] { margin-top: 3px; width: 18px; height: 18px; flex: 0 0 auto; cursor: pointer; }
-  .note-main { flex: 1; min-width: 0; }
-  .note-text { font-size: 14px; line-height: 1.35; word-break: break-word; }
-  .note-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
-  .note-item.done .note-text { text-decoration: line-through; color: var(--muted); }
-  .note-del { padding: 4px 8px !important; font-size: 12px !important; }
-  .note-who { margin-top: 8px; }
-  .note-who input {
-    width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px;
-  }
+  /* v3.55.0：店铺待办功能已删（用户要求），相关样式一起清掉；.note-badge 留着给预约红点用 */
   .head-actions .icon-btn { position: relative; }
   .icon-btn .note-badge[hidden] { display: none !important; }
   .icon-btn .note-badge {
@@ -1434,9 +1417,6 @@
     border-radius: 10px; background: #e53e3e; color: #fff; font-size: 11px; font-weight: 800;
     display: flex; align-items: center; justify-content: center; line-height: 1;
     box-shadow: 0 0 0 2px var(--green-dark);
-  }
-  @media (max-width: 640px) {
-    .note-pop { width: min(340px, calc(100vw - 24px)); }
   }
 
   /* ===== 夜间模式配色（v3.14.0） ===== */
@@ -1677,6 +1657,7 @@
     .rate-box { padding: 7px 10px; gap: 6px; }
     .rate-box label { font-size: 12px; }
     .rate-box input { width: 64px; font-size: 15px; padding: 6px; }
+    #actorName { width: 104px !important; }
     .fx-btn { padding: 7px 8px; font-size: 12px; }
     .tabs { gap: 8px; margin-bottom: 12px; }
     .tab { flex: 1 1 calc(33.333% - 6px); padding: 9px 4px; font-size: 13px; }
@@ -2865,10 +2846,9 @@
           <button type="button" class="icon-btn" id="resEntryBtn" title="预约台账（新预约会亮红点）"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="note-badge" id="resDot" hidden>0</span></button>
           <button type="button" class="icon-btn" id="refreshBtn" title="刷新页面（重新读取最新数据；手机上不用退出后台重进）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 6.4"/><path d="M20 4.5V11h-6.5"/></svg></button>
         </div>
-        <button type="button" class="icon-btn more-btn" id="moreBtn" aria-expanded="false" aria-controls="haMore" title="更多工具（店铺待办 / 汇率对照 / 夜间模式 / 字号）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12h.01M12 12h.01M18.5 12h.01" stroke-width="2.8"/></svg></button>
+        <button type="button" class="icon-btn more-btn" id="moreBtn" aria-expanded="false" aria-controls="haMore" title="更多工具（汇率对照 / 夜间模式 / 字号）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12h.01M12 12h.01M18.5 12h.01" stroke-width="2.8"/></svg></button>
         <!-- ★ v3.43.1：⋯ 菜单每项带文字（图标认不出，加字才看得懂） -->
         <div class="ha-more" id="haMore">
-          <button type="button" class="icon-btn" id="noteBtn" title="店铺待办（补餐巾纸 / 垃圾袋…）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5h6l-1 6 4 4.5H6l4-4.5-1-6z"/><path d="M12 14v6.5"/></svg><span class="ha-label">店铺待办</span><span class="note-badge" id="noteBadge" hidden>0</span></button>
           <button type="button" class="icon-btn" id="fxCompare" title="汇率对照（每天支付宝手动汇率 vs API 自动价的差值）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-8M9.5 20V5M15 20v-5M20.5 20v-9M3 21h18"/></svg><span class="ha-label">汇率对照</span></button>
           <button type="button" class="icon-btn" id="nightBtn" title="夜间模式（跟随时间 / 开 / 关）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.4A8.5 8.5 0 0 1 9.6 3.5a8.5 8.5 0 1 0 10.9 10.9z"/></svg><span class="ha-label">夜间模式</span></button>
           <button type="button" class="icon-btn" id="fontBtn" title="字号调节（小 / 标准 / 大 / 特大）">Aa<span class="ha-label">字号</span></button>
@@ -2903,6 +2883,14 @@
         <div class="input-wrap">
           <input type="text" id="bizStart" class="time-input" placeholder="08:00" maxlength="5" inputmode="numeric" style="width:64px;">
           <span class="cur">点</span>
+        </div>
+      </div>
+      <!-- ★ v3.55.0：「我的名字」原来在店铺待办面板里（待办已删），挪到营业参数；
+           预约的「谁确认到店 / 谁改的」还靠它 -->
+      <div class="rate-box">
+        <label>我的名字</label>
+        <div class="input-wrap">
+          <input type="text" id="actorName" maxlength="12" placeholder="预约记录里标谁操作的">
         </div>
       </div>
     </div>
@@ -4289,20 +4277,6 @@
     <div class="fp-hint">调完自动保存在这台设备</div>
   </div>
 
-  <!-- 店铺待办面板 -->
-  <div class="font-pop note-pop" id="notePop">
-    <div class="fp-title">📌 店铺待办 <span class="note-sub" id="noteCount"></span></div>
-    <div class="note-add">
-      <input type="text" id="noteInput" maxlength="80" placeholder="要提醒什么？如：补餐巾纸 / 垃圾袋没了">
-      <button type="button" class="btn-start sm" id="noteAddBtn">添加</button>
-    </div>
-    <div class="note-list" id="noteList"></div>
-    <div class="note-who">
-      <input type="text" id="noteWho" maxlength="12" placeholder="我的名字（可选，方便别人知道是谁要的）">
-    </div>
-    <div class="fp-hint">打勾就完成 · 完成/删除的记录自动保留 7 天 · 多台设备同步</div>
-  </div>
-
   <!-- 夜间模式面板 -->
   <div class="font-pop" id="nightPop">
     <div class="fp-title">夜间模式</div>
@@ -4401,7 +4375,6 @@
       // ★ 汇率对照记录：每天一条 ✓
       //   { d:"2026-10-20", at:"17:33", market:4.6662, markup:0.33, auto:4.6816, manual:4.6814 }
       fxLog: [],
-      staffNotes: [],              // 📌 店铺待办（v3.15.0）
       tables: tables, history: [],
       snackMenu: [], snackCart: [], snackHistory: [],
       vapes: [], vapeCart: [], vapeHistory: [],
@@ -4453,7 +4426,6 @@
     if (typeof s.fbPath !== "string") s.fbPath = "";
     if (s.fbSeeded === undefined) s.fbSeeded = false;
     if (!Array.isArray(s.history)) s.history = [];
-    if (!Array.isArray(s.staffNotes)) s.staffNotes = [];
     if (!Array.isArray(s.snackMenu)) s.snackMenu = [];
     for (var smi = 0; smi < s.snackMenu.length; smi++) {
       if (typeof s.snackMenu[smi].stock !== "number") s.snackMenu[smi].stock = 0;
@@ -5674,7 +5646,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.54.2";
+  var APP_VER = "v3.55.0";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5685,6 +5657,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.55.0", date: "2026-11-11", items: [
+      "🗑 **删掉「店铺待办」**（用户：没啥用，可以删了）：顶部 📌 按钮、「⋯」菜单里那一项、待办面板（加 / 勾完成 / 两击删除 / 7 天自动清 / 多设备同步）全部移除，同步字段 `set_staffnotes` 也不再上传（云端旧数据留着不读、不传，不影响使用）",
+      "原来面板里的「我的名字」输入**挪到营业参数**（预约台账的「谁确认到店 / 谁改的」还用它，老名字沿用本机缓存）。顺手清掉 300+ 行相关代码 / 样式 / 测试，桌面上方工具图标从 7 个变 6 个、手机「⋯」菜单剩 3 项。"
+    ] },
     { ver: "v3.54.2", date: "2026-11-11", items: [
       "🔢 **商品菜单编辑弹窗再修两点**（用户反馈「库存的框要对齐 / 售罄变灰或单独一列 / 卖光排最后」）：① 「售罄」标签从库存框右边挪到**左边**、库存框改成**固定宽度贴右**——售罄行的「− 数字 ＋」框和别的行完全对齐，不再被标签顶歪",
       "② 卖光（库存 0）的商品在编辑列表里**自动排到本组最后**，有货的排前面",
@@ -5758,9 +5734,6 @@
     { ver: "v3.49.1", date: "2026-11-08", items: [
       "📅 「💬 今天整体文案」**最上方第一行加日期**（用户要求）：弹窗里那段结账记录文案的首行变成 `2026年11月8日（周日）`，发到微信群里一眼能看出是哪一天",
       "下面照旧从 `1. …` 开始编号。当天没记录时仍显示「这天还没有记录」，不会只剩一行日期。集成测试补了三条断言（首行日期 / 第二行从 1. 开始 / 空日提示不变）"
-    ] },
-    { ver: "v3.49.0", date: "2026-11-07", items: [
-      "🧱 开发层拆文件第二步：**JS 也拆出去** —— `mahjong-timer.html` 里的主脚本（15,683 行 / 70.8 万字符）抽成独立 **`app.js`**，主文件从 78.6 万字符降到 **7.7 万字符**（只剩 HTML 骨架）。同样**部署产物不变**：构建时把 `app.css` + `app.js` 内联回单文件，线上仍是 998KB 单文件，PWA / 离线 / 换版 / 推送清单全部零改动。配套改：`生成Firebase版.py`、发布/推送的版本检查、更新日志生成器（改读 app.js）、截图与两个测试脚本（读取时自动内联）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6079,7 +6052,6 @@
       var b = document.getElementById("veDelete");
       if (b) { b.removeAttribute("data-arming"); b.textContent = "删除这条记录"; }
     });
-    armRegister("note-del", function () { renderNotes(); });
     armRegister("tier-del", function () { renderTiers(); });
     armRegister("res-del", function () { renderReservations(); });
     armRegister("extras-clear", function () { render(); });
@@ -10798,13 +10770,6 @@ function inventoryPayloads() {
                    value: JSON.stringify(state.fxLog) });
       }
     } catch (e) {}
-    // ★ 店铺待办（v3.15.0）：跟设置一起同步（一条都没有时不传，免得冲掉云端）
-    try {
-      if ((state.staffNotes || []).length) {
-        out.push({ id: "set_staffnotes", key: "店铺待办",
-                   value: JSON.stringify(state.staffNotes || []) });
-      }
-    } catch (e) {}
     // 电子烟阶梯价 + 员工价
     var g1 = state.vapePrice.g1 || {}, g2 = state.vapePrice.g2 || {};
     out.push({ id: "set_vp1r", key: "一代零售价", value: String(g1.retail || 0) });
@@ -11063,15 +11028,6 @@ function verifyConfigPush(done) {
         if (Array.isArray(fl)) state.fxLog = mergeFxLog(state.fxLog || [], fl);   // ★ 合并，不覆盖
       } catch (e) {}
     }
-    if (byLabel["店铺待办"]) {
-      try {
-        var sn2 = JSON.parse(byLabel["店铺待办"]);
-        if (Array.isArray(sn2)) {
-          state.staffNotes = noteMerge(state.staffNotes || [], sn2);   // ★ 按 id 合并（带墓碑）
-          try { renderNotes(); } catch (e3) {}
-        }
-      } catch (e) {}
-    }
     state.vapePrice.g1.retail = num("一代零售价", state.vapePrice.g1.retail);
     state.vapePrice.g1.t3 = num("一代满3根", state.vapePrice.g1.t3);
     state.vapePrice.g1.t5 = num("一代满5根", state.vapePrice.g1.t5);
@@ -11312,174 +11268,21 @@ function pullTableStates() {
   //     · 企业微信机器人等  直接 POST（浏览器可能被 CORS 挡 ✗ 但请求已发出 ✓）
   //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
   // ============================================================
-  // 📌 店铺待办（v3.15.0）：补餐巾纸 / 垃圾袋没了… 这类口头提醒
-  //   · 存 state.staffNotes，跟设置一起同步（多设备共享）
-  //   · 同一条按 id 合并（up 大的赢），删除用 del 墓碑，避免被别的设备复活
-  //   · 完成/删除的自动保留 7 天再清掉
-  var NOTE_WHO_KEY = "mahjong_note_who";
-  var NOTE_KEEP_MS = 7 * 24 * 3600 * 1000;
-  function staffNotes() {
-    if (!Array.isArray(state.staffNotes)) state.staffNotes = [];
-    return state.staffNotes;
-  }
-  function notePrune() {
-    var list = staffNotes(), out = [], now = Date.now();
-    for (var i = 0; i < list.length; i++) {
-      var n = list[i];
-      if (!n || !n.id) continue;
-      var ts = Number(n.up) || Number(n.at) || 0;
-      if ((n.del || n.done) && now - ts > NOTE_KEEP_MS) continue;
-      out.push(n);
-    }
-    if (out.length !== list.length) state.staffNotes = out;
-  }
-  function noteMerge(local, cloud) {
-    var by = {}, out = [];
-    function add(n) {
-      if (!n || !n.id) return;
-      var cur = by[n.id];
-      if (!cur) { by[n.id] = n; out.push(n); return; }
-      if ((Number(n.up) || 0) > (Number(cur.up) || 0)) {
-        var i = out.indexOf(cur);
-        if (i >= 0) out[i] = n;
-        by[n.id] = n;
-      }
-    }
-    for (var i = 0; i < (local || []).length; i++) add(local[i]);
-    for (var j = 0; j < (cloud || []).length; j++) add(cloud[j]);
-    return out;
-  }
-  function noteTimeTxt(ts) {
-    if (!ts) return "";
-    var d = new Date(Number(ts));
-    if (isNaN(d.getTime())) return "";
-    var today = fmtDate(Date.now()) === fmtDate(Number(ts));
-    return (today ? "" : fmtDate(Number(ts)).slice(5) + " ") +
-      ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
-  }
-  function noteWhoGet() {
-    try { return String(localStorage.getItem(NOTE_WHO_KEY) || "").trim(); } catch (e) { return ""; }
-  }
-  function noteById(id) {
-    var list = staffNotes();
-    for (var i = 0; i < list.length; i++) if (list[i] && list[i].id === id) return list[i];
-    return null;
-  }
-  function renderNotes() {
-    notePrune();
-    var list = staffNotes().filter(function (n) { return !n.del; });
-    list.sort(function (a, b) {
-      var ad = a.done ? 1 : 0, bd = b.done ? 1 : 0;
-      if (ad !== bd) return ad - bd;
-      return (Number(b.at) || 0) - (Number(a.at) || 0);
-    });
-    var open = 0;
-    for (var i = 0; i < list.length; i++) if (!list[i].done) open++;
-    var badge = document.getElementById("noteBadge");
-    if (badge) {
-      badge.hidden = !open;
-      badge.textContent = open > 99 ? "99+" : String(open);
-    }
-    var cnt = document.getElementById("noteCount");
-    if (cnt) cnt.textContent = open ? ("未完成 " + open + " 条") : (list.length ? "都做完了 ✓" : "");
-    var wrap = document.getElementById("noteList");
-    if (!wrap) return;
-    if (!list.length) {
-      wrap.innerHTML = '<div class="empty-mini" style="margin:10px 0;">还没有待办 — 上面输入一条，比如「补餐巾纸」</div>';
-      return;
-    }
-    var h = "";
-    for (var k = 0; k < list.length; k++) {
-      var n = list[k];
-      h += '<div class="note-item' + (n.done ? " done" : "") + '">' +
-        '<input type="checkbox" data-note-done="' + esc(n.id) + '"' + (n.done ? " checked" : "") + '>' +
-        '<div class="note-main">' +
-          '<div class="note-text">' + esc(n.text || "") + '</div>' +
-          '<div class="note-meta">' + esc(n.by || "—") + " · " + noteTimeTxt(n.at) +
-            (n.done ? "　✓ 已完成" + (n.doneAt ? " " + noteTimeTxt(n.doneAt) : "") : "") + '</div>' +
-        '</div>' +
-        '<button type="button" class="btn-ghost sm note-del" data-note-del="' + esc(n.id) + '" data-armkey="note-del"' +
-          (armGet("note-del") === n.id ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
-          (armGet("note-del") === n.id ? "再点一次" : "删") + "</button>" +
-      '</div>';
-    }
-    wrap.innerHTML = h;
-  }
-  function noteAdd() {
-    var inp = document.getElementById("noteInput");
-    if (!inp) return;
-    var text = String(inp.value || "").trim();
-    if (!text) { try { toast("先写点要提醒的内容", "#b45309"); } catch (e) {} inp.focus(); return; }
-    var now = Date.now();
-    staffNotes().push({ id: genId(), text: text, by: noteWhoGet() || "—", at: now, done: false, up: now });
-    inp.value = "";
-    save();
-    renderNotes();
-    try { toast("已添加待办 ✓", "var(--green-dark)"); } catch (e) {}
+  // ===== 「我的名字」（v3.55.0）=====
+  //   原来这个输入在「店铺待办」面板里；待办功能已按用户要求删掉，
+  //   但预约台账的「谁确认到店 / 谁改的」还要用，所以挪到「营业参数」里（#actorName）。
+  //   沿用老 localStorage key，老用户之前填过的名字还在。
+  var ACTOR_NAME_KEY = "mahjong_note_who";
+  function actorNameGet() {
+    try { return String(localStorage.getItem(ACTOR_NAME_KEY) || "").trim(); } catch (e) { return ""; }
   }
   (function () {
-    var btn = document.getElementById("noteBtn");
-    var pop = document.getElementById("notePop");
-    if (!btn || !pop) return;
-    var addBtn = document.getElementById("noteAddBtn");
-    var inp = document.getElementById("noteInput");
-    var who = document.getElementById("noteWho");
-    try { if (who) who.value = noteWhoGet(); } catch (e) {}
-    btn.addEventListener("click", function (e) {
-      if (e && e.stopPropagation) e.stopPropagation();
-      pop.classList.toggle("show");
-      renderNotes();
+    var el = document.getElementById("actorName");
+    if (!el) return;
+    el.value = actorNameGet();
+    el.addEventListener("input", function () {
+      try { localStorage.setItem(ACTOR_NAME_KEY, String(el.value || "").trim()); } catch (e) {}
     });
-    if (addBtn) addBtn.addEventListener("click", noteAdd);
-    if (inp) inp.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") { e.preventDefault(); noteAdd(); }
-    });
-    if (who) who.addEventListener("input", function () {
-      try { localStorage.setItem(NOTE_WHO_KEY, String(who.value || "").trim()); } catch (e) {}
-    });
-    pop.addEventListener("click", function (e) {
-      var cb = e.target.closest ? e.target.closest("input[data-note-done]") : null;
-      if (cb) {
-        var n1 = noteById(cb.getAttribute("data-note-done"));
-        if (n1) {
-          n1.done = !!cb.checked;
-          n1.doneAt = n1.done ? Date.now() : 0;
-          n1.up = Date.now();
-          save();
-          renderNotes();
-        }
-        return;
-      }
-      var db = e.target.closest ? e.target.closest("button[data-note-del]") : null;
-      if (db) {
-        var n2 = noteById(db.getAttribute("data-note-del"));
-        if (n2) {
-          if (armGet("note-del") !== n2.id) {       // 第一下：只亮红提示
-            armSet("note-del", n2.id);
-            renderNotes();
-            return;
-          }
-          armSet("note-del", null);                 // 第二下：真的删
-          n2.del = true;
-          n2.up = Date.now();
-          save();
-          renderNotes();
-        }
-      }
-    });
-    document.addEventListener("click", function (e) {
-      if (!pop.classList.contains("show")) return;
-      var t = e.target;
-      // 勾选/删除会重渲染列表 → 被点的那个节点已经从文档里摘掉了，
-      // 这时 e.target 不在文档里，不能用 pop.contains 判断，否则会误判成“点外面”把面板关掉
-      if (!t || !document.contains(t)) return;
-      if (pop.contains(t) || btn.contains(t)) return;
-      pop.classList.remove("show");
-    });
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && pop.classList.contains("show")) pop.classList.remove("show");
-    });
-    renderNotes();
   })();
 
   // 🌙 夜间模式（v3.14.0）：跟随时间（19:00–07:00）/ 开 / 关，存本机
@@ -18128,7 +17931,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (r.people) return r.people + " 位";
     return "";
   }
-  function resActor() { return resCSMode ? "客服" : (noteWhoGet() || "店员"); }
+  function resActor() { return resCSMode ? "客服" : (actorNameGet() || "店员"); }
   function resFind(id) {
     if (!Array.isArray(state.reservations)) state.reservations = [];
     for (var i = 0; i < state.reservations.length; i++) {
@@ -20848,7 +20651,6 @@ document.addEventListener("mousedown", function (e) {
   renderReservations();
   renderWages();
   renderStats();
-  renderNotes();
   switchTab(state.currentTab || "tables");   // 刷新后回到上次停留的页签
   if (fxNeedsRefresh()) fetchFxRate(); else updateFxInput();
   setInterval(fxAutoTick, 10 * 60 * 1000);
