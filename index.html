@@ -871,24 +871,33 @@
   .vp-cell input:focus { border-color: var(--green); outline: none; }
   body.dark .vp-cell { background: var(--dk-sunken) !important; border-color: var(--dk-border) !important; }
 
-  /* ===== 充值档位（v3.56.3）：和价格格子同一套「浅底小卡片」 ===== */
-  .tier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-  .tier-card { border: 1px solid var(--line); border-radius: 12px; background: var(--c-surface); padding: 10px 12px; }
-  .tier-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .tier-idx {
-    width: 20px; height: 20px; border-radius: 50%; background: var(--green); color: #fff;
-    font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  /* ===== 充值档位（v3.56.4）：一张卡 = 一个档位、占一整行（用户要求「一个档位一行」）
+     桌面：①  [充值 $500] [赠送 $100]      到账 $600.00  ✕   全在同一行；
+     手机：上面一行 ① 到账 … ✕，下面一行两个金额格。 */
+  .tier-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .tier-card {
+    border: 1px solid var(--line); border-radius: 12px; background: var(--c-surface);
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
   }
-  .tier-to { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .tier-to b { color: var(--green-dark); font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .tier-top { display: contents; }        /* 桌面：把 ① / 到账 / ✕ 拉平成同一行的元素 */
+  .tier-idx {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff;
+    font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; order: 1;
+  }
+  .tier-row {
+    order: 2; flex: 1 1 420px; max-width: 560px; min-width: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .tier-to { order: 3; margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .tier-to b { color: var(--green-dark); font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
   .tier-del {
-    width: 28px; height: 28px; padding: 0; flex: 0 0 auto; display: inline-flex;
+    order: 4; width: 30px; height: 30px; padding: 0; flex: 0 0 auto; display: inline-flex;
     align-items: center; justify-content: center;
     background: var(--card); border: 1px solid var(--line); border-radius: 8px;
     color: var(--muted); font-size: 15px; font-weight: 700; cursor: pointer;
   }
   .tier-del:hover { color: var(--red); border-color: #fca5a5; background: #fee2e2; }
-  .tier-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .tier-row .vp-cell { padding: 6px 8px; font-size: 12.5px; background: #fff; }
   body.dark .tier-card { background: var(--dk-sunken) !important; border-color: var(--dk-border) !important; }
   body.dark .tier-row .vp-cell { background: var(--dk-raise) !important; border-color: var(--dk-border) !important; }
@@ -1248,8 +1257,11 @@
     .vp-cell input { padding: 5px 4px; font-size: 15px; }
     .vp-grid2 .vp-cell input[type="number"] { width: 64px !important; flex: 0 0 64px; }
     .vp-cell label { white-space: nowrap; }
-    /* 充值档位在手机上：一行一张卡（两张并排会挤，输入框太窄） */
+    /* 充值档位在手机上：也是一行一个档位，但卡片内部改成「上面 ①+到账+✕、下面两个金额格」 */
     .tier-grid { grid-template-columns: 1fr; }
+    .tier-card { display: block; padding: 10px 12px; }
+    .tier-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .tier-row { max-width: none; display: grid; grid-template-columns: 1fr 1fr; }
     .tier-row .vp-cell input { padding: 5px 4px; font-size: 15px; }
     .snack-card .snack-step { gap: 5px; }
     .snack-card .snack-step button { width: 28px; height: 26px; font-size: 16px; }
@@ -5671,7 +5683,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.3";
+  var APP_VER = "v3.56.4";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5682,6 +5694,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.4", date: "2026-11-11", items: [
+      "🎁 充值档位改成「**一个档位占一整行**」（用户要求：一行一个比并排卡片好读）：桌面每行 `① [充值 $500] [赠送 $100] …… 到账 $600.00 ✕` 全在同一行（金额格最多 560px，右边到账金额右对齐）",
+      "手机保持「上面 ①+到账+✕、下面两个金额格」两行结构。改金额「到账」仍实时更新、删除仍两下确认。`case_price_cards_and_tier_cards` 增加「一个档位占一整行」断言"
+    ] },
     { ver: "v3.56.3", date: "2026-11-11", items: [
       "🎨 把手机版价格设置的「浅底小卡片」搬到电脑，充值档位也换成同一套：① 鸭嘴兽「价格设置」桌面端从「裸输入框 + 灰标签」改成卡片（代别单独一行，每代一行 4 张卡",
       "员工价/刷卡一行 2 张卡，标签 + 右对齐数字），和手机同一个长相",
@@ -5760,11 +5776,6 @@
     { ver: "v3.51.0", date: "2026-11-10", items: [
       "🌙 修**夜间模式下充值收款卡片变成浅灰、字看不清**：原来 `body.dark ... .sp-person` 写的是 `background: var(--ink)`，而夜间 `--ink` 是**浅色文字色** → 卡片浅灰、标题白字看不见（结算弹窗的整单收款卡片同样中招）。改成深面 `var(--dk-deep)` + 深边，手续费小字夜间提亮，卡片里的标题 / 金额统一用亮色。✏️ **「修改流水」也能改收款的付款方式了**（用户要求：和别的结算记录修改一样）：充值的流水里多一块「收款明细」，可加笔 / 删笔 / 换方式（现金·刷卡·人民币混着付），改金额时实付跟着等于明细合计、改实付时各笔自动对齐（和「修改结算记录」同一套组件）",
       "保存时把 `parts`（含纸币/转账、微信/支付宝渠道）和 `cashSum/cardSum/rmbSum/fee/collected/payType` 一起写回流水，扣款 / 余额调整没有收款方式 → 自动隐藏这块。界面测试：`case_recharge_pay_ui` 补 2 条夜间断言（卡片深色 / 标题可见），新增 `case_txn_edit_pay_method` 8 条断言（还原分笔 / 改金额联动 / 混着付保存 / 渠道落库）"
-    ] },
-    { ver: "v3.50.0", date: "2026-11-10", items: [
-      "💳 会员充值的收款 UI 改成和结算弹窗**同一套「整单收款」卡片**（用户要求：充值这的支付 UI 也和别的 UI 一样）：默认就是 `怎么收：💵现金 / 💳刷卡 / 🇨🇳人民币` 一排胶囊，点一下整单按这个方式收，刷卡自动带出含手续费的实收、可手改",
-      "现金分纸币/转账、人民币分微信/支付宝（和结算一致）。要混着付才点「👥 分成几笔收」（原来的分笔明细收进去当高级选项，顺手修了手机上金额/方式/✕/小计各占一行的错位）。底部改成**吸底合计**：大字「到账金额」+ 实付＋赠送 / 实收 / 充值后余额 + 「确认充值」（扣款、余额调整共用，按钮字随之变）。会员交易明细里的**充值行补上收款方式色块**（现金/刷卡/人民币，和结算记录、统计明细一致）",
-      "老数据没存分笔时按现金/刷卡/人民币汇总兜底。界面测试新增 `case_recharge_pay_ui` 14 条断言（整单默认 / 换方式 / 实收含手续费 / 分笔展开 / 到账与流水 / 色块）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
