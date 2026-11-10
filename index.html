@@ -646,6 +646,17 @@
   .me-group:first-child { padding-top: 6px; }
   .me-group .c { font-weight: 600; opacity: .7; }
 
+  /* 列头：和每行的网格列一一对齐（照片 / 名称 / 单价 / 库存 / ⋯ 列不写文字） */
+  .me-head {
+    flex: 0 0 auto; display: grid; align-items: center; gap: 8px;
+    grid-template-columns: 48px minmax(0, 1fr) 104px 168px 34px;
+    margin: 0 10px; padding: 6px 8px 5px;
+    font-size: 11.5px; font-weight: 700; color: var(--muted);
+    border-bottom: 1px solid var(--line); background: var(--card);
+  }
+  .me-head span { text-align: left; }
+  .me-head span:nth-child(3), .me-head span:nth-child(4) { text-align: right; padding-right: 3px; }
+
   /* 一行一卡：照片 | 名称 | 单价 | 库存步进器 | ⋯ */
   .me-row {
     display: grid; align-items: center; gap: 8px;
@@ -656,6 +667,9 @@
   .me-row + .me-row { box-shadow: inset 0 1px 0 rgba(0, 0, 0, .05); }
   .me-row:hover { background: var(--c-surface); }
   .me-modal.me-vape .me-row { grid-template-columns: 48px minmax(0, 1fr) 168px 34px; }
+  .me-modal.me-vape .me-head { grid-template-columns: 48px minmax(0, 1fr) 168px 34px; }
+  .me-modal.me-vape .me-head #meColPrice { display: none; }
+  .me-modal.me-vape .me-head span:nth-child(4) { text-align: right; padding-right: 3px; }
 
   /* 名称 / 单价 / 库存：平时是无边框文字，点进去才描边 */
   .me-nm {
@@ -687,7 +701,7 @@
   }
   .me-step button:hover { background: #eaf5ee; }
   .me-step .me-stk-in {
-    width: 46px; height: 32px; padding: 0 !important; text-align: center;
+    width: 46px; height: 32px; padding: 0 7px 0 0 !important; text-align: right;
     font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums;
     border: none !important; border-left: 1px solid var(--line) !important;
     border-right: 1px solid var(--line) !important;
@@ -754,6 +768,7 @@
     .me-add { padding: 9px 13px 11px; }
     .me-add-row { grid-template-columns: 84px minmax(0, 1fr) 66px 66px; }
     .me-modal.me-vape .me-add-row { grid-template-columns: 84px minmax(0, 1fr) 66px; }
+    .me-head { display: none; }
     .me-body { padding: 0 5px 6px; }
     .me-row {
       grid-template-columns: 42px minmax(0, 1fr) 96px 30px;
@@ -4048,6 +4063,10 @@
         </div>
         <div class="error" id="meAddError" style="display:none;margin:6px 0 0;"></div>
       </div>
+      <!-- 列头：照片 / 名称 / 单价 / 库存（和下面每行的网格列对齐；鸭嘴兽没有单价列） -->
+      <div class="me-head" id="meHead">
+        <span>照片</span><span>名称</span><span id="meColPrice">单价</span><span>库存</span>
+      </div>
       <div class="me-body">
         <div id="menuEditList"></div>
         <div class="me-empty" id="meEmpty" style="display:none;">没有匹配的商品</div>
@@ -5649,7 +5668,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.54.0";
+  var APP_VER = "v3.54.1";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5660,6 +5679,11 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.54.1", date: "2026-11-11", items: [
+      "📐 **商品菜单编辑弹窗补两处**（用户反馈）：① 最上方加**列头**「照片 / 名称 / 单价 / 库存」，和下面每行网格对齐，一眼知道哪一列是什么",
+      "鸭嘴兽弹窗没有单价列，列头自动少一格",
+      "手机两行式不显示列头。② 库存数字改**右对齐**（4 / 17 / 21 右边缘对齐），和单价列一致，扫一列不再左右跳。"
+    ] },
     { ver: "v3.54.0", date: "2026-11-11", items: [
       "🧹 **商品菜单编辑弹窗改版：一行一卡、表格降噪**（用户截图反馈「这界面太花，看不清」）：① 去掉每行 5 个输入框的边框，平时就是「照片 / 名称 / 单价 / 库存」四件事，点进去才描边",
       "② 分类不再每行一个下拉（分组标题已经表达了分类），改到行尾 **⋯** 菜单里「移到饮料 / 移到零食」（鸭嘴兽是「移到一代 / 二代」）",
@@ -5729,11 +5753,6 @@
     { ver: "v3.48.0", date: "2026-11-07", items: [
       "🧱 开发层拆文件（第一步：CSS）：把 `mahjong-timer.html` 里 2472 行的 `<style>` 抽成独立的 **`app.css`**，主文件从 93 万字符降到 **78.6 万**。**线上部署产物不变**——构建时（`生成Firebase版.py` / 部署 `index.html`）会把 `app.css` 内联回单文件，所以 PWA 缓存、离线、版本换版、推送文件全都和以前一样，只是以后改样式不用在 90 万字符里搜了。配套改：截图脚本 / 界面测试 / 集成测试读取时自动内联 `app.css`",
       "集成测试顺手修了一个原本就有的 `fail` 变量未初始化 bug"
-    ] },
-    { ver: "v3.47.0", date: "2026-11-06", items: [
-      "🧩 整体性调整（用户确认 3 项，第 4 项「今日概览条」做了一半后按用户要求撤掉）：① **记录分页** —— 结算记录默认只渲染最近 **100 条**，底部「显示更早的 100 条」按需加载（3000 条时 DOM 从 9 万降到 2.7 万，首屏不再越用越慢）",
-      "② **误删回收站** —— 删除结算记录时先把整条存进本机「最近删除」（最多 20 条），在底部「备份/恢复」弹窗里能看到并一键恢复（恢复时会提示：如果当时退过会员余额要自己核对）",
-      "③ **可读性** —— 说明文字加深一档（新增 `--muted-2`，比原来的 `--muted` 深）、`.hint` 提到 12.5px，11~12px 灰字在浅色底上的对比度从 4.8:1 提到约 6:1"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
