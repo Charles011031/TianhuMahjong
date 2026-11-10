@@ -329,6 +329,29 @@
   }
   /* 手机上用的记录摘要卡（桌面端隐藏，手机端把对应表格藏掉） */
   .rec-cards { display: none; }
+  /* ★ v3.56.6：销售记录「品项」按代别/分类分组（用户选的 A 方案）
+     表格里：顶部一行浅灰小字汇总「共 10 样 11 根（一代 3 根 · 二代 8 根）」，
+     下面一代/二代（零食是 饮料/零食）各一行；手机摘要卡把汇总放在标题、分组行放副标题。 */
+  .rec-item-sum { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .rec-item-line { font-size: 13.3px; line-height: 1.7; }
+  .history td.rec-item-cell { white-space: normal; min-width: 300px; }
+  .rec-gen {
+    display: inline-block; font-size: 11px; font-weight: 700; line-height: 1.6;
+    padding: 0 6px; border-radius: 999px; margin-right: 6px; vertical-align: 1px;
+  }
+  .rec-gen.g1, .rec-gen.drink { background: #eef7f1; color: #1d7a4f; border: 1px solid #b6dcc8; }
+  .rec-gen.g2, .rec-gen.snack { background: #f3e8ff; color: #6b21a8; border: 1px solid #ddd6fe; }
+  @media (max-width: 640px) {
+    .history td.rec-item-cell { min-width: 0; }
+    .rec-item-line { font-size: 12.5px; line-height: 1.65; }
+    .rec-item-sum { font-size: 11.5px; }
+  }
+  body.dark .rec-gen.g1, body.dark .rec-gen.drink {
+    background: #123524 !important; color: #6ee7a8 !important; border-color: #2a6a48 !important;
+  }
+  body.dark .rec-gen.g2, body.dark .rec-gen.snack {
+    background: #2f2144 !important; color: #c4a6ff !important; border-color: #513a7a !important;
+  }
   .history table { width: 100%; border-collapse: collapse; min-width: 920px; }
   /* vertical-align:top —— 应收那格有两行（金额+手续费小字），
      如果单元格垂直居中，同行的其他数字会掉到中间 → 跟表头对不上 */
@@ -5683,7 +5706,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.5";
+  var APP_VER = "v3.56.6";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5694,6 +5717,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.6", date: "2026-11-11", items: [
+      "🦆🍜 销售记录「品项」按类分组（用户选的 A 方案）：鸭嘴兽按 **一代 / 二代** 各一行、零食按 **饮料 / 零食** 各一行，上方浅灰小字写 **「共 N 样 M 根（一代 x 根 · 二代 y 根）」**（零食「共 N 件」）",
+      "手机摘要卡汇总放标题、分组放副标题。不再是一长串交替的 `一代 …、二代 …、一代 …`。新增 `case_record_items_grouped` 8 条断言"
+    ] },
     { ver: "v3.56.5", date: "2026-11-11", items: [
       "🦆 鸭嘴兽英文名**不再显示在销售记录里**（用户要求）：菜单卡片 / 当前点单照旧显示（对货用），但鸭嘴兽销售记录和统计「今日明细」里只写中文（`一代 西瓜×2`），记录区更干净。新增 `case_vape_en_only_in_menu` 守住"
     ] },
@@ -5770,11 +5797,6 @@
       "🐛 修**结算记录列表点「编辑 / 删除」命中别的单**（用户反馈「点开桌台记录，显示的不是本桌的数据」）：列表是「排序 + 搜索 + 只显示前 100 条」之后的副本，原来直接拿副本里的下标去 `state.history` 取记录 → **永远错位**（点第 1 条最新单，打开的是最老那条",
       "删除也会删错单、会员余额退给错的人）。改成排「位置」并记住每条在 `state.history` 里的原下标，编辑 / 删除 / 搜索结果全部命中被点的那一条。界面测试新增 `case_history_edit_hits_right_record` 8 条断言（3 条记录逐行核对桌号+日期、删第 1 条只删它且会员只退这单的 $20、搜索「2号桌」后再点仍对）",
       "顺手修界面测试里「预约同步」用例写死日期的问题（台只显示最近 30 天，2026-11-11 起 10-11 那条被筛掉 → 发布门禁会红，改成跟着今天走）"
-    ] },
-    { ver: "v3.52.0", date: "2026-11-10", items: [
-      "🔘 **收款的「付款方式」从下拉框改成胶囊按钮**（用户要求：修改界面也要用按钮改支付方式）：`💵现金 / 💳刷卡 / 🇨🇳人民币 / 🎫会员扣款` 一排按钮点一下换，现金再点 `纸币/转账`、人民币点 `微信/支付宝`（也是按钮）。一套组件同时改到 4 个地方：结算弹窗「高级：按笔改金额」、修改结算记录、会员充值「分成几笔收」、「修改流水」，以后不会出现「这里能点、那里要下拉」的不一致",
-      "手机端每笔排成 `金额 → 小计 → ✕` 一行 + `怎么收` 按钮行 + 渠道行，不再挤。顺手修：夜间规则漏写 `body.dark` 前缀导致白天收款卡片也变深色",
-      "「修改流水」里不该出现「会员扣款」（充值不能用余额）。测试：界面测试把读下拉的断言改成读按钮，顺手修好 2 条**躺了很久的旧失败**（「点会员余额 → 台费走会员、零食走现金」原来没选会员就断言、「只把改的那一笔拆开」格式过时），已知失败清单 3 条 → 2 条"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -14052,6 +14074,64 @@ jsonpGet(t, onRes);
     return false;
   }
 
+  // ★ v3.56.6：销售记录品项「分组显示」（用户选的 A 方案）
+  //   鸭嘴兽按【一代 / 二代】分组；零食饮料按【饮料 / 零食】分组（类别从商品菜单反查，菜单里删掉的不分组）
+  function vapeItemsInfo(items) {
+    var g = { 1: [], 2: [] }, n = 0, q = 0, q1 = 0, q2 = 0, i;
+    items = items || [];
+    for (i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var gen = Number(it.gen) === 2 ? 2 : 1;
+      var qty = Number(it.qty) || 0;
+      g[gen].push(String(it.name || "") + "×" + qty);
+      n++; q += qty;
+      if (gen === 1) q1 += qty; else q2 += qty;
+    }
+    var sum = "共 " + n + " 样 " + q + " 根";
+    if (g[1].length && g[2].length) sum += "（一代 " + q1 + " 根 · 二代 " + q2 + " 根）";
+    var groups = [];
+    if (g[1].length) groups.push({ cls: "g1", label: "一代", text: g[1].join("　") });
+    if (g[2].length) groups.push({ cls: "g2", label: "二代", text: g[2].join("　") });
+    return { sum: sum, groups: groups };
+  }
+  function snackCatOfName(name) {
+    for (var i = 0; i < state.snackMenu.length; i++) {
+      if (state.snackMenu[i].name === name) return snackCatOf(state.snackMenu[i]);
+    }
+    return "";
+  }
+  function snackItemsInfo(items) {
+    var drink = [], snack = [], other = [], n = 0, i;
+    items = items || [];
+    for (i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var txt = String(it.name || "") + "×" + (Number(it.qty) || 0);
+      n++;
+      var cat = snackCatOfName(it.name);
+      if (cat === "drink") drink.push(txt);
+      else if (cat === "snack") snack.push(txt);
+      else other.push(txt);
+    }
+    var groups = [];
+    if (drink.length) groups.push({ cls: "drink", label: "饮料", text: drink.join("　") });
+    if (snack.length) groups.push({ cls: "snack", label: "零食", text: snack.join("　") });
+    if (other.length) groups.push({ cls: "", label: "", text: other.join("　") });
+    return { sum: "共 " + n + " 件", groups: groups };
+  }
+  function itemLinesHtml(info) {
+    var h = "";
+    for (var i = 0; i < info.groups.length; i++) {
+      var g = info.groups[i];
+      h += '<div class="rec-item-line">' +
+        (g.label ? '<span class="rec-gen ' + g.cls + '">' + g.label + "</span>" : "") +
+        esc(g.text) + "</div>";
+    }
+    return h;
+  }
+  function itemsInfoHtml(info) {
+    return '<div class="rec-item-sum">' + esc(info.sum) + "</div>" + itemLinesHtml(info);
+  }
+
   function renderSnackHistory() {
     var wrap = document.getElementById("snackHistoryWrap");
     // ⚠️ 这个"空"判断【不能】只看 snackHistory ✗
@@ -14128,6 +14208,8 @@ jsonpGet(t, onRes);
           if (j) items += "、";
           items += h.items[j].name + "×" + h.items[j].qty;
         }
+        // ★ v3.56.6：品项按分类分组（饮料 / 零食；菜单里删掉的不分组）
+        var info = snackItemsInfo(h.items);
         if (fromTable) {
           // ★ 挂桌结算的：标出是哪张桌 ✗ 明细没有就写个提示 ✓
           var tn = "🀄 " + (h._tableName || (h._tableNo + " 号桌")) + " 结算";
@@ -14158,11 +14240,12 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
         var armed = armGet("snack-del") === idx;
 
         cards += '<div class="rec-card">' +
-          '<div class="rec-top"><b class="rec-t1">' + esc(items) + "</b>" +
+          '<div class="rec-top"><b class="rec-t1">' + esc(info.sum) + "</b>" +
           '<span class="rec-t2">' + esc(recTimeTxt(h.time)) + "</span>" +
           '<b class="rec-amt">' + fmtMoney(Number(h.grand || 0)) + "</b></div>" +
-          '<div class="rec-sub">小计 ' + fmtMoney(Number(h.subtotal || 0)) +
-            (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div>" +
+          '<div class="rec-sub">' + itemLinesHtml(info) +
+            '<div class="rec-item-line">小计 ' + fmtMoney(Number(h.subtotal || 0)) +
+            (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div></div>" +
           '<div class="rec-bottom"><span class="rec-pays">' +
             recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, payChanLabel(h.payType, h)) +
           '</span><span class="rec-acts">' +
@@ -14173,7 +14256,7 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
 
         rows += "<tr>" +
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
-          "<td>" + esc(items) + "</td>" +
+          '<td class="rec-item-cell">' + itemsInfoHtml(info) + "</td>" +
           '<td class="money">' + fmtMoney(Number(h.subtotal || 0)) + "</td>" +
           '<td class="grand">' + fmtMoney(Number(h.grand || 0)) +
             (showFee && notes.length ? '<div class="cell-note">' + esc(notes.join("　")) + "</div>" : "") + "</td>" +
@@ -15586,12 +15669,8 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
 
       for (i = 0; i < g.items.length; i++) {
         var h = g.items[i].h, idx = g.items[i].idx;
-        var items = "";
-        for (var j = 0; j < h.items.length; j++) {
-          if (j) items += "、";
-          // ★ v3.56.5：销售记录里【不显示】英文名（用户要求）——英文只在菜单/点单里对货用
-          items += (h.items[j].gen === 2 ? "二代" : "一代") + " " + h.items[j].name + "×" + h.items[j].qty;
-        }
+        // ★ v3.56.6：品项按代别分组（A 方案：顶部汇总 + 一代/二代各一行）
+        var info = vapeItemsInfo(h.items);
         // 应收下面的小字：刷卡加价 / 手续费
         var notes = [];
         if (Number(h.cardAdd) > 0.005) notes.push("刷卡加价 " + fmtMoney(Number(h.cardAdd)));
@@ -15599,11 +15678,12 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
         var armed = armGet("vape-del") === idx;
 
                 cards += '<div class="rec-card">' +
-          '<div class="rec-top"><b class="rec-t1">' + esc(items) + "</b>" +
+          '<div class="rec-top"><b class="rec-t1">' + esc(info.sum) + "</b>" +
           '<span class="rec-t2">' + esc(recTimeTxt(h.time)) + "</span>" +
           '<b class="rec-amt">' + fmtMoney(Number(h.grand || 0)) + "</b></div>" +
-          '<div class="rec-sub">小计 ' + fmtMoney(Number(h.subtotal || 0)) +
-            (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div>" +
+          '<div class="rec-sub">' + itemLinesHtml(info) +
+            '<div class="rec-item-line">小计 ' + fmtMoney(Number(h.subtotal || 0)) +
+            (showFee && notes.length ? " · " + esc(notes.join("　")) : "") + "</div></div>" +
           '<div class="rec-bottom"><span class="rec-pays">' +
             recPayChip(h.payType, h.grand, h.payType === "rmb" ? h.rmb : null, payChanLabel(h.payType, h)) +
           '</span><span class="rec-acts">' +
@@ -15613,7 +15693,7 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
               (armed ? "再点一次" : "删除") + "</button></span></div></div>";
 rows += "<tr>" +
           '<td style="white-space:nowrap;font-size:13px;color:var(--muted);">' + esc(recTimeTxt(h.time)) + "</td>" +
-          "<td>" + esc(items) + "</td>" +
+          '<td class="rec-item-cell">' + itemsInfoHtml(info) + "</td>" +
           '<td class="money">' + fmtMoney(Number(h.subtotal || 0)) + "</td>" +
           '<td class="grand">' + fmtMoney(Number(h.grand || 0)) +
             (showFee && notes.length ? '<div class="cell-note">' + esc(notes.join("　")) + "</div>" : "") + "</td>" +
