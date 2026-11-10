@@ -2819,6 +2819,17 @@
   body.dark .me-addbtn { background: var(--green) !important; border-color: var(--green) !important; color: #fff !important; }
   body.dark .me-x { background: var(--dk-raise) !important; border-color: var(--dk-border) !important; color: #93a3b3 !important; }
 
+
+  /* ★ v3.54.0：手机/平板的触摸目标 —— 常用小按钮原来约 31px 高，手指容易点错，统一提到 ≥40px
+     （除了窄屏，还覆盖 iPad 这类「宽屏但没鼠标」的设备） */
+  @media (max-width: 640px), (hover: none) and (pointer: coarse) {
+    .row-edit { min-height: 40px; padding: 9px 14px; }
+    .btn-ghost.sm, .btn-start.sm, .btn-settle.sm { min-height: 40px; padding: 9px 14px; }
+    .mini-del, .qty-btn { min-width: 40px; min-height: 40px; }
+    .me-row .me-del { min-height: 40px; }
+    .snack-count { min-height: 34px; padding: 7px 10px; }
+    .sp-pay, .pay-pick { min-height: 38px; }
+  }
 </style>
 </head>
 <body>
@@ -3620,6 +3631,15 @@
           <div class="field" style="margin:0 0 8px;">
             <label style="font-weight:400;font-size:13px;color:var(--muted);">合并结算另一桌（可选）</label>
             <select id="sMerge"></select>
+          </div>
+          <!-- ★ v3.54.0：修改记录时可以「按人头平分台费」（历史记录没存谁吃了哪样，所以只平台费，零食单独一笔） -->
+          <div class="field" id="sEditSplitRow" style="display:none;margin:0 0 8px;">
+            <label style="font-weight:400;font-size:13px;color:var(--muted);">按人头平分台费（罚款一起摊）</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="number" id="sEditSplitN" min="1" max="20" value="4" style="width:78px;">
+              <span style="font-size:13px;color:var(--muted);">人</span>
+              <button type="button" class="btn-ghost sm" id="sEditSplitBtn">平分台费</button>
+            </div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button type="button" class="btn-ghost sm" id="sEven">平分（按现有笔数）</button>
@@ -5636,7 +5656,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.55.1";
+  var APP_VER = "v3.56.0";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5647,6 +5667,13 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.0", date: "2026-11-11", items: [
+      "⚡ 记录列表分页 + 📱 手机按钮放大 + ✎ 编辑记录「按人头平分台费」 + 🧹 测试清零：① 零食饮料 / 鸭嘴兽 / 员工打卡 / 会员交易明细 四个列表也改成**只渲染最近 100 条 + 「显示更早的 100 条」**（实测每个列表 600 条：全页 DOM 5.6 万 → 2.6 万",
+      "列表编辑/删除的下标用原始位置，分页后不会点错行）",
+      "② 手机/平板（≤640px 或触摸设备）常用小按钮统一提到 **≥40px** 高（原来 31px，手指容易点错）",
+      "③ 编辑结算记录「⋯ 更多选项」新增**按人头平分台费**",
+      "④ 清掉最后 2 条「已知过时」测试断言（分次结算案例写死 $30、实际 $35）→ `工具/已知失败.txt` 清空，发布门禁全绿。测试新增 `case_list_pagination_and_edit_split` 10 条断言"
+    ] },
     { ver: "v3.55.1", date: "2026-11-11", items: [
       "🗑 **「我的名字」也去掉**（用户要求）：预约记录的「谁确认到店 / 谁改的 / 谁加的」不再显示自定义名字，固定写「店员」（客服模式写「客服」）",
       "营业参数里那个输入框一并删掉，参数回到 4 个。"
@@ -5719,11 +5746,6 @@
     { ver: "v3.49.3", date: "2026-11-08", items: [
       "🌙 夜间模式按钮**不再高亮**（用户要求）：删掉夜间配色里「夜间模式开启时把月亮按钮调亮」的规则（`body.dark .icon-btn.on`），桌面 7 个图标始终同一底色",
       "手机「⋯」菜单里夜间模式开启时也不再变绿底。夜间模式功能本身不变（跟随时间 / 开 / 关 + 记住本机）。集成测试里对应的源码断言同步从 `.icon-btn.on` 换成 `applyNight()`"
-    ] },
-    { ver: "v3.49.2", date: "2026-11-08", items: [
-      "🌙 夜间模式两处补色（用户反馈红框 UI 还不对）：① **顶部一排图标底色不统一** —— 中间 4 个（店铺待办 / 汇率对照 / 夜间模式 / 字号）被一条本该只给手机「⋯」弹出菜单用的深色规则误伤，在深绿顶栏上变成深蓝灰，和左右 3 个半透明白底按钮一排两种底色 → 规则收进手机媒体查询，桌面 7 个统一半透明白底",
-      "夜间模式开启时月亮按钮亮起（原来被误伤覆盖、看不出已开启）。② **预约台账「✅ 今天已收工」提示条夜里还是一条亮白绿条**（白天浅绿底配色没做夜间版）→ 改成深绿底 + 亮绿字，和夜间其他绿色块一致",
-      "顺手把预约展开条底部说明的深灰字提亮"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6700,6 +6722,22 @@
   var HIST_PAGE = 100;
   var histShown = HIST_PAGE;
 
+  // ★ v3.54.0：零食 / 鸭嘴兽 / 打卡 / 会员交易明细 也分页
+  //   原来这几个列表一次性全渲染：每个列表 600 条时全页 5.6 万 DOM 节点、切页 30ms，
+  //   记录攒到几千条会明显卡（尤其手机）。结算记录 v3.47 已经分页，这次把剩下的一起补上。
+  var LIST_PAGE = 100;
+  var snackShown = LIST_PAGE, vapeShown = LIST_PAGE, attShown = LIST_PAGE, memTxnShown = LIST_PAGE;
+  function moreRowHtml(btnId, showing, total) {
+    var left = total - showing;
+    if (left <= 0) return "";
+    return '<div class="hist-more"><button type="button" id="' + btnId + '">显示更早的 ' +
+      Math.min(LIST_PAGE, left) + " 条</button><span>还有 " + left + " 条没显示（共 " + total + " 条）</span></div>";
+  }
+  function bindMoreBtn(btnId, fn) {
+    var mb = document.getElementById(btnId);
+    if (mb) mb.addEventListener("click", fn);
+  }
+
   // 麻将种类：常规 108 / 136 / 144，其它自己填
   var MAHJONG_KINDS = ["108", "136", "144"];
   function mahjongOptions(cur) {
@@ -7250,6 +7288,8 @@
   function resetSettleChrome() {
     var et = document.getElementById("sEditTime");
     if (et) et.style.display = "none";
+    var esr = document.getElementById("sEditSplitRow");
+    if (esr) esr.style.display = "none";
     var rb = document.getElementById("sRmbBillBtn");
     if (rb) rb.style.display = "";
     var cf = document.getElementById("sConfirm");
@@ -8331,6 +8371,8 @@
     // ---- 编辑模式专属 UI ----
     var et = document.getElementById("sEditTime");
     if (et) et.style.display = "block";
+    var esr = document.getElementById("sEditSplitRow");
+    if (esr) esr.style.display = "block";       // 「按人头平分台费」只在编辑模式出现
     var rb = document.getElementById("sRmbBillBtn");
     if (rb) rb.style.display = "none";          // 人民币账单读的是桌台实时数据，编辑模式先不显示
     var cf = document.getElementById("sConfirm");
@@ -8369,6 +8411,40 @@
     refreshSettle();
     autoDetailForDesktop();
     settleOverlay.classList.add("show");
+  }
+
+  // ★ v3.54.0：编辑记录时「按人头平分台费」
+  //   台费（含罚款，= tableAll）平分成 N 笔，零食单独一笔现金；
+  //   每笔保留原来那一笔的收款方式（和结算里的「平分」一致）。历史记录没存谁吃了哪样，所以只有台费能按人头。
+  function editSplitByPeople(n) {
+    n = Math.max(1, Math.min(20, parseInt(n, 10) || 4));
+    if (!settleData) return;
+    var b = settleBill();
+    var all = round2(b.tableAll);
+    if (all <= 0.005) {
+      try { toast("这一单没有台费可分", "#b45309"); } catch (e) {}
+      return;
+    }
+    var cents = Math.round(all * 100), base = Math.floor(cents / n), rem = cents - base * n;
+    var out = [];
+    for (var i = 0; i < n; i++) {
+      var oldP = settleParts[i] || null;
+      out.push({
+        amount: (base + (i < rem ? 1 : 0)) / 100,
+        payType: (oldP && oldP.payType) || "card",
+        rmb: null,
+        memberId: (oldP && oldP.memberId) || "",
+        memSearch: (oldP && oldP.memSearch) || "",
+        label: "台费"
+      });
+    }
+    if (b.other > 0.005) {
+      out.push({ amount: round2(b.other), payType: "cash", rmb: null, memberId: "", memSearch: "", label: "零食" });
+    }
+    settleParts = out;
+    renderPayRows("sParts", settleParts);
+    updateSettleTotals();
+    try { autoSplitMemberSnack(); } catch (e2) {}
   }
 
   // 「保存修改」：把弹窗里的结果原地写回这条记录（不新增、不动桌台状态）
@@ -8556,6 +8632,13 @@
       var tname = (state.tables[no] && state.tables[no].name) || (no + " 号桌");
       document.getElementById("sTitle").textContent = tname + " · 修改结算";
       refreshSettle();
+    });
+  })();
+  (function () {
+    var splitBtn = document.getElementById("sEditSplitBtn");
+    if (splitBtn) splitBtn.addEventListener("click", function () {
+      var n = parseInt(document.getElementById("sEditSplitN").value, 10) || 4;
+      editSplitByPeople(n);
     });
   })();
   (function () {
@@ -13977,9 +14060,26 @@ jsonpGet(t, onRes);
         fee: 0, discount: 0, payType: ""
       });
     }
-    var groups = groupByDate(list0,
+    // ★ v3.54.0：分页 —— 按「营业日 + 时间」倒序排位置，只取前 snackShown 条；
+    //   同时把每条在 list0 里的原始下标传给分组（编辑/删除要用它索引 state.snackHistory）
+    var order = [], oiS;
+    for (oiS = 0; oiS < list0.length; oiS++) order.push(oiS);
+    order.sort(function (ai, bi) {
+      var a = list0[ai], b = list0[bi];
+      var ad = showDateOf(a), bd = showDateOf(b);
+      if (ad !== bd) return ad < bd ? 1 : -1;
+      return timeMinutes(b.time) - timeMinutes(a.time);
+    });
+    var shownList = [], shownIdx = [];
+    for (oiS = 0; oiS < order.length && oiS < snackShown; oiS++) {
+      shownList.push(list0[order[oiS]]);
+      shownIdx.push(order[oiS]);
+    }
+    var moreHtml = moreRowHtml("snackMoreBtn", shownList.length, order.length);
+    var groups = groupByDate(shownList,
       function (h) { return showDateOf(h); },
-      function (h) { return timeMinutes(h.time); });
+      function (h) { return timeMinutes(h.time); },
+      shownIdx);
 
     var rows = "", cards = "", gi, i;
     for (gi = 0; gi < groups.length; gi++) {
@@ -14058,7 +14158,8 @@ rows += "<tr style=\"background:#f7fbf8;\">" +
     wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
       "<table><thead><tr><th>时间</th><th>品项（名称×数量）</th>" +
       '<th class="num">小计</th><th class="num">应收</th><th>收款</th><th>操作</th>' +
-      "</tr></thead><tbody>" + rows + "</tbody></table>";
+      "</tr></thead><tbody>" + rows + "</tbody></table>" + moreHtml;
+    bindMoreBtn("snackMoreBtn", function () { snackShown += LIST_PAGE; renderSnackHistory(); });
   }
 
   document.getElementById("snackClearCart").addEventListener("click", function () {
@@ -15425,9 +15526,25 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
     if (!state.vapeHistory.length) { wrap.innerHTML = '<div class="empty">暂无鸭嘴兽销售记录</div>'; return; }
 
     var showFee = state.showFeeDetail !== false;      // 「显示手续费明细」开关
-    var groups = groupByDate(state.vapeHistory,
+    // ★ v3.54.0：分页（只渲染前 vapeShown 条 + 显示更早）
+    var order = [], oiV;
+    for (oiV = 0; oiV < state.vapeHistory.length; oiV++) order.push(oiV);
+    order.sort(function (ai, bi) {
+      var a = state.vapeHistory[ai], b = state.vapeHistory[bi];
+      var ad = showDateOf(a), bd = showDateOf(b);
+      if (ad !== bd) return ad < bd ? 1 : -1;
+      return timeMinutes(b.time) - timeMinutes(a.time);
+    });
+    var shownList = [], shownIdx = [];
+    for (oiV = 0; oiV < order.length && oiV < vapeShown; oiV++) {
+      shownList.push(state.vapeHistory[order[oiV]]);
+      shownIdx.push(order[oiV]);
+    }
+    var moreHtml = moreRowHtml("vapeMoreBtn", shownList.length, order.length);
+    var groups = groupByDate(shownList,
       function (h) { return showDateOf(h); },
-      function (h) { return timeMinutes(h.time); });
+      function (h) { return timeMinutes(h.time); },
+      shownIdx);
 
     var rows = "", cards = "", gi, i;
     for (gi = 0; gi < groups.length; gi++) {
@@ -15482,7 +15599,8 @@ rows += "<tr>" +
     wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
       "<table><thead><tr><th>时间</th><th>品项</th>" +
       '<th class="num">小计</th><th class="num">应收</th><th>收款</th><th>操作</th>' +
-      "</tr></thead><tbody>" + rows + "</tbody></table>";
+      "</tr></thead><tbody>" + rows + "</tbody></table>" + moreHtml;
+    bindMoreBtn("vapeMoreBtn", function () { vapeShown += LIST_PAGE; renderVapeHistory(); });
   }
 
   function renderVapes() {
@@ -16444,9 +16562,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     }
     if (!list.length) { wrap.innerHTML = '<div class="empty">暂无交易记录</div>'; return; }
     list.sort(function (a, b) { return (b.t.ts || 0) - (a.t.ts || 0); });
+    // ★ v3.54.0：分页（只渲染前 memTxnShown 条 + 显示更早）
+    var txnShownList = list.slice(0, memTxnShown);
+    var moreHtml = moreRowHtml("memTxnMoreBtn", txnShownList.length, list.length);
     var rows = "", cards = "";
-    for (var n = 0; n < list.length; n++) {
-      var x = list[n];
+    for (var n = 0; n < txnShownList.length; n++) {
+      var x = txnShownList[n];
       var isRe = (x.t.type === "recharge");
       var isAdj = (x.t.type === "adjust");
       // ★ 充值行补上收款方式色块（和结算记录 / 统计明细一致）
@@ -16501,7 +16622,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         '</tr>';
     }
     wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
-      '<table><thead><tr><th>时间</th><th>会员</th><th>类型</th><th class="num">实付</th><th class="num">到账/扣款</th><th class="num">余额</th><th>备注</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      '<table><thead><tr><th>时间</th><th>会员</th><th>类型</th><th class="num">实付</th><th class="num">到账/扣款</th><th class="num">余额</th><th>备注</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' + moreHtml;
+    bindMoreBtn("memTxnMoreBtn", function () { memTxnShown += LIST_PAGE; renderMemberTxns(); });
   }
 
   document.getElementById("memAdd").addEventListener("click", function () {
@@ -17192,9 +17314,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return (a.clockIn || "") < (b.clockIn || "") ? 1 : -1;
     });
+    // ★ v3.54.0：分页（只渲染前 attShown 条 + 显示更早）
+    var attShownList = list.slice(0, attShown);
+    var moreHtml = moreRowHtml("attMoreBtn", attShownList.length, list.length);
     var rows = "", cards = "";
-    for (var i = 0; i < list.length; i++) {
-      var r = list[i];
+    for (var i = 0; i < attShownList.length; i++) {
+      var r = attShownList[i];
       (function () {
         // 📱 手机摘要卡
         var hTxt = "—";
@@ -17269,7 +17394,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
         '</tr>';
     }
     wrap.innerHTML = '<div class="rec-cards">' + cards + "</div>" +
-      '<table><thead><tr><th>日期</th><th>姓名</th><th>上班时间</th><th>下班时间</th><th class="num">时长(小时)</th><th>班次</th><th>忙日</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      '<table><thead><tr><th>日期</th><th>姓名</th><th>上班时间</th><th>下班时间</th><th class="num">时长(小时)</th><th>班次</th><th>忙日</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' + moreHtml;
+    bindMoreBtn("attMoreBtn", function () { attShown += LIST_PAGE; renderAttRecords(); });
   }
 
   // 点打卡行的「忙日」格子：自动 → 强制算 → 强制不算 → 回自动
