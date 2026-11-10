@@ -694,6 +694,8 @@
   .me-step {
     display: flex; align-items: center; border: 1px solid var(--line);
     border-radius: 9px; overflow: hidden; background: var(--card);
+    /* 固定宽度：售罄行左边多一个「售罄」标签时，框也不会被顶左，整列框对齐 */
+    flex: 0 0 auto; width: 104px;
   }
   .me-step button {
     width: 28px; height: 32px; padding: 0; border: none; background: var(--card);
@@ -741,6 +743,9 @@
     content: ""; position: absolute; left: 0; top: 9px; bottom: 9px;
     width: 3px; border-radius: 3px; background: var(--green);
   }
+  /* 售罄行：照片 / 单价淡一点（库存数字保持红色），一眼看出没货 */
+  .me-row.out .me-photo { opacity: .5; }
+  .me-row.out .me-price { opacity: .6; }
   .me-row.kill { opacity: .45; }
   .me-row.kill input { text-decoration: line-through; }
 
@@ -784,6 +789,7 @@
     .me-modal.me-vape .me-row .me-stk { grid-column: 2 / 4; }
     .me-nm { padding: 5px 6px; font-size: 14.5px; }
     .me-pr { width: 52px; padding: 5px 2px; font-size: 14.5px; }
+    .me-step { width: 98px; }
     .me-step button { height: 30px; width: 27px; }
     .me-step .me-stk-in { height: 30px; width: 42px; font-size: 13px; }
     .me-actions { padding: 10px 13px; }
@@ -5668,7 +5674,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.54.1";
+  var APP_VER = "v3.54.2";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5679,6 +5685,12 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.54.2", date: "2026-11-11", items: [
+      "🔢 **商品菜单编辑弹窗再修两点**（用户反馈「库存的框要对齐 / 售罄变灰或单独一列 / 卖光排最后」）：① 「售罄」标签从库存框右边挪到**左边**、库存框改成**固定宽度贴右**——售罄行的「− 数字 ＋」框和别的行完全对齐，不再被标签顶歪",
+      "② 卖光（库存 0）的商品在编辑列表里**自动排到本组最后**，有货的排前面",
+      "售罄行照片 / 单价淡一点、库存数字红色",
+      "鸭嘴兽弹窗同样适用，手机两行式也对齐。界面测试补「售罄排最后」「库存框左缘一致」两条断言。"
+    ] },
     { ver: "v3.54.1", date: "2026-11-11", items: [
       "📐 **商品菜单编辑弹窗补两处**（用户反馈）：① 最上方加**列头**「照片 / 名称 / 单价 / 库存」，和下面每行网格对齐，一眼知道哪一列是什么",
       "鸭嘴兽弹窗没有单价列，列头自动少一格",
@@ -5749,10 +5761,6 @@
     ] },
     { ver: "v3.49.0", date: "2026-11-07", items: [
       "🧱 开发层拆文件第二步：**JS 也拆出去** —— `mahjong-timer.html` 里的主脚本（15,683 行 / 70.8 万字符）抽成独立 **`app.js`**，主文件从 78.6 万字符降到 **7.7 万字符**（只剩 HTML 骨架）。同样**部署产物不变**：构建时把 `app.css` + `app.js` 内联回单文件，线上仍是 998KB 单文件，PWA / 离线 / 换版 / 推送清单全部零改动。配套改：`生成Firebase版.py`、发布/推送的版本检查、更新日志生成器（改读 app.js）、截图与两个测试脚本（读取时自动内联）"
-    ] },
-    { ver: "v3.48.0", date: "2026-11-07", items: [
-      "🧱 开发层拆文件（第一步：CSS）：把 `mahjong-timer.html` 里 2472 行的 `<style>` 抽成独立的 **`app.css`**，主文件从 93 万字符降到 **78.6 万**。**线上部署产物不变**——构建时（`生成Firebase版.py` / 部署 `index.html`）会把 `app.css` 内联回单文件，所以 PWA 缓存、离线、版本换版、推送文件全都和以前一样，只是以后改样式不用在 90 万字符里搜了。配套改：截图脚本 / 界面测试 / 集成测试读取时自动内联 `app.css`",
-      "集成测试顺手修了一个原本就有的 `fail` 变量未初始化 bug"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -13236,12 +13244,18 @@ jsonpGet(t, onRes);
     return out;
   }
   // 按分组重排过滤后的行（同组内保持原顺序），返回 [行, 原下标, 组标题]
+  // ★ v3.54.2：卖光（库存 0）的自动排到【本组最后】，有货的仍在前面
   function meSorted(filtered) {
-    var out = [], groups = meGroupOrder(), gi, i;
+    var out = [], groups = meGroupOrder(), gi, i, k, ok, gone;
     for (gi = 0; gi < groups.length; gi++) {
+      ok = []; gone = [];
       for (i = 0; i < filtered.length; i++) {
-        if (meCatOf(filtered[i][0]) === groups[gi].k) out.push([filtered[i][0], filtered[i][1], groups[gi].t]);
+        if (meCatOf(filtered[i][0]) !== groups[gi].k) continue;
+        if (meStockOf(filtered[i][0]) <= 0) gone.push(filtered[i]);
+        else ok.push(filtered[i]);
       }
+      for (k = 0; k < ok.length; k++) out.push([ok[k][0], ok[k][1], groups[gi].t]);
+      for (k = 0; k < gone.length; k++) out.push([gone[k][0], gone[k][1], groups[gi].t]);
     }
     // 兜底：不认识的分组也带上，别丢
     for (i = 0; i < filtered.length; i++) {
@@ -13275,7 +13289,7 @@ jsonpGet(t, onRes);
     var hasPh = ph.length > 40;
     var stock = meStockOf(r);
     var out = stock <= 0;
-    var h = '<div class="me-row' + (r.kill ? " kill" : "") + '" data-mi="' + i + '"' +
+    var h = '<div class="me-row' + (r.kill ? " kill" : "") + (out ? " out" : "") + '" data-mi="' + i + '"' +
             ' data-cat="' + (isVape ? String(Number(r.gen) === 2 ? 2 : 1) : (r.cat === "drink" ? "drink" : "snack")) + '">';
     // 照片格子：点 📷 上传 / 点照片换一张；右上角 ✕ 删掉照片
     h += '<div class="me-photo-wrap">' +
@@ -13297,14 +13311,16 @@ jsonpGet(t, onRes);
            '<input type="number" class="me-pr" data-mf="price" min="0" step="0.5" value="' +
              (Number(r.price) || 0) + '"></div>';
     }
-    // 库存步进器：− 数字 ＋（补货点两下）；0 → 红色「售罄」
+    // 库存步进器：− 数字 ＋（补货点两下）
+    // ★ v3.54.2：售罄标签放在步进器【左边】、步进器固定宽度贴右 ——
+    //   这样售罄那一行的框和别的行完全对齐（以前标签在右边，会把框往左顶出去）
     h += '<div class="me-stk' + (out ? " out" : "") + '">' +
+           (out ? '<span class="me-sold">售罄</span>' : "") +
            '<div class="me-step">' +
              '<button type="button" data-mf="stockdec" title="库存 −1">−</button>' +
              '<input type="number" class="me-stk-in" data-mf="stock" min="0" step="1" value="' + stock + '">' +
              '<button type="button" data-mf="stockinc" title="库存 +1">＋</button>' +
            "</div>" +
-           (out ? '<span class="me-sold">售罄</span>' : "") +
          "</div>";
     // 行尾 ⋯ 菜单：改分类 / 换照片 / 删除（删除不再常驻，防手滑）
     h += '<button type="button" class="me-more' + (meOpenMenu === i ? " on" : "") +
