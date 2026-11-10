@@ -155,8 +155,6 @@
     text-align: right;
   }
   .rate-box .cur { font-size: 13px; opacity: .9; white-space: nowrap; }
-  /* ★ v3.55.0：「我的名字」输入框（待办删掉后挪到营业参数）—— 比数字框宽、文字左对齐 */
-  #actorName { width: 132px !important; text-align: left; }
   .fx-btn { padding: 8px 10px; font-size: 13px; background: #fff; color: var(--green-dark); border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: 600; }
   .fx-btn:active { transform: scale(.96); }
   .grid {
@@ -1657,7 +1655,6 @@
     .rate-box { padding: 7px 10px; gap: 6px; }
     .rate-box label { font-size: 12px; }
     .rate-box input { width: 64px; font-size: 15px; padding: 6px; }
-    #actorName { width: 104px !important; }
     .fx-btn { padding: 7px 8px; font-size: 12px; }
     .tabs { gap: 8px; margin-bottom: 12px; }
     .tab { flex: 1 1 calc(33.333% - 6px); padding: 9px 4px; font-size: 13px; }
@@ -2885,14 +2882,7 @@
           <span class="cur">点</span>
         </div>
       </div>
-      <!-- ★ v3.55.0：「我的名字」原来在店铺待办面板里（待办已删），挪到营业参数；
-           预约的「谁确认到店 / 谁改的」还靠它 -->
-      <div class="rate-box">
-        <label>我的名字</label>
-        <div class="input-wrap">
-          <input type="text" id="actorName" maxlength="12" placeholder="预约记录里标谁操作的">
-        </div>
-      </div>
+
     </div>
   </header>
 
@@ -5646,7 +5636,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.55.0";
+  var APP_VER = "v3.55.1";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5657,6 +5647,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.55.1", date: "2026-11-11", items: [
+      "🗑 **「我的名字」也去掉**（用户要求）：预约记录的「谁确认到店 / 谁改的 / 谁加的」不再显示自定义名字，固定写「店员」（客服模式写「客服」）",
+      "营业参数里那个输入框一并删掉，参数回到 4 个。"
+    ] },
     { ver: "v3.55.0", date: "2026-11-11", items: [
       "🗑 **删掉「店铺待办」**（用户：没啥用，可以删了）：顶部 📌 按钮、「⋯」菜单里那一项、待办面板（加 / 勾完成 / 两击删除 / 7 天自动清 / 多设备同步）全部移除，同步字段 `set_staffnotes` 也不再上传（云端旧数据留着不读、不传，不影响使用）",
       "原来面板里的「我的名字」输入**挪到营业参数**（预约台账的「谁确认到店 / 谁改的」还用它，老名字沿用本机缓存）。顺手清掉 300+ 行相关代码 / 样式 / 测试，桌面上方工具图标从 7 个变 6 个、手机「⋯」菜单剩 3 项。"
@@ -5730,10 +5724,6 @@
       "🌙 夜间模式两处补色（用户反馈红框 UI 还不对）：① **顶部一排图标底色不统一** —— 中间 4 个（店铺待办 / 汇率对照 / 夜间模式 / 字号）被一条本该只给手机「⋯」弹出菜单用的深色规则误伤，在深绿顶栏上变成深蓝灰，和左右 3 个半透明白底按钮一排两种底色 → 规则收进手机媒体查询，桌面 7 个统一半透明白底",
       "夜间模式开启时月亮按钮亮起（原来被误伤覆盖、看不出已开启）。② **预约台账「✅ 今天已收工」提示条夜里还是一条亮白绿条**（白天浅绿底配色没做夜间版）→ 改成深绿底 + 亮绿字，和夜间其他绿色块一致",
       "顺手把预约展开条底部说明的深灰字提亮"
-    ] },
-    { ver: "v3.49.1", date: "2026-11-08", items: [
-      "📅 「💬 今天整体文案」**最上方第一行加日期**（用户要求）：弹窗里那段结账记录文案的首行变成 `2026年11月8日（周日）`，发到微信群里一眼能看出是哪一天",
-      "下面照旧从 `1. …` 开始编号。当天没记录时仍显示「这天还没有记录」，不会只剩一行日期。集成测试补了三条断言（首行日期 / 第二行从 1. 开始 / 空日提示不变）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -11268,22 +11258,7 @@ function pullTableStates() {
   //     · 企业微信机器人等  直接 POST（浏览器可能被 CORS 挡 ✗ 但请求已发出 ✓）
   //   ★ 绝不阻塞结算 ★ 出错全部静默 ✓
   // ============================================================
-  // ===== 「我的名字」（v3.55.0）=====
-  //   原来这个输入在「店铺待办」面板里；待办功能已按用户要求删掉，
-  //   但预约台账的「谁确认到店 / 谁改的」还要用，所以挪到「营业参数」里（#actorName）。
-  //   沿用老 localStorage key，老用户之前填过的名字还在。
-  var ACTOR_NAME_KEY = "mahjong_note_who";
-  function actorNameGet() {
-    try { return String(localStorage.getItem(ACTOR_NAME_KEY) || "").trim(); } catch (e) { return ""; }
-  }
-  (function () {
-    var el = document.getElementById("actorName");
-    if (!el) return;
-    el.value = actorNameGet();
-    el.addEventListener("input", function () {
-      try { localStorage.setItem(ACTOR_NAME_KEY, String(el.value || "").trim()); } catch (e) {}
-    });
-  })();
+  // v3.55.1：用户要求不要「我的名字」——预约里的操作人固定写「店员」（客服模式下写「客服」）
 
   // 🌙 夜间模式（v3.14.0）：跟随时间（19:00–07:00）/ 开 / 关，存本机
   var UI_NIGHT_KEY = "mahjong_ui_night";
@@ -17931,7 +17906,7 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (r.people) return r.people + " 位";
     return "";
   }
-  function resActor() { return resCSMode ? "客服" : (actorNameGet() || "店员"); }
+  function resActor() { return resCSMode ? "客服" : "店员"; }
   function resFind(id) {
     if (!Array.isArray(state.reservations)) state.reservations = [];
     for (var i = 0; i < state.reservations.length; i++) {
