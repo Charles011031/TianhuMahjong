@@ -851,24 +851,48 @@
   }
   .menu-head span { text-align: center; }
   /* 电子烟价格设置：左右两栏，把整页宽度用起来，不然右半边空一片 */
-  /* 左栏只占内容需要的宽度，右栏吃掉剩下的 —— 这样左边不会空一片、右边也不会被挤出去 */
-  /* 左栏按内容宽度（v3.39.0 加了「满10根」这一格，写死 1fr 会跟右栏挤在一起），右栏吃掉剩下的 */
-  .vp-wrap { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 28px; align-items: start; }
+  .vp-wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 10px 28px; align-items: start; }
   .vp-title { font-size: 13px; font-weight: 700; color: var(--green-dark); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   .vp-title .hint { font-weight: 400; margin-left: 6px; }
-  /* 阶梯价：四组（零售 / 满3 / 满5 / 满10）紧挨着排，不再被 1fr 拉开 */
-  .vp-grid { display: grid; grid-template-columns: 76px repeat(4, max-content); gap: 13px 20px; align-items: center; justify-content: start; }
-  /* 员工价/刷卡：三列，右侧两组平分剩余宽度 */
-  .vp-grid2 { display: grid; grid-template-columns: 62px minmax(0, 1fr) minmax(0, 1fr); gap: 13px 16px; align-items: center; }
-  .vp-gen { font-size: 15px; font-weight: 700; }
-  .vp-cell { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+  /* ★ v3.56.3：价格格子改成「浅底小卡片」（和手机同一个长相：左边标签、右边右对齐数字）
+     桌面：代别单独一行 → 阶梯价每代一行 4 张卡；员工价/刷卡每行 2 张卡 */
+  .vp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 12px; align-items: stretch; justify-content: stretch; }
+  .vp-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; align-items: stretch; }
+  .vp-gen { grid-column: 1 / -1; font-size: 14px; font-weight: 700; }
+  .vp-cell {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
+    white-space: nowrap; min-width: 0;
+    background: var(--c-surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  }
   .vp-cell input {
-    width: 64px; padding: 8px 8px; border: 1px solid var(--line); border-radius: 8px;
-    font-size: 15px; font-weight: 700; text-align: right; color: var(--ink); background: #fff;
+    width: 100%; min-width: 0; flex: 1 1 auto; padding: 7px 8px; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 16px; font-weight: 700; text-align: right; color: var(--ink); background: #fff;
   }
   .vp-cell input:focus { border-color: var(--green); outline: none; }
-  #tierList .vp-cell input { width: 120px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 15px; font-weight: 700; text-align: right; }
-  #tierList .menu-row { margin-bottom: 10px; }
+  body.dark .vp-cell { background: var(--dk-sunken) !important; border-color: var(--dk-border) !important; }
+
+  /* ===== 充值档位（v3.56.3）：和价格格子同一套「浅底小卡片」 ===== */
+  .tier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .tier-card { border: 1px solid var(--line); border-radius: 12px; background: var(--c-surface); padding: 10px 12px; }
+  .tier-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tier-idx {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--green); color: #fff;
+    font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .tier-to { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .tier-to b { color: var(--green-dark); font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .tier-del {
+    width: 28px; height: 28px; padding: 0; flex: 0 0 auto; display: inline-flex;
+    align-items: center; justify-content: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--muted); font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .tier-del:hover { color: var(--red); border-color: #fca5a5; background: #fee2e2; }
+  .tier-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tier-row .vp-cell { padding: 6px 8px; font-size: 12.5px; background: #fff; }
+  body.dark .tier-card { background: var(--dk-sunken) !important; border-color: var(--dk-border) !important; }
+  body.dark .tier-row .vp-cell { background: var(--dk-raise) !important; border-color: var(--dk-border) !important; }
+  body.dark .tier-del { background: var(--dk-raise) !important; border-color: var(--dk-border) !important; color: #93a3b3 !important; }
   /* 会员页顶部：充值档位（左，宽）+ 新增会员（右，窄）并排 */
   .mem-top { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
   .mem-top > .card-box { margin-bottom: 0; }
@@ -1215,42 +1239,18 @@
     .attach-tb .tb-name { font-size: 13px; }
     .attach-panel { padding: 11px; }
     .attach-go { font-size: 14px; padding: 11px; }
-    /* ★ v3.56.2：鸭嘴兽「价格设置」手机重排
-       旧写法是 4 列塞 5 个格（代别 + 零售/满3/满5/满10）→「满10根」被挤到下一行，
-       于是标签和输入框错位、整块又高又乱（用户截图反馈）。
-       新写法：阶梯价 = 代别单独一行 + 4 个价格格 2×2；员工价/刷卡 = 标签一行 + 两格并排。 */
-    .vp-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 6px 10px; justify-content: stretch;
-    }
-    .vp-grid .vp-gen { grid-column: 1 / -1; font-size: 13px; margin-top: 4px; }
+    /* ★ v3.56.3：卡片样式桌面/手机通用（基础样式里已定义），手机只改「一排放几张」和紧凑度：
+       阶梯价 = 代别一行 + 4 格 2×2；员工价/刷卡 = 标签一行 + 两格并排 */
+    .vp-grid, .vp-grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; }
+    .vp-gen { font-size: 13px; margin-top: 4px; }
     .vp-grid .vp-gen:first-child { margin-top: 0; }
-    .vp-grid .vp-cell {
-      flex-direction: row; align-items: center; gap: 6px; white-space: nowrap;
-      font-size: 12px; padding: 6px 8px;
-      background: var(--c-surface); border: 1px solid var(--line); border-radius: 10px;
-    }
-    .vp-grid .vp-cell input {
-      width: 100% !important; flex: 1 1 auto; min-width: 0;
-      padding: 5px 4px; font-size: 15px; font-weight: 700; text-align: right;
-    }
-    .vp-grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; }
-    .vp-grid2 .vp-gen { grid-column: 1 / -1; font-size: 13px; }
-    .vp-grid2 .vp-cell {
-      flex-direction: row; align-items: center; flex-wrap: wrap; gap: 6px;
-      font-size: 12px; padding: 6px 8px;
-      background: var(--c-surface); border: 1px solid var(--line); border-radius: 10px;
-    }
-    .vp-grid2 .vp-cell input[type="number"] {
-      width: 64px !important; flex: 0 0 64px; min-width: 0;
-      padding: 5px 4px; font-size: 15px; font-weight: 700; text-align: right;
-    }
-    .vp-grid2 > .vp-cell:last-child { grid-column: auto; }
+    .vp-cell { font-size: 12px; padding: 6px 8px; gap: 6px; }
+    .vp-cell input { padding: 5px 4px; font-size: 15px; }
+    .vp-grid2 .vp-cell input[type="number"] { width: 64px !important; flex: 0 0 64px; }
     .vp-cell label { white-space: nowrap; }
-    #tierList .vp-cell input { width: 100% !important; min-width: 0; padding: 6px 5px; font-size: 13px; }
-    body.dark .vp-grid .vp-cell, body.dark .vp-grid2 .vp-cell {
-      background: var(--dk-sunken) !important; border-color: var(--dk-border) !important;
-    }
+    /* 充值档位在手机上：一行一张卡（两张并排会挤，输入框太窄） */
+    .tier-grid { grid-template-columns: 1fr; }
+    .tier-row .vp-cell input { padding: 5px 4px; font-size: 15px; }
     .snack-card .snack-step { gap: 5px; }
     .snack-card .snack-step button { width: 28px; height: 26px; font-size: 16px; }
     .snack-card .snack-step .n { min-width: 14px; font-size: 13px; }
@@ -1908,27 +1908,11 @@
     .rec-acts .row-edit, .rec-acts .btn-ghost { padding: 7px 12px; font-size: 13px; }
     .rec-busy { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 
-    /* --- 充值档位：手机上收窄，不横向溢出 --- */
-    #tierList .menu-row { grid-template-columns: 24px minmax(0,1fr) minmax(0,1fr) minmax(0,0.85fr) 30px !important; gap: 6px; }
-    #tierList .menu-row.menu-head { display: none; }
-    #tierList .menu-row .vp-cell {
-      display: block; position: relative; padding-top: 14px !important;
-      font-size: 13px; white-space: nowrap;
-    }
-    #tierList .menu-row .vp-cell input { width: calc(100% - 11px) !important; min-width: 0; padding: 6px 4px; font-size: 13px; }
-    #tierList .menu-row .vp-cell::before {
-      position: absolute; top: 0; left: 0; font-size: 11px; font-weight: 400; color: var(--muted);
-    }
-    #tierList .menu-row:not(.menu-head) > span:nth-child(2)::before { content: "充值"; }
-    #tierList .menu-row:not(.menu-head) > span:nth-child(3)::before { content: "赠送"; }
+    /* 充值档位已改成卡片式（v3.56.3，基础样式里定义），手机上一行一张卡（见 .tier-grid 上面的手机规则） */
     /* 空单元格（比如没填备注）不占一行 */
     #historyWrap tbody td:empty, #snackHistoryWrap tbody td:empty, #vapeHistoryWrap tbody td:empty,
     #memberList tbody td:empty, #memberTxnWrap tbody td:empty, #attWrap tbody td:empty,
     #stTxnWrap tbody td:empty { display: none; }
-    #tierList .menu-row:not(.menu-head) > span:nth-child(4) {
-      display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 14px;
-    }
-    #tierList .menu-row:not(.menu-head) > span:nth-child(4)::before { content: "到账"; color: var(--muted); font-size: 11px; font-weight: 400; }
   }
 
   /* ============================================================
@@ -5687,7 +5671,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.2";
+  var APP_VER = "v3.56.3";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5698,6 +5682,14 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.3", date: "2026-11-11", items: [
+      "🎨 把手机版价格设置的「浅底小卡片」搬到电脑，充值档位也换成同一套：① 鸭嘴兽「价格设置」桌面端从「裸输入框 + 灰标签」改成卡片（代别单独一行，每代一行 4 张卡",
+      "员工价/刷卡一行 2 张卡，标签 + 右对齐数字），和手机同一个长相",
+      "② 会员充值「充值档位」从表格行改成卡片（① ② ③ + 到账金额 + ✕ + 充值/赠送两个输入格），手机一行一张、桌面一行 3~4 张",
+      "改金额「到账」实时更新",
+      "③ 夜间模式一并配了深色卡片。测试新增 `case_price_cards_and_tier_cards` 11 条断言（卡片结构 / 底色 / 到账实时 / 桌面 4 列+2 列 / 代别占满行 / 删除两下确认）",
+      "集成测试静态检查同步改成卡片版"
+    ] },
     { ver: "v3.56.2", date: "2026-11-11", items: [
       "📱 修手机上的「鸭嘴兽 · 价格设置」排版（用户截图：又高又乱）：旧 CSS 给阶梯价排了 4 列，但每代有 5 个格（代别 + 零售/满3/满5/满10），「满10根」被挤到下一行 → 标签和输入框错位。现在手机上改成 **代别单独一行 + 4 个价格格 2×2**（每格浅底卡片、标签和输入框同行），员工价/刷卡改成 **标签一行 + 两格并排**",
       "整块高度和错位都没了，夜间也配了深色卡片。新增界面测试 `case_vape_price_mobile_layout`（CDP 模拟 430×932：2 列 / 代别占满行 / 8 格都在视口内 / 无横滚 / 格子不超高）"
@@ -5773,10 +5765,6 @@
       "💳 会员充值的收款 UI 改成和结算弹窗**同一套「整单收款」卡片**（用户要求：充值这的支付 UI 也和别的 UI 一样）：默认就是 `怎么收：💵现金 / 💳刷卡 / 🇨🇳人民币` 一排胶囊，点一下整单按这个方式收，刷卡自动带出含手续费的实收、可手改",
       "现金分纸币/转账、人民币分微信/支付宝（和结算一致）。要混着付才点「👥 分成几笔收」（原来的分笔明细收进去当高级选项，顺手修了手机上金额/方式/✕/小计各占一行的错位）。底部改成**吸底合计**：大字「到账金额」+ 实付＋赠送 / 实收 / 充值后余额 + 「确认充值」（扣款、余额调整共用，按钮字随之变）。会员交易明细里的**充值行补上收款方式色块**（现金/刷卡/人民币，和结算记录、统计明细一致）",
       "老数据没存分笔时按现金/刷卡/人民币汇总兜底。界面测试新增 `case_recharge_pay_ui` 14 条断言（整单默认 / 换方式 / 实收含手续费 / 分笔展开 / 到账与流水 / 色块）"
-    ] },
-    { ver: "v3.49.5", date: "2026-11-10", items: [
-      "📊 结算记录的**分组小计拆开**（用户反馈：原来只有一个金额，看不出是台费还是含了挂账零食）：组标题行改成 `台费 $199.74 · 零食 $34.00 · 罚款 $10.00 · 应收 $244.87`，**没发生罚款的那天不显示「罚款」这一节**",
-      "手机卡片的分组条同样显示，放不下一行就换到第二行右对齐。口径：台费=纯台费（不含罚款，和统计页「台费」卡一致）、零食=挂账零食、罚款=单独列、应收=最终收的钱（含罚款与手续费）。界面测试新增 6 条断言（四项都有 / 没罚款不显示 / 分组应收＝明细应收相加 / 手机分组条）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -16301,42 +16289,36 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
   // ============================================================
   //  会员充值
   // ============================================================
-  // ---------- 充值档位 ----------
-  // 充值档位表头（跟商品菜单一样的风格）
-  function tierHead() {
-    return '<div class="menu-row menu-head" style="grid-template-columns:52px 168px 168px minmax(0,1fr) 76px;">' +
-      '<span>档位</span>' +
-      '<span style="text-align:right;">充值</span>' +
-      '<span style="text-align:right;">赠送</span>' +
-      '<span style="text-align:center;">到账</span>' +
-      '<span></span>' +
-      "</div>";
-  }
-
+  // ---------- 充值档位（v3.56.3：浅底小卡片，和鸭嘴兽「价格设置」同一套长相）----------
   function renderTiers() {
     var wrap = document.getElementById("tierList");
     if (!state.rechargeTiers.length) {
       wrap.innerHTML = '<div class="empty-mini">还没有档位，点右上角「+ 添加档位」。</div>';
       return;
     }
-    var h = tierHead();
-    var list = state.rechargeTiers.slice().sort(function (a, b) { return (Number(b.pay) || 0) - (Number(a.pay) || 0); });
+    var list = state.rechargeTiers.slice().sort(function (a, b) {
+      return (Number(b.pay) || 0) - (Number(a.pay) || 0);
+    });
+    var h = '<div class="tier-grid">';
     for (var i = 0; i < list.length; i++) {
       var t = list[i];
       var pay = Number(t.pay) || 0, bonus = Number(t.bonus) || 0;
-      h += '<div class="menu-row" style="grid-template-columns:52px 168px 168px minmax(0,1fr) 76px;">' +
-        '<span style="font-size:13px;font-weight:700;color:var(--green-dark);">' + (i + 1) + "</span>" +
-        '<span class="vp-cell" style="justify-content:flex-end;">$<input type="number" min="0" step="1" value="' + pay +
-          '" data-tier="pay" data-id="' + t.id + '" style="width:120px;"></span>' +
-        '<span class="vp-cell" style="justify-content:flex-end;">$<input type="number" min="0" step="1" value="' + bonus +
-          '" data-tier="bonus" data-id="' + t.id + '" style="width:120px;color:#b45309;"></span>' +
-        '<span style="text-align:center;font-size:15px;font-weight:700;color:var(--green-dark);font-variant-numeric:tabular-nums;" ' +
-          'data-tier-sum="' + t.id + '">' + fmtMoney(round2(pay + bonus)) + "</span>" +
-        '<button class="mini-del" data-tier="del" data-id="' + t.id + '" data-armkey="tier-del" title="删除这个档位"' +
-          (armGet("tier-del") === t.id ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
-          (armGet("tier-del") === t.id ? "再点" : "✕") + "</button>" +
+      var armed = armGet("tier-del") === t.id;
+      h += '<div class="tier-card">' +
+        '<div class="tier-top">' +
+          '<span class="tier-idx">' + (i + 1) + "</span>" +
+          '<span class="tier-to">到账 <b data-tier-sum="' + t.id + '">' + fmtMoney(round2(pay + bonus)) + "</b></span>" +
+          '<button class="tier-del" data-tier="del" data-id="' + t.id + '" data-armkey="tier-del" title="删除这个档位"' +
+            (armed ? ' style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:700;"' : "") + ">" +
+            (armed ? "再点" : "✕") + "</button>" +
+        "</div>" +
+        '<div class="tier-row">' +
+          '<label class="vp-cell">充值 $<input type="number" min="0" step="1" value="' + pay + '" data-tier="pay" data-id="' + t.id + '"></label>' +
+          '<label class="vp-cell">赠送 $<input type="number" min="0" step="1" value="' + bonus + '" data-tier="bonus" data-id="' + t.id + '"></label>' +
+        "</div>" +
         "</div>";
     }
+    h += "</div>";
     wrap.innerHTML = h;
   }
 
@@ -16351,8 +16333,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     for (var i = 0; i < state.rechargeTiers.length; i++) {
       if (state.rechargeTiers[i].id === id) {
         state.rechargeTiers[i][f] = (isNaN(v) || v < 0) ? 0 : round2(v);
-        var sum = document.querySelector('#tierList span[data-tier-sum="' + id + '"]');
-        if (sum) sum.textContent = "到账 " + fmtMoney(round2((Number(state.rechargeTiers[i].pay) || 0) + (Number(state.rechargeTiers[i].bonus) || 0)));
+        var sum = document.querySelector('#tierList [data-tier-sum="' + id + '"]');
+        if (sum) sum.textContent = fmtMoney(round2((Number(state.rechargeTiers[i].pay) || 0) + (Number(state.rechargeTiers[i].bonus) || 0)));
         break;
       }
     }
