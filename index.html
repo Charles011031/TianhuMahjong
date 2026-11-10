@@ -5683,7 +5683,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.4";
+  var APP_VER = "v3.56.5";
   var APP_DATE = "2026-11-11";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5694,6 +5694,9 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.5", date: "2026-11-11", items: [
+      "🦆 鸭嘴兽英文名**不再显示在销售记录里**（用户要求）：菜单卡片 / 当前点单照旧显示（对货用），但鸭嘴兽销售记录和统计「今日明细」里只写中文（`一代 西瓜×2`），记录区更干净。新增 `case_vape_en_only_in_menu` 守住"
+    ] },
     { ver: "v3.56.4", date: "2026-11-11", items: [
       "🎁 充值档位改成「**一个档位占一整行**」（用户要求：一行一个比并排卡片好读）：桌面每行 `① [充值 $500] [赠送 $100] …… 到账 $600.00 ✕` 全在同一行（金额格最多 560px，右边到账金额右对齐）",
       "手机保持「上面 ①+到账+✕、下面两个金额格」两行结构。改金额「到账」仍实时更新、删除仍两下确认。`case_price_cards_and_tier_cards` 增加「一个档位占一整行」断言"
@@ -5772,10 +5775,6 @@
       "🔘 **收款的「付款方式」从下拉框改成胶囊按钮**（用户要求：修改界面也要用按钮改支付方式）：`💵现金 / 💳刷卡 / 🇨🇳人民币 / 🎫会员扣款` 一排按钮点一下换，现金再点 `纸币/转账`、人民币点 `微信/支付宝`（也是按钮）。一套组件同时改到 4 个地方：结算弹窗「高级：按笔改金额」、修改结算记录、会员充值「分成几笔收」、「修改流水」，以后不会出现「这里能点、那里要下拉」的不一致",
       "手机端每笔排成 `金额 → 小计 → ✕` 一行 + `怎么收` 按钮行 + 渠道行，不再挤。顺手修：夜间规则漏写 `body.dark` 前缀导致白天收款卡片也变深色",
       "「修改流水」里不该出现「会员扣款」（充值不能用余额）。测试：界面测试把读下拉的断言改成读按钮，顺手修好 2 条**躺了很久的旧失败**（「点会员余额 → 台费走会员、零食走现金」原来没选会员就断言、「只把改的那一笔拆开」格式过时），已知失败清单 3 条 → 2 条"
-    ] },
-    { ver: "v3.51.0", date: "2026-11-10", items: [
-      "🌙 修**夜间模式下充值收款卡片变成浅灰、字看不清**：原来 `body.dark ... .sp-person` 写的是 `background: var(--ink)`，而夜间 `--ink` 是**浅色文字色** → 卡片浅灰、标题白字看不见（结算弹窗的整单收款卡片同样中招）。改成深面 `var(--dk-deep)` + 深边，手续费小字夜间提亮，卡片里的标题 / 金额统一用亮色。✏️ **「修改流水」也能改收款的付款方式了**（用户要求：和别的结算记录修改一样）：充值的流水里多一块「收款明细」，可加笔 / 删笔 / 换方式（现金·刷卡·人民币混着付），改金额时实付跟着等于明细合计、改实付时各笔自动对齐（和「修改结算记录」同一套组件）",
-      "保存时把 `parts`（含纸币/转账、微信/支付宝渠道）和 `cashSum/cardSum/rmbSum/fee/collected/payType` 一起写回流水，扣款 / 余额调整没有收款方式 → 自动隐藏这块。界面测试：`case_recharge_pay_ui` 补 2 条夜间断言（卡片深色 / 标题可见），新增 `case_txn_edit_pay_method` 8 条断言（还原分笔 / 改金额联动 / 混着付保存 / 渠道落库）"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -15590,9 +15589,8 @@ document.getElementById("seItemsList").addEventListener("click", function (e) {
         var items = "";
         for (var j = 0; j < h.items.length; j++) {
           if (j) items += "、";
-          items += (h.items[j].gen === 2 ? "二代" : "一代") + " " + h.items[j].name +
-                   (vapeEnOf(h.items[j].gen, h.items[j].name) ? " " + vapeEnOf(h.items[j].gen, h.items[j].name) : "") +
-                   "×" + h.items[j].qty;
+          // ★ v3.56.5：销售记录里【不显示】英文名（用户要求）——英文只在菜单/点单里对货用
+          items += (h.items[j].gen === 2 ? "二代" : "一代") + " " + h.items[j].name + "×" + h.items[j].qty;
         }
         // 应收下面的小字：刷卡加价 / 手续费
         var notes = [];
@@ -19750,9 +19748,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
       var vitems = "";
       for (var vi = 0; vi < vh.items.length; vi++) {
         if (vi) vitems += "、";
-        vitems += (vh.items[vi].gen === 2 ? "二代" : "一代") + vh.items[vi].name +
-                  (vapeEnOf(vh.items[vi].gen, vh.items[vi].name) ? " " + vapeEnOf(vh.items[vi].gen, vh.items[vi].name) : "") +
-                  "×" + vh.items[vi].qty;
+        // ★ v3.56.5：统计明细里也不显示英文名（和销售记录一致）
+        vitems += (vh.items[vi].gen === 2 ? "二代" : "一代") + vh.items[vi].name + "×" + vh.items[vi].qty;
       }
       r.txns.push({
         kind: "vape", dt: vh.date, t: txnTimeWithReal(vh, vh.time), d: vitems, a: Number(vh.grand) || 0,
