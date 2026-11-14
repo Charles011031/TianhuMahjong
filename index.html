@@ -1337,6 +1337,8 @@
   .chip.rmb    { background: var(--c-warn-bg); color: var(--c-warn-deep); border: 1px solid #f0c98a; }
   .chip.member { background: #f3e8ff; color: #6b21a8; border: 1px solid #ddd6fe; }
   .chip.mix    { background: var(--c-surface-2); color: #4b5563; border: 1px solid var(--line); }
+  /* ★ v3.56.8：老充值没存过收款方式 → 灰色「未记录」（别假装是现金） */
+  .chip.none   { background: var(--c-surface-2); color: var(--muted); border: 1px dashed var(--line); font-weight: 600; }
   /* 数字列：表头和格子都右对齐（表头靠 class="num"，格子靠 .money/.grand）*/
   .history th.num, .history td.num, .mem-table th.num, .mem-table td.num { text-align: right; }
   .history td.money, .history td.grand, .mem-table td.money, .mem-table td.grand { text-align: right; }
@@ -1547,6 +1549,7 @@
   body.dark .chip.rmb    { background: #3a2a12 !important; color: #f0b95a !important; border: 1px solid #6b4d20 !important; }
   body.dark .chip.member { background: #2f2144 !important; color: #c4a6ff !important; border: 1px solid #513a7a !important; }
   body.dark .chip.mix    { background: #12333a !important; color: #7fd6e8 !important; border: 1px solid #2a5f6b !important; }
+  body.dark .chip.none   { background: #1f2a33 !important; color: #9aa8b5 !important; border: 1px dashed #3a4a57 !important; }
   /* v3.49.3：夜间模式开启时不再把月亮按钮调亮（用户要求「不需要高亮」），7 个按钮始终一致 */
   body.dark .font-pop { background: var(--card) !important; border-color: var(--line) !important; }
   body.dark .font-pop .fp-title { color: #b9c6d3 !important; }
@@ -5706,8 +5709,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.7";
-  var APP_DATE = "2026-11-11";
+  var APP_VER = "v3.56.8";
+  var APP_DATE = "2026-11-14";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -5717,6 +5720,12 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.8", date: "2026-11-14", items: [
+      "💰 **修：会员充值的「收款方式」会丢**（用户反馈：选了人民币，今天发现明细里显示成「现金」，以前的刷卡/人民币也全变现金）：根因是 `memberTxnRow` 推到云端的行里只有「实付/到账/余额/备注」，**收款方式从来没上过云**，每次云端快照回来 `applyMemberRows` 重建流水就把 payType / 分笔明细 / 现金·刷卡·人民币金额 / 人民币实收 / 手续费全抹掉，明细只能兜底成「现金」",
+      "统计页「会员充值 · 人民币」也因此一直是 0。现在这些字段跟着流水一起存（`payParts` 分笔 JSON），拉回来原样还原，并做了三层兜底：① 云端老行缺字段时保留本机已有的值，**1.5 秒后自动补推回云端**（自愈，换设备也不丢）",
+      "② **v3.56.7 之前的历史充值**云端确实没存过 → 明细显示灰色**「未记录」**（不再假装现金），打开「改」会提示「当时没记收款方式」，**只改备注/日期不会把它悄悄固化成现金**，要补就点一次收款方式（补完自动上云）",
+      "③ 统计明细的刷卡色块改成和会员明细一致（含手续费）。顺手修了读回时 `dueOverride` 丢失、`collected` 显式为 0 会把充值营业额算成 0 两个小坑。（Google 表格版已冻结，收款方式只在 Firebase 版同步）新增 `case_member_recharge_pay_sync` 11 条断言（人民币充值 → 推云端 → 快照回来还是人民币 / 老数据「未记录」/ 本机有值自动补推 / 只改备注不变现金 / 统计页一致）"
+    ] },
     { ver: "v3.56.7", date: "2026-11-11", items: [
       "🧾 会员「交易明细」改成**从新到旧**（用户要求）：原来只按记录时间戳 `ts` 排，从 Google 表格 / 早期补录导入的流水没有 `ts`，排出来还是导入顺序（看起来是从旧到新）。现在按**日期 + 时间**从新到旧，同一时刻再按 `ts`（后发生的在前）。新增 `case_member_txn_newest_first` 7 条断言"
     ] },
@@ -5786,15 +5795,6 @@
     { ver: "v3.53.1", date: "2026-11-11", items: [
       "🌙 **夜间模式全站补漏**（用户截图反馈人民币账单两个合计卡片白底 + 浅绿大字糊成一片）：修 `#rmbBillOverlay` 的合计卡片 / 标题 / 表格配色",
       "顺手做了一次**自动对比度审计**（6 个页面 + 25 个弹窗/浮层，逐元素算「背景亮度 / 文字对比度」），把漏网的都补上： - 人民币账单：两个合计卡片改成深底 + 亮绿/亮绿字 - 编辑结算记录顶部那块（v3.53.0 新增，漏了夜间配色）、罚款框棕字、人民币参考条 - 红按钮（确认结算 / 删除记录 / 结束计时 / 确认充值 / 关闭）白字只有 2.8:1 → 夜间换深一档红 - 结算完成弹窗「知道了」是 UA 白底白字、商品菜单编辑的 ✕ 浅灰底、数据备份「最近删除」浅底 - 更新日志版本徽章（白字压亮绿 1.6:1）、空闲桌 00:00:00（#56636f 2.6:1）、售罄/二代标记的深紫、会员流水「扣款/调整」行内色、统计预估条分隔符、统计明细分组标签、预约提醒气泡 - 说明文字色 `--muted-2` 夜间没跟着亮（`.hint/.mem-sub/.cell-note` 等一片偏灰）→ 补进夜间变量 - **新增界面测试 `case_dark_mode_no_light_boxes`**：真夜间模式下扫 6 个页面 + 25 个弹窗，任何「浅色底」或「对比度 < 3」直接红（1532 个元素，18 秒）—— 以后加 UI 不会再把夜间漏掉"
-    ] },
-    { ver: "v3.53.0", date: "2026-11-11", items: [
-      "🖥 **PC 结算弹窗改成左右两栏 + 「修改结算记录」就是结算界面 + 鸭嘴兽中英双语**（用户提的 3 件事一起做）：① 窗口 ≥900px 时结算弹窗变两栏（左：账单信息 / 罚款 / 账单明细",
-      "右：整单收款 / 实收合计 / 确认结算），一屏看全、确认按钮永远可见",
-      "手机端用 `display:contents` 保持原样",
-      "② 编辑结算记录不再用另一套弹窗，直接开**同一个结算弹窗的编辑模式**：桌号 / 单价 / 日期 / 开始–结束时间可改，罚款 / 收款明细 / 会员抵扣 / 平分全部复用，底部变「保存修改」+「删除这条记录」，**原地替换**不多出一条",
-      "顺手修掉旧编辑弹窗会吞罚款（保存后 `fine/tableAll` 没写）、合并桌金额丢失、`carryIn` 不同步 3 个坑",
-      "③ 鸭嘴兽口味可填**英文名**，「中文大字 + 灰色英文小字」显示在菜单卡片、点单、销售记录、统计明细，跟着商品库存同步（`.gs`/`代码.js` 脚本 v31：商品库存表追加「英文名」列 + `idCol:5`）。测试：界面测试新增 3 个用例（两栏+编辑模式 18 条断言、老表格没英文列不清本机英文、预约同步用例改成动态日期），集成测试场景 7/8/12/13 跟着旧编辑弹窗换成新编辑模式",
-      "`已知失败.txt` 仍 2 条"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -10061,6 +10061,9 @@
 
   // ---------- 会员流水修改 ----------
   var txnEditTarget = null, txnDelArm = null;
+  // ★ v3.56.8：修改流水弹窗里的两个标记（见 openTxnEdit / teSave）
+  var teNoPayOld = false;        // 这笔是「云端没存过收款方式」的老充值
+  var tePartsTouched = false;    // 用户动过收款区（点方式 / 改金额 / 加减笔 / 填实付）
   function findTxn(mid, tid) {
     for (var i = 0; i < state.members.length; i++) {
       if (state.members[i].id !== mid) continue;
@@ -10082,6 +10085,17 @@
     document.getElementById("teInfo").innerHTML =
       "现在：<b>" + (f.t.type === "recharge" ? "充值" : (f.t.type === "adjust" ? "余额调整" : "扣款")) +
       "</b>　金额 <b>" + fmtMoney((Number(f.t.amount) || 0)) + "</b>　余额 <b>" + fmtMoney((Number(f.t.balanceAfter) || 0)) + "</b>";
+    // ★ v3.56.8：v3.56.7 之前的充值云端没存过收款方式（明细显示「未记录」）。
+    //   这种记录只改备注/日期时，保存不能悄悄把收款方式写成默认的「现金」——
+    //   所以先记下这是「无收款方式的老数据」，用户动过收款区才覆盖（见 tePartsTouched）。
+    teNoPayOld = (f.t.type === "recharge" && !(f.t.parts && f.t.parts.length) &&
+                  !(Number(f.t.cashSum) > 0.005) && !(Number(f.t.cardSum) > 0.005) &&
+                  !(Number(f.t.rmbSum) > 0.005) && !f.t.payType);
+    tePartsTouched = false;
+    if (teNoPayOld) {
+      document.getElementById("teInfo").innerHTML +=
+        '<div style="margin-top:6px;color:#b45309;font-size:13px;">⚠ 这笔是旧数据：当时没记收款方式（明细里显示「未记录」）。要补就点下面的收款方式选一次；只改备注 / 日期不会覆盖。</div>';
+    }
     // ★ v3.51.0：充值那条也能像「修改结算记录」一样改收款方式（现金/刷卡/人民币，可混着付）
     teInitParts(f.t);
     teShowPayField();
@@ -10186,8 +10200,10 @@
     var base0 = memberBase(f.m);          // ★ 改动之前就把基数取好
     t.type = type;
     t.amount = amt;
-    if (type === "recharge") {
+    if (type === "recharge" && (!teNoPayOld || tePartsTouched)) {
       // ★ v3.51.0：收款明细是准的（实付 / 各笔 / 渠道 / 手续费全从它来）
+      // ★ v3.56.8：老数据（云端从没存过收款方式）只在用户动过收款区时才写，
+      //   否则「只改备注/日期」会把它悄悄固化成「现金」
       var tt = partsTotals(teParts);
       var paySum = round2(tt.amountSum);
       var payInput = (payRaw === "") ? 0 : round2(parseFloat(payRaw) || 0);
@@ -10204,6 +10220,8 @@
       t.fee = tt.feeSum; t.collected = tt.collected;
       t.payType = tt.card > 0.005 ? (tt.cash > 0.005 || tt.rmb > 0.005 ? "mixed" : "card")
                                  : (tt.rmb > 0.005 ? (tt.cash > 0.005 ? "mixed" : "rmb") : "cash");
+    } else if (type === "recharge") {
+      // 老数据 + 用户没动收款区：收款方式整块保持原样（仍是「未记录」），只改金额/备注/日期
     } else {
       t.payAmount = 0;
       t.parts = [];
@@ -10226,29 +10244,33 @@
     var payEl = document.getElementById("tePay");
     if (payEl) payEl.addEventListener("input", function () {
       if (teTypeNow() !== "recharge") return;
+      tePartsTouched = true;                    // ★ v3.56.8：动过收款区才算「用户确认过方式」
       if (!teParts.length) teParts = [{ amount: tePayVal(), payType: "cash", rmb: null }];
       syncParts(teParts, tePayVal(), 0);
       teRender(false);
     });
     var typeEl = document.getElementById("teType");
-    if (typeEl) typeEl.addEventListener("change", teShowPayField);
+    if (typeEl) typeEl.addEventListener("change", function () { tePartsTouched = true; teShowPayField(); });
     var addEl = document.getElementById("teAddRow");
     if (addEl) addEl.addEventListener("click", function () {
+      tePartsTouched = true;
       var left = round2(tePayVal() - partsTotals(teParts).amountSum);
       teParts.push({ amount: left > 0.005 ? left : 0, payType: "cash", rmb: null });
       teRender(true);
     });
     var fillEl = document.getElementById("teFillAll");
     if (fillEl) fillEl.addEventListener("click", function () {
+      tePartsTouched = true;
       teParts = [{ amount: tePayVal(), payType: "cash", rmb: null }];
       teRender(true);
       teRowsChanged();
     });
     var boxEl = document.getElementById("teParts");
     if (boxEl) {
-      boxEl.addEventListener("input", function (e) { handlePartEvent(e, teParts, "teParts", teRowsChanged); });
-      boxEl.addEventListener("change", function (e) { handlePartEvent(e, teParts, "teParts", teRowsChanged); });
+      boxEl.addEventListener("input", function (e) { tePartsTouched = true; handlePartEvent(e, teParts, "teParts", teRowsChanged); });
+      boxEl.addEventListener("change", function (e) { tePartsTouched = true; handlePartEvent(e, teParts, "teParts", teRowsChanged); });
       boxEl.addEventListener("click", function (e) {
+        if (e.target && e.target.closest && e.target.closest("input,button")) tePartsTouched = true;
         handlePartDelete(e, teParts, "teParts", function () { teRender(true); teRowsChanged(); });
       });
     }
@@ -10746,6 +10768,43 @@
     };
   }
 
+  // ★ v3.56.8：会员充值的【收款方式】以前从来没上过云 ——
+  //   memberTxnRow 只存了实付/到账/余额/备注，云端（Firebase / 表格）一回来
+  //   这些字段就没了，明细里的色块只好兜底成「现金」→ 用户看到
+  //   「选的是人民币，过一会儿/重开页面就变现金」，刷卡同理。
+  //   现在把收款方式一起存（JSON 文本，换行/格式都稳）；
+  //   云端老行没有这些字段时，applyMemberRows 会保留本机已有的。
+  function memberPartsPayload(parts) {
+    if (!parts || !parts.length) return "";
+    try { return JSON.stringify(parts); } catch (e) { return ""; }
+  }
+  function memberPartsFromCloud(v) {
+    if (!v) return null;
+    if (typeof v === "string") {
+      try { v = JSON.parse(v); } catch (e) { return null; }
+    }
+    if (!v || typeof v.length !== "number" || !v.length) return null;
+    var out = [];
+    for (var i = 0; i < v.length; i++) {
+      var p = v[i] || {};
+      var pt = (p.payType === "cash" || p.payType === "card" ||
+                p.payType === "rmb" || p.payType === "member") ? p.payType : "";
+      if (!pt) continue;
+      var rmbV = (p.rmb != null && p.rmb !== "" && !isNaN(Number(p.rmb))) ? round2(Number(p.rmb)) : null;
+      out.push({
+        amount: round2(Number(p.amount) || 0),
+        payType: pt,
+        rmb: rmbV,
+        rmbChannel: pt === "rmb" ? (p.rmbChannel === "alipay" ? "alipay" : "wx") : "",
+        cashChannel: pt === "cash" ? (p.cashChannel === "transfer" ? "transfer" : "cash") : "",
+        due: (p.due != null && p.due !== "" && !isNaN(Number(p.due))) ? round2(Number(p.due)) : null,
+        dueOverride: (p.dueOverride != null && p.dueOverride !== "" && !isNaN(Number(p.dueOverride)))
+                       ? round2(Number(p.dueOverride)) : null
+      });
+    }
+    return out.length ? out : null;
+  }
+
   // 会员信息 + 交易合并为一张表：左边充值栏、右边扣款栏，每次事件一行
   function memberTxnRow(m, t) {
     if (t.type === "recharge") {
@@ -10759,6 +10818,16 @@
         balance: t.balanceAfter || 0,
         note: t.note || "",
         commWho: t.commWho || "",
+        // ★ v3.56.8：收款方式（现金 / 刷卡 / 人民币 / 混合）跟着流水一起存，
+        //   否则云端往返一圈就丢，明细里会全部变成「现金」
+        payType: t.payType || "",
+        cashSum: Number(t.cashSum) || 0,
+        cardSum: Number(t.cardSum) || 0,
+        rmbSum: Number(t.rmbSum) || 0,
+        rmbActual: Number(t.rmbActual) || 0,
+        fee: Number(t.fee) || 0,
+        collected: t.collected != null ? Number(t.collected) : (Number(t.payAmount) || 0),
+        payParts: memberPartsPayload(t.parts),
         deleted: t.deleted ? 1 : ""
       };
     }
@@ -12211,12 +12280,30 @@ function pullTableStates() {
     return true;
   }
 
+  // 会员充值行的数字：云端有就用；没有（老数据 / 表格版没这列）退回本机已有的值
+  function payNumOr(v, oldv) {
+    if (v !== "" && v != null) { var n = Number(v); if (!isNaN(n)) return n; }
+    if (oldv !== "" && oldv != null && !isNaN(Number(oldv))) return Number(oldv);
+    return undefined;
+  }
+
   // 处理「会员充值」合并表的行：一行可能只有充值、只有扣款，或两者都有
   // replace=true 时：完全以表格为准，清空本机会员后重建
   function applyMemberRows(rows, replace) {
     var added = 0, updated = 0, i, j;
     var byId = {};
     var lastMember = null; // 扣款行不写名字时，沿用上一位会员
+    // ★ v3.56.8：先把本机每笔流水的「收款方式」记一份（按流水 id）。
+    //   云端 / 表格的老行没有这些字段（v3.56.7 之前根本没存），重建时用本机有的
+    //   兜底，避免「明明本机还记着，一拉云端就被清空」。两台设备互相拉扯时也更稳。
+    var oldTxn = {};
+    for (i = 0; i < state.members.length; i++) {
+      var otl = state.members[i].txns || [];
+      for (j = 0; j < otl.length; j++) if (otl[j] && otl[j].id) oldTxn[otl[j].id] = otl[j];
+    }
+    // ★ v3.56.8：云端老行缺收款方式、本机有 → 收集起来，1.5 秒后补推回云端（自愈）。
+    //   只推一次：推上去之后云端就有字段了，下次拉取不会再触发。没连接时 postToGoogle 自己会忽略。
+    var healPush = [];
     if (replace) state.members = [];
     for (i = 0; i < state.members.length; i++) byId[state.members[i].id] = state.members[i];
 
@@ -12263,6 +12350,13 @@ function pullTableStates() {
       var isRecharge = (pay != null || credited != null);
 
       if (isRecharge) {
+        // ★ v3.56.8：收款方式（payType / 分笔 / 现金·刷卡·人民币金额 / 人民币实收 / 手续费）
+        //   以前云端行里根本没有，重建流水时全丢 → 明细兜底成「现金」。
+        //   云端老行没有这些字段时，退回本机这一笔已有的值（本机也没有才留空）。
+        var oldRe = baseId ? oldTxn[baseId] : null;
+        var cloudParts = memberPartsFromCloud(r.payParts);
+        var oldParts = (oldRe && oldRe.parts && oldRe.parts.length) ? oldRe.parts : null;
+        var payTypeV = r.payType ? String(r.payType) : ((oldRe && oldRe.payType) ? String(oldRe.payType) : "");
         var ok1 = upsertTxn(mem, {
           id: baseId || genId(), type: "recharge",
           amount: credited != null ? credited : pay,
@@ -12272,9 +12366,27 @@ function pullTableStates() {
           time: r.rechargeTime ? String(r.rechargeTime) : "",
           ts: 0, note: note,
           commWho: r.commWho ? String(r.commWho) : "",    // ★ 提成归属也要还原
+          payType: payTypeV,
+          cashSum: payNumOr(r.cashSum, oldRe && oldRe.cashSum) || 0,
+          cardSum: payNumOr(r.cardSum, oldRe && oldRe.cardSum) || 0,
+          rmbSum: payNumOr(r.rmbSum, oldRe && oldRe.rmbSum) || 0,
+          rmbActual: payNumOr(r.rmbActual, oldRe && oldRe.rmbActual) || 0,
+          fee: payNumOr(r.fee, oldRe && oldRe.fee) || 0,
+          // collected 显式 0 也当「没有」：统计页按「collected > 0 ? collected : 实付」算，
+          // 补成 0 会把充值营业额算成 0（充值实收 0 没有合理场景）
+          collected: (function () {
+            var cv = payNumOr(r.collected, oldRe && oldRe.collected);
+            return (cv != null && cv > 0) ? cv : (pay != null ? pay : (credited || 0));
+          })(),
+          parts: cloudParts || oldParts || [],
           deleted: (r.deleted === 1 || r.deleted === "1" || r.deleted === true) ? true : undefined
         });
         if (ok1) added++; else updated++;
+        if (!cloudParts && oldParts && baseId) {
+          for (j = 0; j < mem.txns.length; j++) {
+            if (mem.txns[j].id === baseId) { healPush.push({ m: mem, t: mem.txns[j] }); break; }
+          }
+        }
       }
       if (deduct != null) {
         var ok2 = upsertTxn(mem, {
@@ -12287,6 +12399,16 @@ function pullTableStates() {
         });
         if (ok2) added++; else updated++;
       }
+    }
+
+    // ★ v3.56.8：本机还留着收款方式、云端老行没有 → 补推回云端（限 200 条，只推一次）
+    if (healPush.length) {
+      var healList = healPush.slice(0, 200);
+      setTimeout(function () {
+        for (var hx = 0; hx < healList.length; hx++) {
+          try { postToGoogle("memberRows", [memberTxnRow(healList[hx].m, healList[hx].t)]); } catch (e) {}
+        }
+      }, 1500);
     }
 
     for (i = 0; i < state.members.length; i++) {
@@ -16635,7 +16757,11 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     if (card > 0.005) chips.push(payChip("card", "刷卡", round2(card + fee)));
     if (rmb > 0.005) chips.push(payChip("rmb", "人民币", rmb, Number(t.rmbActual) || null));
     if (!chips.length && Number(t.payAmount) > 0.005) {
-      chips.push(payChip(chipCls(t.payType || "cash"), payLabelOf(t.payType || "cash"), Number(t.payAmount)));
+      // ★ v3.56.8：这种是 v3.56.7 之前的充值（云端从来没存过收款方式）→
+      //   显示灰色「未记录」，不再默认成「现金」假装知道（用户实测：人民币/刷卡全变现金）
+      chips.push(t.payType
+        ? payChip(chipCls(t.payType), payLabelOf(t.payType), Number(t.payAmount))
+        : { txt: "未记录", cls: "none" });
     }
     return chips;
   }
@@ -19866,9 +19992,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
           var cs = Number(x.cashSum) || 0, ks = Number(x.cardSum) || 0, ms = Number(x.rmbSum) || 0;
           var rchips = [];
           if (cs > 0.005) rchips.push(payChip("cash", "现金", cs, null));
-          if (ks > 0.005) rchips.push(payChip("card", "刷卡", ks, null));
+          // ★ v3.56.8：和会员明细 memTxnChips 一致 —— 刷卡显示「含手续费的实际收款」
+          if (ks > 0.005) rchips.push(payChip("card", "刷卡", round2(ks + (Number(x.fee) || 0)), null));
           if (ms > 0.005) rchips.push(payChip("rmb", "人民币", ms, x.rmbActual));
-          if (!rchips.length) rchips.push(payChip(chipCls(x.payType), payLabelOf(x.payType), got, x.rmbActual));
+          if (!rchips.length) rchips.push(x.payType
+            ? payChip(chipCls(x.payType), payLabelOf(x.payType), got, x.rmbActual)
+            : { txt: "未记录", cls: "none" });   // ★ v3.56.8：老充值没存过收款方式 → 不假装现金
           r.txns.push({
             kind: "recharge", dt: x.date, t: x.time || "", d: m2.name, a: got,
             chips: rchips,
