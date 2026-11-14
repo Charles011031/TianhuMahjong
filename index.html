@@ -5709,7 +5709,7 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.8";
+  var APP_VER = "v3.56.9";
   var APP_DATE = "2026-11-14";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
@@ -5720,6 +5720,13 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.56.9", date: "2026-11-14", items: [
+      "💰🧑 **修两个会员同步的老问题**（用户问「这两个问题怎么解决」，按方案 A 修）：① **余额调整被同步成扣款**：调整推云端时没带方向（塞进了扣款字段 `deductAmount`），云端一回来看重建的流水只能猜成「扣款」→ 增加余额的调整变成消费、余额反向（真机实测：调整 +50，余额 150 → 50）。现在调整行多带一个 `adjustAmount`（带正负号），拉回来原样还原成正/负调整",
+      "本机还留着正确那笔、云端是坏行的会**自动补推修正**",
+      "余额重算也改成认调整方向（增加 / 减少都对）。② **新加会员（还没充值过）会消失**：会员行是「一笔流水一行」，零流水会员一行都不推，云端整表替换时就被抹掉（真机实测：新增后 2 人 → 同步回来 1 人）。现在零流水会员也推一行**占位行**（`id = mem_会员ID`，带姓名 / 电话 / 余额），新增和改名时立刻推",
+      "建会员时余额按占位行还原",
+      "另一台设备新增的会员也能拉过来。线上核对：644 条扣款/调整行全是台费类备注 → 调整功能此前没真正用过，没有存量余额被算坏。新增 `case_member_adjust_and_empty_member_sync` 9 条断言（调整 +50 / −20 经云端往返仍是调整且余额对 / 占位行 / 新会员不消失 / 另一台设备的会员能拉过来）"
+    ] },
     { ver: "v3.56.8", date: "2026-11-14", items: [
       "💰 **修：会员充值的「收款方式」会丢**（用户反馈：选了人民币，今天发现明细里显示成「现金」，以前的刷卡/人民币也全变现金）：根因是 `memberTxnRow` 推到云端的行里只有「实付/到账/余额/备注」，**收款方式从来没上过云**，每次云端快照回来 `applyMemberRows` 重建流水就把 payType / 分笔明细 / 现金·刷卡·人民币金额 / 人民币实收 / 手续费全抹掉，明细只能兜底成「现金」",
       "统计页「会员充值 · 人民币」也因此一直是 0。现在这些字段跟着流水一起存（`payParts` 分笔 JSON），拉回来原样还原，并做了三层兜底：① 云端老行缺字段时保留本机已有的值，**1.5 秒后自动补推回云端**（自愈，换设备也不丢）",
@@ -5791,10 +5798,6 @@
       "⑥ 改动可见：改过的行左侧绿条 + 底部「还有 N 项改动没保存」+ 保存按钮显示条数，点取消 / 遮罩会提醒",
       "⑦ 快速添加改成点「＋ 新增商品」才展开（默认不占地方，仍可连着录）",
       "⑧ 夜间模式与手机（两行式紧凑行）都适配，深色审计用例复查通过。界面测试 5 个用例跟着新结构更新（新增搜索 / 筛选 / 步进器断言）"
-    ] },
-    { ver: "v3.53.1", date: "2026-11-11", items: [
-      "🌙 **夜间模式全站补漏**（用户截图反馈人民币账单两个合计卡片白底 + 浅绿大字糊成一片）：修 `#rmbBillOverlay` 的合计卡片 / 标题 / 表格配色",
-      "顺手做了一次**自动对比度审计**（6 个页面 + 25 个弹窗/浮层，逐元素算「背景亮度 / 文字对比度」），把漏网的都补上： - 人民币账单：两个合计卡片改成深底 + 亮绿/亮绿字 - 编辑结算记录顶部那块（v3.53.0 新增，漏了夜间配色）、罚款框棕字、人民币参考条 - 红按钮（确认结算 / 删除记录 / 结束计时 / 确认充值 / 关闭）白字只有 2.8:1 → 夜间换深一档红 - 结算完成弹窗「知道了」是 UA 白底白字、商品菜单编辑的 ✕ 浅灰底、数据备份「最近删除」浅底 - 更新日志版本徽章（白字压亮绿 1.6:1）、空闲桌 00:00:00（#56636f 2.6:1）、售罄/二代标记的深紫、会员流水「扣款/调整」行内色、统计预估条分隔符、统计明细分组标签、预约提醒气泡 - 说明文字色 `--muted-2` 夜间没跟着亮（`.hint/.mem-sub/.cell-note` 等一片偏灰）→ 补进夜间变量 - **新增界面测试 `case_dark_mode_no_light_boxes`**：真夜间模式下扫 6 个页面 + 25 个弹窗，任何「浅色底」或「对比度 < 3」直接红（1532 个元素，18 秒）—— 以后加 UI 不会再把夜间漏掉"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -10049,6 +10052,8 @@
     for (var j = 0; j < (m.txns || []).length; j++) {
       if (m.txns[j].id) postToGoogle("memberRows", [memberTxnRow(m, m.txns[j])]);
     }
+    // ★ v3.56.9：占位行（零流水会员）也要跟着改名/改电话，否则换设备会显示旧名字
+    postToGoogle("memberRows", [memberPlaceholderRow(m)]);
     logOp("修改会员资料", "「" + oldName + " / " + (oldPhone || "无电话") + "」→「" + name + " / " + (phone || "无电话") + "」");
     save(); renderMembers();
     closeMemEdit();
@@ -10831,6 +10836,25 @@
         deleted: t.deleted ? 1 : ""
       };
     }
+    if (t.type === "adjust") {
+      // ★ v3.56.9：余额调整推云端时必须带上【方向】。
+      //   原来调整被塞进扣款字段（deductAmount，没方向），云端一回来看重建的流水
+      //   只能猜成「扣款」→ 增加余额的调整变成消费，余额反向（实测 150 → 50）。
+      //   deductAmount 照旧写（老表格版靠它），adjustAmount 带正负号给新版还原。
+      var adjVal = (t.adjust != null ? Number(t.adjust) : (Number(t.amount) || 0));
+      if (isNaN(adjVal)) adjVal = 0;
+      return {
+        id: t.id || "", memberId: m.id || "", name: m.name || "", phone: m.phone || "",
+        rechargeDate: "", payAmount: "", creditedAmount: "",
+        deductDate: t.date || "",
+        deductTime: t.time || "",
+        deductAmount: Math.abs(Number(t.amount) || adjVal) || 0,
+        adjustAmount: round2(adjVal),
+        deleted: t.deleted ? 1 : "",
+        balance: t.balanceAfter || 0,
+        note: t.note || ""
+      };
+    }
     return {
       id: t.id || "", memberId: m.id || "", name: m.name || "", phone: m.phone || "",
       rechargeDate: "", payAmount: "", creditedAmount: "",
@@ -10843,6 +10867,17 @@
     };
   }
 
+  // ★ v3.56.9：没有任何流水的会员也要在云端占一行（只有姓名/电话/余额）。
+  //   否则云端行里没有这个人 → 拉云端整表替换时新加的会员会被抹掉。
+  function memberPlaceholderRow(m) {
+    return {
+      id: "mem_" + (m.id || ""), memberId: m.id || "", name: m.name || "", phone: m.phone || "",
+      rechargeDate: "", payAmount: "", creditedAmount: "",
+      deductDate: "", deductTime: "", deductAmount: "", adjustAmount: "",
+      balance: Number(m.balance) || 0, note: "", commWho: "", deleted: ""
+    };
+  }
+
   function memberRowPayloads() {
     var out = [];
     for (var i = 0; i < state.members.length; i++) {
@@ -10850,11 +10885,7 @@
       for (var j = 0; j < m.txns.length; j++) out.push(memberTxnRow(m, m.txns[j]));
       // 还没充值/消费过的会员也要存一行（只有名字/电话/余额），
       // 不然换设备拉取时这个人就不见了
-      if (!m.txns.length) {
-        out.push({ rechargeDate: "", name: m.name || "", phone: m.phone || "",
-                   payAmount: "", amount: "", deductDate: "", deductAmount: "",
-                   balance: Number(m.balance) || 0, note: "", memberId: m.id || "", id: "mem_" + (m.id || "") });
-      }
+      if (!m.txns.length) out.push(memberPlaceholderRow(m));
     }
     return out;
   }
@@ -12334,7 +12365,9 @@ function pullTableStates() {
       }
       if (!mem) {
         if (!name) continue;
-        mem = { id: mid || genId(), name: name, phone: phone, balance: 0, txns: [] };
+        // ★ v3.56.9：余额也按云端行还原（零流水会员的占位行就靠这条；
+        //   有流水的会员下面会按流水重算，不受影响）
+        mem = { id: mid || genId(), name: name, phone: phone, balance: numOr(r.balance, 0) || 0, txns: [] };
         state.members.push(mem);
         byId[mem.id] = mem;
       }
@@ -12388,7 +12421,34 @@ function pullTableStates() {
           }
         }
       }
-      if (deduct != null) {
+      // ★ v3.56.9：余额调整带方向（adjustAmount）。v3.56.9 之前云端把调整写成了
+      //   「扣款」（没方向）→ 这里先看云端有没有 adjustAmount；没有就看本机是不是
+      //   还留着那笔调整（本机有 = 补推回云端，把云端那条修正掉）
+      var adjAmt = numOr(r.adjustAmount, null);
+      var healAdjust = false;
+      if (adjAmt == null && !isRecharge && deduct != null && baseId && oldTxn[baseId] &&
+          oldTxn[baseId].type === "adjust" && oldTxn[baseId].adjust != null) {
+        adjAmt = round2(Number(oldTxn[baseId].adjust) || 0);
+        healAdjust = true;
+      }
+      if (adjAmt != null && !isRecharge) {
+        var oldAdj = baseId ? oldTxn[baseId] : null;
+        var okAdj = upsertTxn(mem, {
+          id: baseId || genId(), type: "adjust",
+          amount: Math.abs(round2(adjAmt)), payAmount: 0, bonus: 0,
+          balanceAfter: balance != null ? balance : 0,
+          date: r.deductDate ? String(r.deductDate) : ((oldAdj && oldAdj.date) ? String(oldAdj.date) : ""),
+          time: r.deductTime ? String(r.deductTime) : ((oldAdj && oldAdj.time) ? String(oldAdj.time) : ""),
+          ts: 0, adjust: round2(adjAmt), note: note,
+          deleted: (r.deleted === 1 || r.deleted === "1" || r.deleted === true) ? true : undefined
+        });
+        if (okAdj) added++; else updated++;
+        if (healAdjust && baseId) {
+          for (j = 0; j < mem.txns.length; j++) {
+            if (mem.txns[j].id === baseId) { healPush.push({ m: mem, t: mem.txns[j] }); break; }
+          }
+        }
+      } else if (deduct != null) {
         var ok2 = upsertTxn(mem, {
           id: isRecharge ? (baseId ? baseId + "-d" : genId()) : (baseId || genId()),
           type: "deduct", amount: deduct, payAmount: 0,
@@ -12422,7 +12482,9 @@ function pullTableStates() {
       for (var ti2 = 0; ti2 < m2.txns.length; ti2++) {
         var t3 = m2.txns[ti2];
         var amt3 = Number(t3.amount) || 0;
-        bal = round2(t3.type === "deduct" ? bal - amt3 : bal + amt3);
+        // ★ v3.56.9：调整按 t3.adjust（带正负）算，不能一律当「加」
+        bal = round2(t3.type === "deduct" ? bal - amt3
+                   : (t3.type === "adjust" ? bal + (Number(t3.adjust) || 0) : bal + amt3));
         if (bal < -0.005) { broke = true; break; }        // 算出负数 = 流水有缺口
         t3.balanceAfter = bal;
       }
@@ -16899,6 +16961,8 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     nameEl.value = ""; phoneEl.value = "";
     document.getElementById("memSearch").value = "";
     save(); renderMembers();
+    // ★ v3.56.9：还没流水也要先占一行，否则云端整表替换时这个新会员会被抹掉
+    postToGoogle("memberRows", [memberPlaceholderRow(state.members[state.members.length - 1])]);
   });
   document.getElementById("memSearch").addEventListener("input", renderMembers);
   document.getElementById("memberTxnWrap").addEventListener("click", function (e) {
@@ -21197,7 +21261,9 @@ function fbFixBalances() {
     for (var k = 0; k < m.txns.length; k++) {
       var t = m.txns[k], amt = Number(t.amount) || 0;
       if (t.deleted) continue;                            // ★ 软删除的不参与余额重算
-      bal = round2(t.type === "deduct" ? bal - amt : bal + amt);
+      // ★ v3.56.9：调整按 t.adjust（带正负）算
+      bal = round2(t.type === "deduct" ? bal - amt
+                 : (t.type === "adjust" ? bal + (Number(t.adjust) || 0) : bal + amt));
       if (bal < -0.005) { broke = true; break; }     // 负数 = 流水有缺口（老会员开卡余额在流水之前）
       t.balanceAfter = bal;
     }
@@ -21213,7 +21279,8 @@ function fbFixBalances() {
     for (k2 = 0; k2 < m.txns.length; k2++) {
       t2 = m.txns[k2];
       chain2 = round2(t2.type === "deduct" ? chain2 - (Number(t2.amount) || 0)
-                                            : chain2 + (Number(t2.amount) || 0));
+                 : (t2.type === "adjust" ? chain2 + (Number(t2.adjust) || 0)
+                                        : chain2 + (Number(t2.amount) || 0)));
       offsets.push(round2((Number(t2.balanceAfter) || 0) - chain2));
     }
     var same = true;
@@ -22462,8 +22529,12 @@ function fbSeedAll() {
 function fbMemberRowsAll() {
   var out = [];
   for (var i = 0; i < state.members.length; i++) {
-    var m = state.members[i];
-    for (var k = 0; k < (m.txns || []).length; k++) out.push(memberTxnRow(m, m.txns[k]));
+    var m = state.members[i], n = 0;
+    for (var k = 0; k < (m.txns || []).length; k++) { out.push(memberTxnRow(m, m.txns[k])); n++; }
+    // ★ v3.56.9：一笔流水都没有的会员也要占一行（姓名/电话/余额）。
+    //   否则云端根本没有这个人 → 拉云端整表替换（applyMemberRows）时，
+    //   刚加、还没充值的会员会被抹掉（线上真实会丢人）。
+    if (!n) out.push(memberPlaceholderRow(m));
   }
   return out;
 }
