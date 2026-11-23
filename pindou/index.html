@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>拼豆店 · 工位看板</title>
+<style>
+:root{
+  --bg:#f4efe6; --bg2:#fbf8f2; --card:#ffffff; --ink:#241f1a; --ink2:#4b4239; --muted:#7c7064;
+  --line:#e5dbcc; --line2:#efe7db; --accent:#e2602f; --accent-soft:#fbe8de;
+  --teal:#2c7a6b; --teal-soft:#e4f1ed; --blue:#3a6ea8; --violet:#7a5aa8;
+  --gold:#b9861f; --ok:#2f8a57; --bad:#bd4a38; --warn:#b07a16;
+  --r:16px; --shadow:0 1px 2px rgba(50,35,20,.04), 0 10px 26px rgba(50,35,20,.06);
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);color:var(--ink);background-color:var(--bg);
+  background-image:radial-gradient(rgba(90,70,50,.045) 1px,transparent 1px);background-size:18px 18px;
+  -webkit-font-smoothing:antialiased;line-height:1.55}
+h1,h2,h3,h4{margin:0;line-height:1.25;letter-spacing:-.01em}
+p{margin:0}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 22px}
+.muted{color:var(--muted)}
+.xsmall{font-size:11.5px}
+.small{font-size:12.5px}
+
+/* top */
+.top{position:sticky;top:0;z-index:80;background:rgba(251,248,243,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:16px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:850;font-size:16px;letter-spacing:-.01em;flex:none}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.04em}
+.beads{display:grid;grid-template-columns:repeat(2,9px);gap:3px}
+.beads i{width:9px;height:9px;border-radius:50%;display:block}
+.beads i:nth-child(1){background:#e2602f}.beads i:nth-child(2){background:#e9b949}
+.beads i:nth-child(3){background:#2c7a6b}.beads i:nth-child(4){background:#7a5aa8}
+.meta{display:flex;gap:14px;margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.actions{display:flex;align-items:center;gap:8px;flex:none}
+.sync{font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;background:#f2ece2;color:var(--ink2);border:1px solid var(--line)}
+.sync.ok{background:var(--teal-soft);color:#1d6255;border-color:#cfe2da}
+.sync.err{background:#fbe3de;color:#a83b27;border-color:#f0c7bd}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink);
+  border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;transition:.12s;white-space:nowrap}
+.btn:hover{border-color:#cfc3b1;transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#3a3128}
+.btn.acc{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.acc:hover{background:#c9501f}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--line2);color:var(--ink)}
+.btn.sm{padding:5px 8px;font-size:11px;border-radius:8px}
+.btn.lg{padding:11px 16px;font-size:13.5px;border-radius:12px}
+
+/* summary */
+main{padding:20px 0 44px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.stat .l{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.03em}
+.stat .v{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.stat .s{font-size:10.5px;color:var(--muted);margin-top:1px}
+.stat.acc .v{color:var(--accent)} .stat.teal .v{color:var(--teal)}
+
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+.board-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.board-head h2{font-size:17px;font-weight:850}
+.board-head .legend{margin-left:auto;display:flex;gap:10px;font-size:10.5px;color:var(--muted)}
+.legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:1px}
+.seats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.seat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 11px 10px;min-height:156px;display:flex;flex-direction:column;transition:.15s;box-shadow:0 1px 2px rgba(50,35,20,.03)}
+.seat:hover{box-shadow:var(--shadow)}
+.seat.running{border-color:#f0b499;background:linear-gradient(180deg,#fff,#fff8f4)}
+.seat.paused{border-color:#e6d3a8;background:linear-gradient(180deg,#fff,#fffbf0)}
+.seat .sh{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.seat .no{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.04em}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:750;padding:2px 6px;border-radius:5px;background:#f2ece2;color:var(--ink2);white-space:nowrap}
+.badge.smart{background:#e6edf7;color:#2b5686}.badge.normal{background:#eef0e7;color:#57613b}
+.badge.run{background:#fbe9e0;color:#b34518}.badge.pause{background:#f8efd8;color:#8a6512}
+.seat .timer{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:9px 0 1px}
+.seat.idle .timer{color:#c7bbab;font-size:22px}
+.seat .sub{font-size:10.5px;color:var(--muted);min-height:16px;line-height:1.4}
+.seat .amt{font-family:var(--mono);font-size:13px;font-weight:800;margin-top:2px}
+.seat .acts{display:flex;gap:5px;margin-top:auto;padding-top:8px;flex-wrap:wrap}
+.seat .acts .btn{flex:1;padding:6px 5px;font-size:10.5px;border-radius:8px;min-width:0}
+.seat .acts .btn.wide{flex:1 1 100%}
+.seat .hint{font-size:10px;color:var(--muted);margin-top:2px}
+.idle-pick{display:flex;gap:5px;margin-top:auto;padding-top:8px}
+
+/* panels */
+aside{display:flex;flex-direction:column;gap:12px;position:sticky;top:78px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line2);background:#fdfaf5}
+.panel-h h3{font-size:13px}
+.panel-h .count{font-size:10.5px;color:var(--muted);font-weight:700}
+.panel-b{padding:11px 13px}
+.iron-slots{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}
+.slot{border:1px dashed var(--line);border-radius:10px;padding:7px 8px;min-height:58px;background:#fdfbf7}
+.slot .sl{font-size:9.5px;color:var(--muted);font-weight:750}
+.slot .sv{font-size:11px;font-weight:800;margin-top:2px;line-height:1.3}
+.slot.busy{border-style:solid;border-color:#f0b499;background:#fff6f2}
+.iron-item{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px dashed var(--line2);font-size:11.5px}
+.iron-item:last-child{border-bottom:0}
+.iron-item .who{font-weight:750;min-width:34px}
+.iron-item .meta{color:var(--muted);font-size:10px}
+.iron-item .act{margin-left:auto}
+.iron-item .act .btn{padding:4px 7px;font-size:10px;border-radius:7px}
+.pill{display:inline-flex;align-items:center;font-size:9.5px;font-weight:750;padding:1px 6px;border-radius:999px;background:#f2ece2;color:var(--ink2);white-space:nowrap}
+.pill.wait{background:#f8efd8;color:#8a6512}.pill.iron{background:#fbe9e0;color:#b34518}.pill.ready{background:#e4f1ed;color:#1d6255}
+.rec-item{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:6px 0;border-bottom:1px dashed var(--line2)}
+.rec-item:last-child{border-bottom:0}
+.rec-item .l{color:var(--muted)}
+.rec-item b{font-family:var(--mono)}
+.empty{font-size:11.5px;color:var(--muted);padding:6px 0}
+.panel-note{font-size:10.5px;color:var(--muted);padding:8px 13px;background:#fdfaf5;border-top:1px solid var(--line2);line-height:1.5}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(35,28,22,.5);backdrop-filter:blur(3px)}
+.modal.on{display:flex}
+.mbox{background:#fff;border-radius:18px;max-width:430px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.28);overflow:hidden;animation:pop .16s ease-out}
+@keyframes pop{from{opacity:.6;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--line2);background:#fdfaf5}
+.mhead b{font-size:14px}
+.mbody{padding:15px 16px}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;padding:11px 16px;border-top:1px solid var(--line2);background:#fffdf9}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:11px;font-weight:750;color:var(--muted);margin-bottom:4px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.segbtn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--ink2)}
+.segbtn.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.pricebox{background:#faf6ef;border-radius:10px;padding:10px 12px;font-size:11.5px;color:var(--ink2);line-height:1.6}
+.receipt{border:1px dashed var(--line);border-radius:11px;padding:10px 12px;background:#fffdf7;font-size:11.5px;font-family:var(--mono)}
+.receipt .rr{display:flex;justify-content:space-between;padding:2px 0}
+.receipt .rr.tot{border-top:1px dashed var(--line);margin-top:5px;padding-top:6px;font-weight:800;font-size:13px}
+.checkline{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0;cursor:pointer}
+.checkline input{width:15px;height:15px;accent-color:var(--accent)}
+.payopts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.payopt{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 10px;font-size:11.5px;font-weight:700}
+.payopt.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.setgrid .field{margin:0}
+.input{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px;font-family:var(--mono);background:#fff}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#241f1a;color:#fff;padding:9px 14px;border-radius:10px;font-size:12px;z-index:300;opacity:0;transition:.2s;pointer-events:none;max-width:80vw;text-align:center}
+.toast.on{opacity:1}
+
+@media(max-width:1100px){.layout{grid-template-columns:1fr}aside{position:static;display:grid;grid-template-columns:1fr 1fr}.seats{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:820px){.summary{grid-template-columns:1fr 1fr}.seats{grid-template-columns:repeat(3,1fr)}aside{grid-template-columns:1fr}}
+@media(max-width:560px){.top-in{gap:8px}.meta{display:none}.seats{grid-template-columns:repeat(2,1fr)}.wrap{padding:0 14px}.seat{min-height:146px}.seat .timer{font-size:23px}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">
+      <span class="beads"><i></i><i></i><i></i><i></i></span>
+      <div>拼豆店 <small id="shopName">Hurstville · 工位看板</small></div>
+    </div>
+    <div class="meta"><span id="dateTxt">—</span><span id="clockTxt">--:--:--</span></div>
+    <div class="actions">
+      <span class="sync" id="syncBadge">本地</span>
+      <button class="btn sm" id="settingsBtn">⚙ 设置</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="summary">
+    <div class="stat acc"><div class="l">今日营收</div><div class="v" id="sumRev">$0.00</div><div class="s" id="sumSub">0 单</div></div>
+    <div class="stat"><div class="l">使用中</div><div class="v" id="sumActive">0 / 10</div><div class="s" id="sumActiveSub">利用率 0%</div></div>
+    <div class="stat teal"><div class="l">烫位等待</div><div class="v" id="sumWait">0</div><div class="s" id="sumWaitSub">熨烫中 0</div></div>
+    <div class="stat"><div class="l">可取件</div><div class="v" id="sumReady">0</div><div class="s">提醒客人来拿</div></div>
+  </section>
+
+  <div class="layout">
+    <section>
+      <div class="board-head">
+        <h2>10 个工位</h2>
+        <div class="legend">
+          <span><i style="background:#2c7a6b"></i>智能板</span>
+          <span><i style="background:#b9861f"></i>普通板</span>
+          <span><i style="background:#e2602f"></i>计时中</span>
+        </div>
+      </div>
+      <div class="seats" id="seats"></div>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <div class="panel-h"><h3>烫位 · 2 个</h3><span class="count" id="ironCount">0 件</span></div>
+        <div class="panel-b">
+          <div class="iron-slots" id="ironSlots"></div>
+          <div id="ironList"></div>
+        </div>
+        <div class="panel-note">结算后作品自动进这里排队，店员代熨；熨完点「可取件」，客人取走后点「已取走」。</div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>今日收款</h3><span class="count" id="recCount">0 笔</span></div>
+        <div class="panel-b" id="records"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div class="modal" id="modal">
+  <div class="mbox">
+    <div class="mhead"><b id="mTitle">开台</b><button class="btn sm ghost" id="mClose">✕</button></div>
+    <div class="mbody" id="mBody"></div>
+    <div class="mfoot" id="mFoot"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const money = n => "$" + (Math.round((+n || 0) * 100) / 100).toFixed(2);
+const round2 = n => Math.round((+n || 0) * 100) / 100;
+const pad2 = n => String(n).padStart(2, "0");
+const fmtDur = ms => {
+  const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return [h, m, ss].map(pad2).join(":");
+};
+const nowTime = () => { const d = new Date(); return [pad2(d.getHours()), pad2(d.getMinutes()), pad2(d.getSeconds())].join(":"); };
+const todayKey = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+const TYPE = {smart:"智能板", normal:"普通板"};
+const BILL = {hourly:"按小时", package:"2 小时套餐"};
+
+/* Firebase：新表放在同一个 RTDB 的 shops/<新 key> 下，和天胡门店数据隔离 */
+/* Firebase：新表 = 同一个 RTDB 的 shops/<新 key>，与天胡门店数据隔离；REST 轮询同步 */
+const FB_URL = "https://tianhu-fd795-default-rtdb.asia-southeast1.firebasedatabase.app/shops/pindou-92a10ba65847/state.json";
+
+const DEFAULT_SETTINGS = {
+  smartHourly: 15, normalHourly: 10,
+  smartPackage: 28, normalPackage: 18,
+  packageMinutes: 120,
+  smartExtra: 3.75, normalExtra: 2.5,
+  cardFee: 1.2, memberDiscount: 10
+};
+function freshState(){
+  return {
+    version: 1,
+    settings: Object.assign({}, DEFAULT_SETTINGS),
+    seats: Array.from({length:10}, (_, i) => ({id:i + 1, status:"idle", type:null, billing:null, startAt:0, accMs:0, price:null, last:null})),
+    tickets: [], records: [], updatedAt: 0
+  };
+}
+function normalize(v){
+  const base = freshState();
+  if (!v || typeof v !== "object") return base;
+  base.settings = Object.assign({}, DEFAULT_SETTINGS, v.settings || {});
+  base.seats = Array.from({length:10}, (_, i) => {
+    const d = (v.seats || []).find(x => x && +x.id === i + 1) || {};
+    return Object.assign({id:i + 1, status:"idle", type:null, billing:null, startAt:0, accMs:0, price:null, last:null}, d);
+  });
+  base.tickets = Array.isArray(v.tickets) ? v.tickets.filter(t => t && t.id) : [];
+  base.records = Array.isArray(v.records) ? v.records.filter(r => r && r.id) : [];
+  base.updatedAt = +v.updatedAt || 0;
+  return base;
+}
+const STORE_KEY = "pindou_board_v1";
+let state = freshState();
+let pushing = false, pushTimer = null;
+
+function loadLocal(){
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    state = raw ? normalize(JSON.parse(raw)) : freshState();
+  } catch (e){ state = freshState(); }
+}
+function saveLocal(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e){}
+}
+function setSync(text, ok){
+  const el = $("#syncBadge");
+  el.textContent = text;
+  el.className = "sync" + (ok ? " ok" : (text === "本地" ? "" : " err"));
+}
+function touch(){
+  state.updatedAt = Date.now();
+  saveLocal();
+  renderAll();
+  queuePush();
+}
+function nextId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* 计时与计价 */
+const elapsed = s => (s.accMs || 0) + (s.status === "running" ? Date.now() - s.startAt : 0);
+function snapshot(type, billing){
+  const s = state.settings;
+  return {
+    hourly: type === "smart" ? +s.smartHourly : +s.normalHourly,
+    package: type === "smart" ? +s.smartPackage : +s.normalPackage,
+    extra15: type === "smart" ? +s.smartExtra : +s.normalExtra,
+    packageMinutes: +s.packageMinutes
+  };
+}
+function billFor(seat, ms){
+  const p = seat.price || snapshot(seat.type, seat.billing);
+  if (seat.billing === "hourly"){
+    const minutes = Math.max(30, Math.ceil(ms / 60000 / 15) * 15);
+    return {minutes, amount:round2(minutes / 60 * p.hourly), detail:minutes + " 分钟 × A$" + p.hourly + "/小时"};
+  }
+  const mins = ms / 60000;
+  const blocks = Math.max(0, Math.ceil((mins - p.packageMinutes) / 15));
+  const extra = round2(blocks * p.extra15);
+  return {minutes:Math.ceil(mins), amount:round2(p.package + extra), base:p.package, blocks, extra, detail:"含 " + p.packageMinutes + " 分钟" + (blocks ? " + 超时 " + blocks + "×15 分钟" : "")};
+}
+
+/* 渲染 */
+function renderAll(){
+  renderSeats();
+  renderSummary();
+  renderIron();
+  renderRecords();
+}
+function renderSeats(){
+  $("#seats").innerHTML = state.seats.map(s => {
+    const num = pad2(s.id);
+    if (s.status === "idle"){
+      return `<div class="seat idle">
+        <div class="sh"><span class="no">${num} 号</span><span class="badge">空闲</span></div>
+        <div class="timer">— — —</div>
+        <div class="sub">${s.last ? "上一单 " + money(s.last.amount) + " · " + (s.last.time || "") : "选板型开台"}</div>
+        <div class="idle-pick">
+          <button class="btn acc" data-act="open" data-id="${s.id}" data-type="smart">智能板</button>
+          <button class="btn" data-act="open" data-id="${s.id}" data-type="normal">普通板</button>
+        </div>
+      </div>`;
+    }
+    const ms = elapsed(s), b = billFor(s, ms);
+    return `<div class="seat ${s.status}">
+      <div class="sh"><span class="no">${num} 号</span><span class="badge ${s.type}">${TYPE[s.type]} · ${BILL[s.billing]}</span></div>
+      <div class="timer" data-timer="${s.id}">${fmtDur(ms)}</div>
+      <div class="sub">${s.status === "paused" ? "已暂停" : (s.billing === "hourly" ? "A$" + (s.price ? s.price.hourly : "") + "/小时 · 15 分钟进位" : "2 小时套餐 · 超时 A$" + (s.price ? s.price.extra15 : "") + "/15 分钟")}</div>
+      <div class="amt" data-amt="${s.id}">预估 ${money(b.amount)}</div>
+      <div class="acts">
+        ${s.status === "running"
+          ? `<button class="btn" data-act="pause" data-id="${s.id}">暂停</button>`
+          : `<button class="btn" data-act="resume" data-id="${s.id}">继续</button>`}
+        <button class="btn primary" data-act="finish" data-id="${s.id}">结束</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function renderSummary(){
+  const today = todayKey();
+  const rows = state.records.filter(r => r.date === today);
+  const rev = rows.reduce((a, r) => a + (+r.amount || 0), 0);
+  const active = state.seats.filter(s => s.status !== "idle").length;
+  const wait = state.tickets.filter(t => t.status === "wait").length;
+  const iron = state.tickets.filter(t => t.status === "ironing").length;
+  const ready = state.tickets.filter(t => t.status === "ready").length;
+  $("#sumRev").textContent = money(rev);
+  $("#sumSub").textContent = rows.length + " 单" + (rows.length ? " · 均 " + money(rev / rows.length) : "");
+  $("#sumActive").textContent = active + " / 10";
+  $("#sumActiveSub").textContent = "利用率 " + Math.round(active / 10 * 100) + "%";
+  $("#sumWait").textContent = wait;
+  $("#sumWaitSub").textContent = "熨烫中 " + iron;
+  $("#sumReady").textContent = ready;
+}
+function renderIron(){
+  const ironing = state.tickets.filter(t => t.status === "ironing");
+  const wait = state.tickets.filter(t => t.status === "wait");
+  const ready = state.tickets.filter(t => t.status === "ready");
+  $("#ironCount").textContent = (wait.length + ironing.length + ready.length) + " 件";
+  $("#ironSlots").innerHTML = [0, 1].map(i => {
+    const t = ironing[i];
+    return t
+      ? `<div class="slot busy"><div class="sl">烫位 ${i + 1}</div><div class="sv">${pad2(t.seatId)} 号 · ${TYPE[t.type]}</div><div class="xsmall muted">${money(t.amount)} · 已收款</div></div>`
+      : `<div class="slot"><div class="sl">烫位 ${i + 1}</div><div class="sv muted">空闲</div></div>`;
+  }).join("");
+  const list = state.tickets.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  $("#ironList").innerHTML = list.length ? list.map(t => {
+    const pill = t.status === "wait" ? `<span class="pill wait">排队</span>` : t.status === "ironing" ? `<span class="pill iron">熨烫中</span>` : `<span class="pill ready">可取件</span>`;
+    const act = t.status === "wait"
+      ? `<button class="btn acc" data-iron="start" data-id="${t.id}" ${ironing.length >= 2 ? "disabled" : ""}>开始熨烫</button>`
+      : t.status === "ironing"
+        ? `<button class="btn" data-iron="done" data-id="${t.id}">熨烫完成</button>`
+        : `<button class="btn" data-iron="pick" data-id="${t.id}">已取走</button>`;
+    return `<div class="iron-item"><span class="who">${pad2(t.seatId)} 号</span>${pill}<span class="meta">${TYPE[t.type]} · ${t.minutes} 分钟</span><span class="act">${act}</span></div>`;
+  }).join("") : `<div class="empty">还没有待熨作品。结算后会自动进来。</div>`;
+}
+function renderRecords(){
+  const today = todayKey();
+  const rows = state.records.filter(r => r.date === today).slice().reverse().slice(0, 8);
+  $("#recCount").textContent = state.records.filter(r => r.date === today).length + " 笔";
+  $("#records").innerHTML = rows.length ? rows.map(r =>
+    `<div class="rec-item"><span class="l">${r.time} · ${pad2(r.seatId)} 号 ${TYPE[r.type] || ""}</span><span><b>${money(r.amount)}</b> <span class="xsmall muted">${r.pay}</span></span></div>`
+  ).join("") : `<div class="empty">今天还没有收款。</div>`;
+}
+
+/* 计时刷新 */
+function tick(){
+  const now = new Date();
+  $("#clockTxt").textContent = nowTime();
+  $("#dateTxt").textContent = now.toLocaleDateString("zh-CN", {month:"long", day:"numeric", weekday:"long"});
+  state.seats.forEach(s => {
+    if (s.status !== "running") return;
+    const ms = elapsed(s), b = billFor(s, ms);
+    const t = document.querySelector('[data-timer="' + s.id + '"]');
+    if (t) t.textContent = fmtDur(ms);
+    const a = document.querySelector('[data-amt="' + s.id + '"]');
+    if (a) a.textContent = "预估 " + money(b.amount);
+  });
+}
+
+/* 模态框 */
+let M = {build:null, click:null};
+function openModal(title, build, click){
+  M = {build, click};
+  $("#mTitle").textContent = title;
+  $("#modal").classList.add("on");
+  build();
+}
+function closeModal(){ $("#modal").classList.remove("on"); M = {build:null, click:null}; }
+$("#mClose").addEventListener("click", closeModal);
+$("#modal").addEventListener("click", e => { if (e.target === $("#modal")) closeModal(); });
+$("#mBody").addEventListener("click", e => { if (M.click) M.click(e); });
+$("#mFoot").addEventListener("click", e => { if (M.click) M.click(e); });
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2200);
+}
+
+/* 开台 */
+function openSeatModal(seatId, type){
+  const seat = state.seats[seatId - 1];
+  let selType = type === "normal" ? "normal" : "smart";
+  let selBill = "hourly";
+  const build = () => {
+    const st = state.settings;
+    const rate = selType === "smart" ? st.smartHourly : st.normalHourly;
+    const pkg = selType === "smart" ? st.smartPackage : st.normalPackage;
+    const extra = selType === "smart" ? st.smartExtra : st.normalExtra;
+    const info = selBill === "hourly"
+      ? `A$${rate} / 小时 · 15 分钟进位 · 最低 30 分钟`
+      : `A$${pkg} / 2 小时（含豆）· 超时 A$${extra}/15 分钟`;
+    $("#mBody").innerHTML = `
+      <div class="field"><label>板型</label>
+        <div class="seg">
+          <button class="segbtn ${selType === "smart" ? "on" : ""}" data-t="smart">智能板</button>
+          <button class="segbtn ${selType === "normal" ? "on" : ""}" data-t="normal">普通板</button>
+        </div>
+      </div>
+      <div class="field"><label>计费方式（开台后锁定）</label>
+        <div class="seg">
+          <button class="segbtn ${selBill === "hourly" ? "on" : ""}" data-b="hourly">按小时</button>
+          <button class="segbtn ${selBill === "package" ? "on" : ""}" data-b="package">2 小时套餐</button>
+        </div>
+      </div>
+      <div class="pricebox">${info}<br>豆子不限量，已含在时长/套餐内。</div>`;
+    $("#mFoot").innerHTML = `<button class="btn" data-act="cancel">取消</button>
+      <button class="btn acc" data-act="start">开始计时</button>`;
+  };
+  openModal(`开台 · ${pad2(seatId)} 号工位`, build, e => {
+    const t = e.target.closest("[data-t]");
+    if (t){ selType = t.dataset.t; build(); return; }
+    const b = e.target.closest("[data-b]");
+    if (b){ selBill = b.dataset.b; build(); return; }
+    const act = e.target.closest("[data-act]");
+    if (!act) return;
+    if (act.dataset.act === "cancel"){ closeModal(); return; }
+    if (act.dataset.act === "start"){
+      Object.assign(seat, {
+        status:"running", type:selType, billing:selBill,
+        startAt:Date.now(), accMs:0, price:snapshot(selType, selBill), last:null
+      });
+      touch(); closeModal(); toast(`${pad2(seatId)} 号工位 · ${TYPE[selType]} · ${BILL[selBill]} 开始计时`);
+    }
+  });
+}
+$("#seats").addEventListener("click", e => {
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const seat = state.seats[+btn.dataset.id - 1];
+  const act = btn.dataset.act;
+  if (act === "open"){ openSeatModal(seat.id, btn.dataset.type); return; }
+  if (act === "pause"){ seat.accMs = elapsed(seat); seat.startAt = 0; seat.status = "paused"; touch(); }
+  else if (act === "resume"){ seat.startAt = Date.now(); seat.status = "running"; touch(); }
+  else if (act === "finish"){
+    const ms = elapsed(seat);
+    seat.accMs = ms; seat.startAt = 0; seat.status = "paused";
+    openSettle(seat, ms);
+    renderSeats();
+  }
+});
+
+/* 结算 */
+function openSettle(seat, ms){
+  const b = billFor(seat, ms);
+  const draft = {member:false, pay:"cash"};
+  const build = () => {
+    const st = state.settings;
+    const disc = draft.member ? round2(b.amount * (+st.memberDiscount || 0) / 100) : 0;
+    const sub = round2(b.amount - disc);
+    const fee = draft.pay === "card" ? Math.ceil(sub * (+st.cardFee || 0) / 100 * 100) / 100 : 0;
+    const total = round2(sub + fee);
+    $("#mBody").innerHTML = `
+      <div class="receipt">
+        <div class="rr"><span>工位</span><span>${pad2(seat.id)} 号 · ${TYPE[seat.type]}</span></div>
+        <div class="rr"><span>时长</span><span>${fmtDur(ms)}（${b.minutes} 分钟）</span></div>
+        <div class="rr"><span>${BILL[seat.billing]} · ${b.detail}</span><span>${money(b.amount)}</span></div>
+        ${disc ? `<div class="rr"><span>会员 ${st.memberDiscount}% 优惠</span><span>−${money(disc)}</span></div>` : ""}
+        ${fee ? `<div class="rr"><span>刷卡手续费 ${st.cardFee}%</span><span>${money(fee)}</span></div>` : ""}
+        <div class="rr tot"><span>应收</span><span>${money(total)}</span></div>
+      </div>
+      <label class="checkline" style="margin-top:11px"><input type="checkbox" id="memChk" ${draft.member ? "checked" : ""}> 会员 ${state.settings.memberDiscount}% 优惠</label>
+      <div class="field" style="margin:9px 0 0"><label>怎么收</label>
+        <div class="payopts">
+          <button class="payopt ${draft.pay === "cash" ? "on" : ""}" data-pay="cash">💵 现金</button>
+          <button class="payopt ${draft.pay === "card" ? "on" : ""}" data-pay="card">💳 刷卡 +${state.settings.cardFee}%</button>
+        </div>
+      </div>
+      <div class="xsmall muted" style="margin-top:9px">收款后作品自动进烫位队列；板子和豆子不单独收费。</div>`;
+    $("#mFoot").innerHTML = `<button class="btn" data-act="cancel">取消</button>
+      <button class="btn acc" data-act="ok">收款 ${money(total)} 并送熨烫</button>`;
+  };
+  openModal(`结算 · ${pad2(seat.id)} 号工位`, build, e => {
+    if (e.target.id === "memChk"){ draft.member = e.target.checked; build(); return; }
+    const pay = e.target.closest("[data-pay]");
+    if (pay){ draft.pay = pay.dataset.pay; build(); return; }
+    const act = e.target.closest("[data-act]");
+    if (!act) return;
+    if (act.dataset.act === "cancel"){ seat.status = "paused"; closeModal(); renderSeats(); return; }
+    if (act.dataset.act === "ok"){
+      const st = state.settings;
+      const disc = draft.member ? round2(b.amount * (+st.memberDiscount || 0) / 100) : 0;
+      const sub = round2(b.amount - disc);
+      const fee = draft.pay === "card" ? Math.ceil(sub * (+st.cardFee || 0) / 100 * 100) / 100 : 0;
+      const total = round2(sub + fee);
+      const payLabel = draft.pay === "card" ? "刷卡" : "现金";
+      state.records.push({id:nextId(), seatId:seat.id, type:seat.type, amount:total, pay:payLabel, minutes:b.minutes, time:nowTime(), date:todayKey()});
+      state.tickets.push({id:nextId(), seatId:seat.id, type:seat.type, billing:seat.billing, minutes:b.minutes, amount:total, status:"wait", createdAt:Date.now()});
+      Object.assign(seat, {status:"idle", type:null, billing:null, startAt:0, accMs:0, price:null, last:{amount:total, time:nowTime()}});
+      touch(); closeModal(); toast(`${pad2(seat.id)} 号收款 ${money(total)}，已送烫位`);
+    }
+  });
+}
+
+/* 烫位 */
+$("#ironList").addEventListener("click", e => {
+  const btn = e.target.closest("[data-iron]"); if (!btn) return;
+  const t = state.tickets.find(x => x.id === btn.dataset.id); if (!t) return;
+  if (btn.dataset.iron === "start"){
+    if (state.tickets.filter(x => x.status === "ironing").length >= 2){ toast("2 个烫位都在熨，先完成一件"); return; }
+    t.status = "ironing"; t.ironAt = Date.now();
+  } else if (btn.dataset.iron === "done"){
+    t.status = "ready"; t.readyAt = Date.now();
+  } else if (btn.dataset.iron === "pick"){
+    state.tickets = state.tickets.filter(x => x.id !== t.id);
+  }
+  touch();
+});
+
+/* 设置 */
+$("#settingsBtn").addEventListener("click", openSettings);
+function openSettings(){
+  const s = state.settings;
+  const build = () => {
+    $("#mBody").innerHTML = `
+      <div class="setgrid">
+        <div class="field"><label>智能板 · 每小时 (A$)</label><input class="input" id="setSmartHourly" type="number" min="0" step="0.5" value="${s.smartHourly}"></div>
+        <div class="field"><label>普通板 · 每小时 (A$)</label><input class="input" id="setNormalHourly" type="number" min="0" step="0.5" value="${s.normalHourly}"></div>
+        <div class="field"><label>智能板 · 2h 套餐 (A$)</label><input class="input" id="setSmartPackage" type="number" min="0" step="1" value="${s.smartPackage}"></div>
+        <div class="field"><label>普通板 · 2h 套餐 (A$)</label><input class="input" id="setNormalPackage" type="number" min="0" step="1" value="${s.normalPackage}"></div>
+        <div class="field"><label>套餐含多少分钟</label><input class="input" id="setPackageMinutes" type="number" min="30" step="15" value="${s.packageMinutes}"></div>
+        <div class="field"><label>刷卡手续费 %</label><input class="input" id="setCardFee" type="number" min="0" step="0.1" value="${s.cardFee}"></div>
+        <div class="field"><label>智能板超时 / 15 分钟</label><input class="input" id="setSmartExtra" type="number" min="0" step="0.25" value="${s.smartExtra}"></div>
+        <div class="field"><label>普通板超时 / 15 分钟</label><input class="input" id="setNormalExtra" type="number" min="0" step="0.25" value="${s.normalExtra}"></div>
+        <div class="field"><label>会员优惠 %</label><input class="input" id="setMemberDiscount" type="number" min="0" max="50" step="1" value="${s.memberDiscount}"></div>
+      </div>
+      <div class="xsmall muted" style="margin-top:10px">价格只影响新开的工单；进行中的按开台时锁定的价格结算。</div>`;
+    $("#mFoot").innerHTML = `<button class="btn" data-act="cancel">取消</button><button class="btn acc" data-act="save">保存</button>`;
+  };
+  openModal("设置 · 价格", build, e => {
+    const act = e.target.closest("[data-act]"); if (!act) return;
+    if (act.dataset.act === "cancel"){ closeModal(); return; }
+    if (act.dataset.act === "save"){
+      const val = id => Math.max(0, parseFloat($(id).value) || 0);
+      state.settings = {
+        smartHourly:val("#setSmartHourly"), normalHourly:val("#setNormalHourly"),
+        smartPackage:val("#setSmartPackage"), normalPackage:val("#setNormalPackage"),
+        packageMinutes:Math.max(30, val("#setPackageMinutes")),
+        cardFee:val("#setCardFee"),
+        smartExtra:val("#setSmartExtra"), normalExtra:val("#setNormalExtra"),
+        memberDiscount:Math.min(50, val("#setMemberDiscount"))
+      };
+      touch(); closeModal(); toast("价格已保存");
+    }
+  });
+}
+
+/* Firebase：新表 shops/<key>/state */
+function queuePush(){
+  if (!FB_URL) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushNow, 400);
+}
+async function pushNow(){
+  if (!FB_URL || pushing) return;
+  pushing = true; setSync("同步中", false);
+  try {
+    const payload = JSON.parse(JSON.stringify(state));
+    const r = await fetch(FB_URL, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload), cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    setSync("已同步", true);
+  } catch (e){ setSync("本地", false); }
+  finally { pushing = false; }
+}
+async function pullNow(){
+  if (!FB_URL || pushing) return;
+  try {
+    const r = await fetch(FB_URL, {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const v = await r.json();
+    if (!v || !v.updatedAt){
+      if ((+state.updatedAt || 0) > 0) queuePush();
+      else setSync("已同步", true);
+      return;
+    }
+    if ((+v.updatedAt || 0) > (+state.updatedAt || 0)){
+      state = normalize(v); saveLocal(); renderAll(); setSync("已同步", true);
+    } else if ((+state.updatedAt || 0) > (+v.updatedAt || 0)){
+      queuePush();
+    } else {
+      setSync("已同步", true);
+    }
+  } catch (e){ setSync("本地", false); }
+}
+function initFB(){
+  if (!FB_URL){ setSync("本地", false); return; }
+  setSync("同步中", false);
+  pullNow();
+  setInterval(pullNow, 3000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) pullNow(); });
+}
+
+/* 启动 */
+loadLocal();
+if (!state.updatedAt) state.updatedAt = 0;
+renderAll();
+tick();
+setInterval(tick, 1000);
+initFB();
+})();
+</script>
+</body>
+</html>
