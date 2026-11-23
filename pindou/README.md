@@ -2,7 +2,10 @@
 
 10 个工位的计时/收费/烫位看板，给悉尼拼豆店用。
 
-**线上**：https://charles011031.github.io/PinDouShop/
+**线上**：https://charles011031.github.io/TianhuMahjong/pindou/
+
+> 当前 GitHub token 只能写 `TianhuMahjong` 仓库，所以先放在它的 `pindou/` 子路径；
+> 要独立仓库（例如 `PinDouShop`）的话，建一个空仓库并把 token 授权给它，我再迁过去。
 
 ## 现在能做什么
 
