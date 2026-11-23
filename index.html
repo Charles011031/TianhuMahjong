@@ -451,6 +451,40 @@
   .rmb-line b { font-size: 20px; color: var(--c-warn-deep); }
   .modal-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
   .modal-btns button { width: 100%; }
+
+  /* ===== ★ v3.57.0：罚款（台费子类）=====
+     1) 桌卡：台费行下面标出「含罚款 $X · 每人 $Y」（只有这一场有罚款才出现）
+     2) 人民币账单：「其中罚款」小字行（不重复计进合计）
+     3) 罚款小弹窗：停表 / 待结算时填金额（带快捷金额） */
+  .table .est.has-fine { min-height: 36px; line-height: 18px; }
+  .table .est .fine-tip { display: block; font-size: 11.5px; font-weight: 700; color: #b45309; line-height: 16px; margin-top: 1px; }
+  .rb-table tr.rb-fine-sub td {
+    background: #fffbeb; color: #92400e; font-size: 12.5px;
+    padding-top: 4px; padding-bottom: 4px; border-bottom: 1px dashed #f0d9b5;
+  }
+  .rb-table tr.rb-fine-sub td.name { font-weight: 600; }
+  .fine-modal { width: min(92vw, 430px); text-align: left; }
+  .fine-modal h3 { margin-bottom: 6px; }
+  .fine-sub { font-size: 12.5px; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
+  .fine-amount { display: flex; align-items: center; gap: 8px; }
+  .fine-cur { font-size: 22px; font-weight: 800; color: #92400e; }
+  .fine-amount input {
+    flex: 1; min-width: 0; padding: 10px 12px; font-size: 24px; font-weight: 800;
+    border: 1px solid #fcd34d; border-radius: 10px; background: #fffdf5; color: var(--ink);
+    text-align: right; font-family: inherit;
+  }
+  .fine-quick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .fine-quick button {
+    flex: 1 1 60px; padding: 8px 10px; font-size: 13.5px; font-weight: 800; margin: 0 !important;
+    background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; border-radius: 9px;
+  }
+  .fine-tip { font-size: 11.5px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+  body.dark .table .est .fine-tip { color: #fbbf24; }
+  body.dark .rb-table tr.rb-fine-sub td { background: #241d0f; color: #fbbf24; border-bottom-color: #4a3a16; }
+  body.dark .fine-cur { color: #fbbf24; }
+  body.dark .fine-amount input { background: #241d0f; border-color: #6b5518; color: #fde68a; }
+  body.dark .fine-quick button { background: #241d0f; border-color: #6b5518; color: #fcd34d; }
+  body.dark .fine-sub, body.dark .fine-tip { color: #93a3b3; }
   /* v3.30.0：微信群消息弹窗的营业日切换（日期框外面那对 ◀ ▶ 是页面通用组件自动加的） */
   .wx-daybar { display: flex; gap: 6px; align-items: center; margin: 0 0 10px; }
   /* v3.39.1 修 bug：上面这条 display:flex 会盖掉 hidden 属性的默认 display:none，
@@ -3594,6 +3628,14 @@
           <button type="button" class="mini" id="tEndNow">现在</button>
         </div>
       </div>
+      <!-- ★ v3.57.0：罚款 = 台费的一个子类 —— 停表时就能填，并进台费一起 4 人分 -->
+      <div class="field">
+        <label>⚖️ 罚款（算进台费，可留空）</label>
+        <div class="row">
+          <input type="number" id="tFine" min="0" step="5" inputmode="decimal" placeholder="0.00" style="width:130px;">
+          <span style="font-size:12px;color:var(--muted);line-height:1.5;">并进台费 · 跟台费一起 4 人分 · 会员余额也能抵</span>
+        </div>
+      </div>
       <div class="preview" id="tPreview"></div>
       <div class="modal-btns">
         <button id="tEnd" class="btn-pause">⏹ 结束计时（稍后再结算）</button>
@@ -3658,7 +3700,7 @@
           <span style="font-size:13px;font-weight:700;color:#92400e;">⚖️ 罚款</span>
           <input type="number" id="sFine" min="0" step="0.5" value="0"
                  style="width:100px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
-          <span style="font-size:12px;color:var(--muted);">按【台费】算，会跟着台费一起平摊 ✓　会员余额也能抵 ✓</span>
+          <span style="font-size:12px;color:var(--muted);">算进【台费】：跟着台费一起 4 人分 ✓　会员余额也能抵 ✓</span>
         </div>
       </div>
       <button type="button" class="btn-ghost sm" id="sDetailToggle" style="margin-top:4px;">▸ 账单明细 / 汇率</button>
@@ -4395,6 +4437,30 @@
     </div>
   </div>
 
+<!-- ★ v3.57.0：罚款小弹窗（台费子类：并进台费，跟着台费一起 4 人分） -->
+<div class="overlay" id="fineOverlay">
+  <div class="modal fine-modal">
+    <h3 id="fineTitle">⚖️ 罚款</h3>
+    <div class="fine-sub" id="fineSub">罚款算进台费，跟着台费一起 4 人分；会员余额也能抵</div>
+    <div class="fine-amount">
+      <span class="fine-cur">$</span>
+      <input type="number" id="fineInput" min="0" step="5" inputmode="decimal" placeholder="0.00">
+    </div>
+    <div class="fine-quick" id="fineQuick">
+      <button type="button" data-quick="5">$5</button>
+      <button type="button" data-quick="10">$10</button>
+      <button type="button" data-quick="20">$20</button>
+      <button type="button" data-quick="50">$50</button>
+    </div>
+    <div class="fine-tip">填 0 或点「清空」= 这一场没有罚款；账单会显示「台费（含罚款）」</div>
+    <div class="modal-btns">
+      <button type="button" id="fineSave" class="btn-settle">保存</button>
+      <button type="button" id="fineClear" class="btn-ghost">清空</button>
+      <button type="button" id="fineCancel" class="btn-ghost">取消</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   "use strict";
@@ -4533,6 +4599,9 @@
     if (s.vapeCardPer !== "order") s.vapeCardPer = "stick";
     for (var tk in s.tables) {
       if (s.tables.hasOwnProperty(tk) && typeof s.tables[tk].carry !== "number") s.tables[tk].carry = 0;
+      // ★ v3.57.0：这一场的罚款（台费的一个子类：并进台费一起 4 人分）
+      //   停表 / 待结算时就能填，账单和结算都读它；老数据没有 → 0
+      if (s.tables.hasOwnProperty(tk) && typeof s.tables[tk].fine !== "number") s.tables[tk].fine = 0;
     }
     if (typeof s.autoSyncMin !== "number") s.autoSyncMin = 5;
     if (!Array.isArray(s.opLogs)) s.opLogs = [];
@@ -5709,8 +5778,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.56.10";
-  var APP_DATE = "2026-11-19";
+  var APP_VER = "v3.57.0";
+  var APP_DATE = "2026-11-23";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -5720,6 +5789,10 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.57.0", date: "2026-11-23", items: [
+      "⚖️ **罚款提前填：罚款 = 台费的一个子类，自助阶段就能显示在账单上**（用户提的需求 + 选型方案 A）：以前罚款输入框只在结算弹窗里，客人打完先走 / 桌子收进待结算时账单上看不到罚款，结算再填就和客人看过的账单对不上。现在罚款存成「这一场」的字段（`t.fine` / 待结算 `p.fine`），**结束计时弹窗**和**待结算卡片的「⚖️ 罚款」**都能填（小弹窗带 $5/$10/$20/$50 快捷），全程按台费子类处理：桌卡写「台费 $68.00（含罚款 $20.00 · 每人 $5.00）」、账单台费行写「台费（含罚款）：人均 $17.00 × 4 = $68.00」+ 小字「其中 ⚖️ 罚款 $20.00（每人 $5.00）」，结算弹窗自动预填（仍可改）",
+      "「台费 4 人分 / 按人分账 / 平分台费 / 会员余额抵扣」全部自动带罚款（本来就吃 `tableAll`），统计 / 导出 / 记录口径不变。同步：桌台状态 payload/签名/套用加 `fine`（迁移 key 升 v3 补推一次），收进待结算带过去、搬回带回来、换桌跟着走、合并结算另一桌的罚款并进台费、结算/取消计时清零。顺手把「账单人民币默认值」口径改成含罚款的台费人均，保持「账单 ¥ = 实收 ¥」。界面测试新增 `case_fine_as_table_fee`，集成测试新增罚款接线检查"
+    ] },
     { ver: "v3.56.10", date: "2026-11-19", items: [
       "💬 **「复制今天整体文案」也列预约，统一放在最下面**（用户要求）：本营业日**还没到店**的预约（`status = booked`）接在桌台记录后面、编号接着排，一行一个 `桌号 时间 姓名 桌数 预约`（例：`2. 4号桌 22:30 陈先生 2 张桌 预约`）",
       "已到店的会以「开台记录」出现在上面、已取消的不列，没指定桌写「未指定桌」，桌数 2 张以上才写",
@@ -5788,11 +5861,6 @@
       "② 卖光（库存 0）的商品在编辑列表里**自动排到本组最后**，有货的排前面",
       "售罄行照片 / 单价淡一点、库存数字红色",
       "鸭嘴兽弹窗同样适用，手机两行式也对齐。界面测试补「售罄排最后」「库存框左缘一致」两条断言。"
-    ] },
-    { ver: "v3.54.1", date: "2026-11-11", items: [
-      "📐 **商品菜单编辑弹窗补两处**（用户反馈）：① 最上方加**列头**「照片 / 名称 / 单价 / 库存」，和下面每行网格对齐，一眼知道哪一列是什么",
-      "鸭嘴兽弹窗没有单价列，列头自动少一格",
-      "手机两行式不显示列头。② 库存数字改**右对齐**（4 / 17 / 21 右边缘对齐），和单价列一致，扫一列不再左右跳。"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -6199,8 +6267,14 @@
           (enSameDay ? fmtHM(enTs) : (fmtDate(enTs).slice(5) + " " + fmtHM(enTs))) + '</div>';
       }
       if (t.status !== "idle") {
-        html += '  <div class="est">' + (t.status === "ended" ? "台费 " : "预估台费 ") +
-          fmtMoney(tableFeeOf(ms)) + ' ≈ ' + fmtRmb(tableFeeOf(ms)) + '</div>';
+        // ★ v3.57.0：罚款是台费的子类 → 卡片上的「台费」直接显示含罚款的合计，
+        //   后面小字标出其中罚款多少（跟结算/账单同一口径，4 人分也按这个数）
+        var fineNow = round2(Number(t.fine) || 0);
+        var feeAllNow = round2(tableFeeOf(ms) + fineNow);
+        html += '  <div class="est' + (fineNow > 0.005 ? ' has-fine' : '') + '">' + (t.status === "ended" ? "台费 " : "预估台费 ") +
+          fmtMoney(feeAllNow) + ' ≈ ' + fmtRmb(feeAllNow) +
+          (fineNow > 0.005 ? '<span class="fine-tip">含罚款 ' + fmtMoney(fineNow) + '　每人 ' + fmtMoney(round2(fineNow / 4)) + '</span>' : '') +
+          '</div>';
       }
       // ★ v3.25.3：挂单行固定单行（没挂单也占位），免得一张卡多一行、整排按钮错位
       //   ≤2 项直接显示明细；≥3 项只显示「N 项」，明细在「✎ 编辑」弹窗 /「📄 看账单」里看全
@@ -6266,6 +6340,7 @@
         html += '<button class="btn-ghost" data-act="bill" data-id="' + i + '"' + (canPend ? "" : ' style="grid-column:1/-1;"') + '>📄 看账单</button>';
         if (canPend) html += '<button class="btn-ghost" data-fbpend="take" data-id="' + i + '">🧾 收进待结算</button>';
         html += '<div class="btns-mini">' +
+                '<button type="button" class="btn-ghost" data-act="fine" data-id="' + i + '">⚖️ 罚款</button>' +
                 '<button type="button" class="btn-ghost" data-act="manual" data-id="' + i + '">⏱ 改时间</button>' +
                 '<button type="button" class="btn-ghost" data-act="unend" data-id="' + i + '">↩ 撤销结束</button>' +
                 '<button type="button" class="btn-ghost" data-act="cancel" data-armkey="table-cancel" data-id="' + i + '"' +
@@ -6613,6 +6688,7 @@
       t.sessionStart = Date.now();
       t.elapsedAtPause = 0;
       t.lastResult = null;
+      t.fine = 0;                 // ★ v3.57.0：新的一场从 0 开始（上一场已结清）
       save(); render();
     } else if (act === "resume") {
       if (t.status === "paused") {
@@ -6645,6 +6721,11 @@
       openRmbBill(id);
     } else if (act === "settle2") {
       openSettleModal(id, t.sessionStart || (t.endedAt - 60000), t.endedAt || Date.now());
+    } else if (act === "fine") {
+      // ★ v3.57.0：待结算（已停表）时补填/改罚款 —— 并进台费，账单/结算都带上
+      openFineEditor((t.name || "桌台") + " · 罚款",
+        "罚款算进台费（4 人一起分）；账单会显示「台费（含罚款）」", Number(t.fine) || 0,
+        function (v) { setTableFine(t, v); });
     } else if (act === "unend") {
       t.status = "running";
       t.endedAt = null;
@@ -6708,6 +6789,7 @@
       t.elapsedAtPause = 0;
       t.endedAt = null;
       t.extras = [];
+      t.fine = 0;                 // ★ v3.57.0：作废这一场 → 罚款一起清掉
       t.note = "";
       save(); render();
     } else if (act === "manual") {
@@ -7098,6 +7180,92 @@
     if (fb2) fb2.title = "点=抓市场汇率（含自动加点）；长按/右键=改加点%（填 auto 恢复自动学习）";
   })();
 
+  // ============================================================
+  //  ⚖️ v3.57.0：罚款 —— 台费的一个子类（提前填，账单/结算都带上）
+  //  数据：t.fine（桌台）/ p.fine（待结算条目）
+  //  口径：并进台费合计 tableAll = 纯台费 + 合并桌 + 罚款，
+  //        所以「台费 4 人分 / 按人分账 / 平分台费 / 会员余额抵扣」自动带罚款
+  //  入口：结束计时弹窗、待结算卡片（Firebase 版）、已结束桌卡的「⚖️ 罚款」
+  //  显示：桌卡「台费 $X（含罚款 $Y · 每人 $Z）」、账单「台费（含罚款）」行
+  // ============================================================
+  var fineEditorOnSave = null;
+  function openFineEditor(title, sub, value, onSave) {
+    fineEditorOnSave = (typeof onSave === "function") ? onSave : null;
+    var ov = document.getElementById("fineOverlay");
+    if (!ov) return;
+    var ti = document.getElementById("fineTitle");
+    var su = document.getElementById("fineSub");
+    var inp = document.getElementById("fineInput");
+    if (ti) ti.textContent = title || "⚖️ 罚款";
+    if (su) su.textContent = sub || "罚款算进台费，跟着台费一起 4 人分；会员余额也能抵";
+    if (inp) inp.value = (Math.round((Number(value) || 0) * 100) / 100) ? String(Math.round((Number(value) || 0) * 100) / 100) : "";
+    ov.classList.add("show");
+    setTimeout(function () { try { if (inp) { inp.focus(); inp.select(); } } catch (e) {} }, 30);
+  }
+  function closeFineEditor() {
+    var ov = document.getElementById("fineOverlay");
+    if (ov) ov.classList.remove("show");
+    fineEditorOnSave = null;
+  }
+  function readFineInput() {
+    var inp = document.getElementById("fineInput");
+    var v = inp ? (parseFloat(inp.value) || 0) : 0;
+    if (v < 0) v = 0;
+    return round2(v);
+  }
+  function readTimeFine() {
+    var el = document.getElementById("tFine");
+    var v = el ? (parseFloat(el.value) || 0) : 0;
+    if (v < 0) v = 0;
+    return round2(v);
+  }
+  (function () {
+    var ov = document.getElementById("fineOverlay");
+    if (!ov) return;
+    var inp = document.getElementById("fineInput");
+    var quick = document.getElementById("fineQuick");
+    if (quick && quick.addEventListener) {
+      quick.addEventListener("click", function (e) {
+        var b = e.target.closest ? e.target.closest("button[data-quick]") : null;
+        if (!b || !inp) return;
+        inp.value = b.getAttribute("data-quick");
+        inp.focus();
+      });
+    }
+    var save = document.getElementById("fineSave");
+    if (save) save.addEventListener("click", function () {
+      var v = readFineInput();
+      var cb = fineEditorOnSave;
+      closeFineEditor();
+      if (cb) cb(v);
+    });
+    var clr = document.getElementById("fineClear");
+    if (clr) clr.addEventListener("click", function () {
+      var cb = fineEditorOnSave;
+      closeFineEditor();
+      if (cb) { try { cb(0); } catch (e) {} }
+    });
+    var cancel = document.getElementById("fineCancel");
+    if (cancel) cancel.addEventListener("click", closeFineEditor);
+    ov.addEventListener("click", function (e) { if (e.target === ov) closeFineEditor(); });
+    if (inp) inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); var s2 = document.getElementById("fineSave"); if (s2) s2.click(); }
+    });
+  })();
+
+  // 把「这一场」的罚款写到桌台上：并进台费（4 人分/会员抵扣自动带上）
+  function setTableFine(t, v, label) {
+    if (!t) return;
+    t.fine = round2(Number(v) || 0);
+    save(); render();
+    try {
+      toast(t.fine > 0.005
+        ? "罚款 " + fmtMoney(t.fine) + " 已记这一场（并进台费 · 每人 " + fmtMoney(round2(t.fine / 4)) + "）"
+        : "这一场没有罚款");
+    } catch (e) {}
+    logOp("设罚款", (label || t.name || "桌台") + "　" + fmtMoney(t.fine));
+  }
+
   // ---------- 自定义时间弹窗（24 小时制） ----------
   var timeOverlay = document.getElementById("timeOverlay");
   var currentTimeId = null;
@@ -7112,6 +7280,9 @@
     var endTs = (t.status === "ended" && t.endedAt) ? t.endedAt : Date.now();
     document.getElementById("tEndDate").value = fmtDate(endTs);
     document.getElementById("tEndTime").value = fmtHM(endTs);
+    // ★ v3.57.0：这一场已经填过罚款就带出来（罚款算进台费，停表时顺手改）
+    var tFineEl = document.getElementById("tFine");
+    if (tFineEl) tFineEl.value = (round2(Number(t.fine) || 0) > 0.005) ? String(round2(Number(t.fine) || 0)) : "";
     updateTimePreview();
     timeOverlay.classList.add("show");
   }
@@ -7135,7 +7306,14 @@
     apply.disabled = false;
     if (e && e > s) {
       var ms = e - s;
-      p.innerHTML = "时长 <b>" + fmtDuration(ms) + "</b> · 台费 <b>" + fmtMoney(tableFeeOf(ms)) + "</b>";
+      // ★ v3.57.0：罚款并进台费 → 预览显示「台费合计（含罚款）」
+      var tFine0 = document.getElementById("tFine");
+      var fine0 = tFine0 ? round2(parseFloat(tFine0.value) || 0) : 0;
+      if (fine0 < 0) fine0 = 0;
+      var fee0 = tableFeeOf(ms);
+      var feeAll0 = round2(fee0 + fine0);
+      p.innerHTML = "时长 <b>" + fmtDuration(ms) + "</b> · 台费 <b>" + fmtMoney(feeAll0) + "</b>" +
+        (fine0 > 0.005 ? "（含罚款 <b style='color:#b45309;'>" + fmtMoney(fine0) + "</b> · 每人 " + fmtMoney(round2(fine0 / 4)) + "）" : "");
       settle.disabled = false;
     } else {
       p.textContent = "已设置开始时间；未填写有效结束时间时，将按「从开始时间继续计时」处理";
@@ -7157,6 +7335,8 @@
   ["tStartDate", "tStartTime", "tEndDate", "tEndTime"].forEach(function (id) {
     document.getElementById(id).addEventListener("input", updateTimePreview);
   });
+  var tFineInput = document.getElementById("tFine");
+  if (tFineInput) tFineInput.addEventListener("input", updateTimePreview);
 
   document.getElementById("tStartNow").addEventListener("click", function () {
     var now = Date.now();
@@ -7182,6 +7362,7 @@
     t.elapsedAtPause = 0;
     t.endedAt = null;
     t.lastResult = null;
+    t.fine = readTimeFine();          // ★ v3.57.0：罚款跟着这一场
     save(); render();
     closeTimeModal();
   });
@@ -7190,6 +7371,8 @@
     var s = combineToTs(document.getElementById("tStartDate").value, document.getElementById("tStartTime").value);
     var e = combineToTs(document.getElementById("tEndDate").value, document.getElementById("tEndTime").value);
     if (!s || !e || e <= s) return;
+    var tSettle0 = state.tables[currentTimeId];
+    if (tSettle0) { tSettle0.fine = readTimeFine(); save(); }   // ★ v3.57.0：结算弹窗预填它
     closeTimeModal();
     openSettleModal(currentTimeId, s, e);
   });
@@ -7210,6 +7393,7 @@
     t.endedAt = e;
     t.elapsedAtPause = 0;
     t.lastResult = null;
+    t.fine = readTimeFine();          // ★ v3.57.0：停表时填的罚款记到这一场
     save(); render();
     closeTimeModal();
   });
@@ -7221,7 +7405,7 @@
     if (!s0 && t0) s0 = t0.sessionStart;
     if (!e0) e0 = Date.now();
     if (!s0 || !e0 || e0 <= s0) { try { toast("结束时间要晚于开始时间", "#b45309"); } catch (e) {} return; }
-    openRmbBill(currentTimeId, s0, e0);
+    openRmbBill(currentTimeId, s0, e0, readTimeFine());
   });
   document.getElementById("tCancel").addEventListener("click", closeTimeModal);
   timeOverlay.addEventListener("click", function (e) {
@@ -7277,7 +7461,8 @@
       other = round2(other);
     }
     var mcarry = round2(Number(t.carry) || 0);
-    return { no: no, table: t, fee: fee, other: other, carry: mcarry, sum: round2(fee + other + mcarry), ms: ms };
+    var mfine = round2(Number(t.fine) || 0);   // ★ v3.57.0：合并的另一桌罚款也并进台费
+    return { no: no, table: t, fee: fee, other: other, carry: mcarry, fine: mfine, sum: round2(fee + other + mcarry + mfine), ms: ms };
   }
 
   // ---------- 分账结算 ----------
@@ -7307,7 +7492,13 @@
       "小时数：<b>" + fmtHours(endTs - startTs) + " 小时</b>" +
       (extraLine ? "<br>" + extraLine : "");
     document.getElementById("sOther").value = exSum;
-    var fe = document.getElementById("sFine"); if (fe) fe.value = 0;   // ★ 罚款每次从 0 开始
+    // ★ v3.57.0：罚款提前存在这一场上（自助阶段就能填）→ 打开结算直接预填；
+    //   编辑历史记录时 openSettleEdit 后面会再用 rec.fine 覆盖一次
+    var fe = document.getElementById("sFine");
+    if (fe) {
+      var finePre = round2(Number(t.fine) || 0);
+      fe.value = finePre > 0.005 ? String(finePre) : 0;
+    }
     fillSettleSelects(id);
     settleParts = [];
     refreshSettle();
@@ -7414,7 +7605,9 @@
     if (!b) b = settleBill();
     var fx = Number(state.fxRate) || 0;
     if (!(fx > 0)) return 0;
-    var fee = b.tableFee;
+    // ★ v3.57.0：罚款是台费的子类 → 账单台费行是「纯台费 + 罚款」的人均 × 4，
+    //   这里必须用同一个口径，才能保持「看账单的 ¥ = 结算实收的 ¥」
+    var fee = round2(b.tableFee + (b.fine || 0));
     // 台费：账单写「人均 ¥x × 4 = ¥合计」（人均先四舍五入）
     var perFee = round2(fee / 4);
     var feeRmb = round2(round2(perFee * fx) * 4);
@@ -8241,6 +8434,7 @@
     t.sessionStart = null;
     t.elapsedAtPause = 0;
     t.extras = [];
+    t.fine = 0;                 // ★ v3.57.0：这一场的罚款已经记进记录了 → 桌台清零
     t.note = "";                // ★ v3.36.0：这一场已经结清 → 桌卡上的备注一起清掉（用户要求）
     var waived = shortBy > 0.005 && settleData.shortChoice === "waive";
     t.carry = (shortBy > 0.005 && !waived) ? shortBy : 0;   // 没收到的：记在桌上 或 直接免除
@@ -8253,6 +8447,7 @@
       mt.elapsedAtPause = 0;
       mt.endedAt = null;
       mt.extras = [];
+      mt.fine = 0;               // ★ v3.57.0：罚款已经并进这张单
       mt.note = "";             // ★ v3.36.0：合并结算的另一桌也清掉备注
       mt.carry = 0;              // 已经并进这张单一起收了
     }
@@ -18251,10 +18446,12 @@ document.getElementById("veItemsList").addEventListener("click", function (e) {
     dst.mahjongType = src.mahjongType || dst.mahjongType || "";
     // 上次未付也跟着这张桌走；目标桌本来也欠着钱的，两笔都留着
     dst.carry = round2((Number(dst.carry) || 0) + (Number(src.carry) || 0));
+    // ★ v3.57.0：罚款（台费子类）也跟着换到目标桌
+    dst.fine = round2((Number(dst.fine) || 0) + (Number(src.fine) || 0));
     dst.endedAt = src.endedAt || null;           // ★「待结算」桌的结束时间也要搬过去，不然会丢
     dst.lastResult = null;
     src.status = "idle"; src.sessionStart = null; src.elapsedAtPause = 0;
-    src.extras = []; src.note = ""; src.lastResult = null; src.carry = 0;
+    src.extras = []; src.note = ""; src.lastResult = null; src.carry = 0; src.fine = 0;
     src.endedAt = null;
     save(); render(); closeMoveModal();
     logOp("换桌", src.name + " → " + dst.name + "　已用 " + fmtDuration(elapsedMs(dst)) +
@@ -20484,10 +20681,13 @@ rows += "<tr>" +
       } else if (t.status === "ended") {
         var et = t.endedAt || Date.now();
         var exS = extrasMoney(t.extras);
+        // ★ v3.57.0：罚款并进台费 → 台费写合计，后面括注含罚款多少
+        var tFineE = round2(Number(t.fine) || 0);
         items.push({
           ts: st,
           line: wxTableNoOf(t) + gpart + " " + fmtHM(st) + "开始 " +
-                wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(tableFeeOf(et - st)) + "刀" +
+                wxHM(fmtEndHM(et, st)) + "结束 台费" + wxNum(round2(tableFeeOf(et - st) + tFineE)) + "刀" +
+                (tFineE > 0.005 ? "（含罚款" + wxNum(tFineE) + "刀）" : "") +
                 (exS > 0.005 ? " 零食" + wxNum(exS) + "刀" : "") + " 待结算"
         });
       }
@@ -20503,10 +20703,12 @@ rows += "<tr>" +
       var pGame = wxGameLabel(p.mahjongType || "");
       var pGpart = pGame ? " " + pGame : "";
       var pEx = extrasMoney(p.extras);
+      var pFine = round2(Number(p.fine) || 0);
       items.push({
         ts: Number(p.startTs),
         line: pName + pGpart + " " + fmtHM(p.startTs) + "开始 " +
-              wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(tableFeeOf(Math.max(0, pEnd - p.startTs))) + "刀" +
+              wxHM(fmtEndHM(pEnd, p.startTs)) + "结束 台费" + wxNum(round2(tableFeeOf(Math.max(0, pEnd - p.startTs)) + pFine)) + "刀" +
+              (pFine > 0.005 ? "（含罚款" + wxNum(pFine) + "刀）" : "") +
               (pEx > 0.005 ? " 零食" + wxNum(pEx) + "刀" : "") + " 待结算"
       });
     }
@@ -20971,7 +21173,7 @@ document.addEventListener("mousedown", function (e) {
   //  🧾 人民币账单（只看，不发送）
   //  每一行同时显示澳币和人民币；零食按「单价 × 数量」两栏都乘
   // ============================================================
-  function rmbBillInfo(id, startOverride, endOverride) {
+  function rmbBillInfo(id, startOverride, endOverride, fineOverride) {
     var t = state.tables[id];
     if (!t) return null;
     var now = Date.now();
@@ -20984,20 +21186,38 @@ document.addEventListener("mousedown", function (e) {
       ms = endOverride - startOverride; startTs = startOverride; endTs = endOverride; forced = true;
     }
     var fee = tableFeeOf(ms), fx = Number(state.fxRate) || 0;
+    // ★ v3.57.0：罚款 = 台费子类 → 账单台费行按「人均（纯台费 + 罚款）」显示；
+    //   从结算弹窗打开账单时传当前罚款框的值（fineOverride），保证账单和结算一致
+    var fine = (fineOverride === undefined || fineOverride === null)
+      ? round2(Number(t.fine) || 0)
+      : round2(Number(fineOverride) || 0);
+    if (fine < 0) fine = 0;
+    var feeAll = round2(fee + fine);
     var lines = [], totalAud = 0, totalRmb = 0;
-    // 台费：按 4 人平摊，显示「一个人的台费 × 4 = 总台费」
+    // 台费：按 4 人平摊，显示「一个人的台费 × 4 = 总台费」（罚款并进人均）
     var PERSON_N = 4;
-    var perFee = round2(fee / PERSON_N);
+    var perFee = round2(feeAll / PERSON_N);
     var feeTotal = round2(perFee * PERSON_N);
     var perRmb = fx > 0 ? round2(perFee * fx) : 0;
     var feeRmbTotal = fx > 0 ? round2(perRmb * PERSON_N) : 0;
     lines.push({
-      name: "台费", qty: PERSON_N + " 人",
+      name: fine > 0.005 ? "台费（含罚款）" : "台费", qty: PERSON_N + " 人",
       audTxt: fmtMoney(perFee) + " × " + PERSON_N + " = " + fmtMoney(feeTotal),
       rmbTxt: fx > 0 ? ("¥" + perRmb.toFixed(2) + " × " + PERSON_N + " = ¥" + feeRmbTotal.toFixed(2)) : "—",
       aud: feeTotal, rmb: feeRmbTotal
     });
     totalAud = feeTotal; totalRmb = feeRmbTotal;
+    if (fine > 0.005) {
+      // 「其中罚款」小字行：只是说明，不重复计进合计
+      var perFine = round2(fine / PERSON_N);
+      var perFineRmb = fx > 0 ? round2(perFine * fx) : 0;
+      lines.push({
+        name: "其中 ⚖️ 罚款", qty: "—",
+        audTxt: fmtMoney(fine) + "（每人 " + fmtMoney(perFine) + "）",
+        rmbTxt: fx > 0 ? ("¥" + round2(fine * fx).toFixed(2) + "（每人 ¥" + perFineRmb.toFixed(2) + "）") : "—",
+        aud: 0, rmb: 0, cls: "rb-fine-sub"
+      });
+    }
     // 零食：单价 × 数量，两栏都按数量乘
     (t.extras || []).forEach(function (ex) {
       var qty = Number(ex.qty) || 0;
@@ -21015,10 +21235,10 @@ document.addEventListener("mousedown", function (e) {
       totalAud = round2(totalAud + audLine);
       totalRmb = round2(totalRmb + rmbLine);
     });
-    return { t: t, ms: ms, startTs: startTs, endTs: endTs, forced: forced, fee: fee, fx: fx, lines: lines, totalAud: totalAud, totalRmb: totalRmb };
+    return { t: t, ms: ms, startTs: startTs, endTs: endTs, forced: forced, fee: fee, fine: fine, feeAll: feeAll, fx: fx, lines: lines, totalAud: totalAud, totalRmb: totalRmb };
   }
-  function openRmbBill(id, startOverride, endOverride) {
-    var info = rmbBillInfo(id, startOverride, endOverride);
+  function openRmbBill(id, startOverride, endOverride, fineOverride) {
+    var info = rmbBillInfo(id, startOverride, endOverride, fineOverride);
     if (!info) return;
     var t = info.t, now = Date.now();
     var h = '<div class="rb-store">🀄 天胡麻将馆</div>' +
@@ -21029,7 +21249,7 @@ document.addEventListener("mousedown", function (e) {
       (t.note ? '<br>备注：' + esc(t.note) : '') + '</div>' +
       '<table class="rb-table"><thead><tr><th>项目</th><th class="num">数量</th><th class="num">澳币</th><th class="num">人民币</th></tr></thead><tbody>';
     info.lines.forEach(function (ln) {
-      h += '<tr><td class="name">' + esc(ln.name) + '</td>' +
+      h += '<tr' + (ln.cls ? ' class="' + ln.cls + '"' : '') + '><td class="name">' + esc(ln.name) + '</td>' +
         '<td class="num">' + esc(ln.qty) + '</td>' +
         '<td class="num">' + esc(ln.audTxt) + '</td>' +
         '<td class="num">' + esc(ln.rmbTxt) + '</td></tr>';
@@ -21052,7 +21272,14 @@ document.addEventListener("mousedown", function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
     if (t.closest("#rmbBillClose")) { closeRmbBill(); return; }
-    if (t.closest("#sRmbBillBtn")) { if (settleData) openRmbBill(settleData.id); return; }
+    if (t.closest("#sRmbBillBtn")) {
+      if (settleData) {
+        // ★ v3.57.0：按当前罚款框的值出账单（改了罚款再点账单，数字对得上）
+        var sf = document.getElementById("sFine");
+        openRmbBill(settleData.id, null, null, sf ? (parseFloat(sf.value) || 0) : 0);
+      }
+      return;
+    }
     var ov = document.getElementById("rmbBillOverlay");
     if (ov && t === ov) closeRmbBill();
   });
@@ -21745,6 +21972,7 @@ function fbTblSig(no) {
   return [t.status || "idle", t.sessionStart || 0, t.elapsedAtPause || 0,
           t.endedAt || 0,                                  // ★ 结束时间
           Number(t.carry) || 0,                            // ★ 未付款
+          Number(t.fine) || 0,                             // ★ v3.57.0：罚款（台费子类）
           JSON.stringify(t.extras || []),                  // ★ 挂在桌上的零食
           t.mahjongType || "108", t.name || "", t.note || ""].join("|");
 }
@@ -21757,6 +21985,8 @@ function fbTblPayload(no) {
            //   而且桌上挂的零食、未付款也看不到 ✗（那台设备一结算零食就丢了 ✗）
            endedAt: t.endedAt || 0,
            carry: Number(t.carry) || 0,
+           // ★ v3.57.0：这一场的罚款（并进台费，4 人分）也要同步，别的设备才看得到
+           fine: Number(t.fine) || 0,
            extras: t.extras || [],
            mahjongType: t.mahjongType || "108", note: t.note || "" };
 }
@@ -21785,6 +22015,8 @@ function applyTableStates(rows) {
       var cloudNew = (r.endedAt !== undefined || r.extras !== undefined || r.carry !== undefined);
       if (r.endedAt !== undefined) t.endedAt = r.endedAt || 0;
       if (r.carry !== undefined) t.carry = Number(r.carry) || 0;
+      // ★ v3.57.0：罚款；云端老格式没这个字段 → 不动本机（本地有值的会被迁移重推补上）
+      if (r.fine !== undefined) t.fine = Number(r.fine) || 0;
       // ★★ 空数组的坑 ★★
       //   火库【不保存空数组】✗ extras=[] 会被直接删键 ✗
       //   于是云端"没有 extras"有两种情况：
@@ -21840,7 +22072,7 @@ if (typeof document !== "undefined" && document.addEventListener) {
 //   以前只靠一个内存标志去重推 ✗ 不可靠（时序、开关页面都会错过 ✗）
 //   改成用 localStorage 记住"这台设备做过迁移没有"✗ 做完就打勾 ✓
 //   任何一台"手上有好数据"的设备打开一次 ✗ 就会把完整状态补上去 ✓
-var FB_TBL_MIGRATE_KEY = "tianhu_tbl_migrate_v2";
+var FB_TBL_MIGRATE_KEY = "tianhu_tbl_migrate_v3";   // ★ v3.57.0：补推 fine 字段
 function fbMaybeMigrateTableStates() {
   try {
     if (fbRestMode) return;
@@ -21976,6 +22208,7 @@ function fbPendTakeFromTable(no) {
     extras: (t.extras || []).slice(),
     mahjongType: t.mahjongType || "108",
     note: t.note || "",
+    fine: Number(t.fine) || 0,     // ★ v3.57.0：待结算也带着罚款（并进台费）
     movedAt: Date.now()
   });
   t.status = "idle";
@@ -21983,6 +22216,7 @@ function fbPendTakeFromTable(no) {
   t.elapsedAtPause = 0;
   t.endedAt = null;
   t.extras = [];
+  t.fine = 0;                // ★ v3.57.0：罚款已经带进待结算条目
   t.note = "";               // ★ v3.36.0：备注已经带进待结算条目 → 桌卡上清掉（用户要求）
   t.lastResult = null;
   // ★ v3.22.0：刚动过这张桌 → 20 秒内不让云端旧快照把它改回"待结算"
@@ -22008,10 +22242,11 @@ function fbPendTakeQuiet(no) {
     id: genId(), tableNo: no, tableName: t.name || (no + " 号桌"),
     startTs: t.sessionStart || (t.endedAt || Date.now()), endTs: t.endedAt || Date.now(),
     extras: (t.extras || []).slice(), mahjongType: t.mahjongType || "108",
+    fine: Number(t.fine) || 0,     // ★ v3.57.0：罚款跟着待结算走
     note: t.note || "", movedAt: Date.now()
   });
   t.status = "idle"; t.sessionStart = null; t.elapsedAtPause = 0;
-  t.endedAt = null; t.extras = []; t.lastResult = null;
+  t.endedAt = null; t.extras = []; t.fine = 0; t.lastResult = null;
   t.note = "";               // ★ v3.36.0：备注已经带进待结算条目 → 桌卡上清掉（用户要求）
   try { fbTblRecent[no] = Date.now(); } catch (e) {}
   try { toast("上一场已自动收进待结算区 ✓", "#b45309"); } catch (e) {}
@@ -22028,7 +22263,8 @@ function fbPendSettle(id) {
     no: p.tableNo, name: p.tableName + " · 待结算", status: "idle",
     sessionStart: p.startTs, elapsedAtPause: 0, endedAt: p.endTs,
     mahjongType: p.mahjongType || "108", note: p.note || "",
-    extras: (p.extras || []).slice()
+    extras: (p.extras || []).slice(),
+    fine: Number(p.fine) || 0          // ★ v3.57.0：罚款并进台费，结算弹窗预填
   };
   fbPendSettling = id;
   fbPendHistBefore = (state.history || []).length;   // 记下结算前的条数，用来判断"这次真的结算成功了吗"
@@ -22047,6 +22283,7 @@ function fbPendRestore(id) {
   t.endedAt = p.endTs;
   t.extras = (p.extras || []).slice();
   t.mahjongType = p.mahjongType || "108";
+  t.fine = Number(p.fine) || 0;   // ★ v3.57.0：罚款（台费子类）跟着搬回桌台
   t.note = p.note || "";     // ★ v3.36.0：搬回桌台时，备注跟着回到卡片上
   fbPendMarkGone(id);
   state.pending = state.pending.filter(function (x) { return x.id !== id; });
@@ -22077,6 +22314,33 @@ function fbPendEditExtras(id) {
   });
 }
 
+// 待结算【改罚款】：复用 app 的罚款小弹窗，存到这条待结算上
+//  ★ v3.57.0：罚款并进台费（4 人分 / 会员余额抵扣都自动带上），账单也会显示
+function fbPendSetFine(id) {
+  var p = fbPendFind(id);
+  if (!p) return;
+  var label = p.tableName || ((p.tableNo || "") + " 号桌");
+  if (typeof openFineEditor !== "function") {
+    try { toast("这个版本不支持改罚款", "#b45309"); } catch (e) {}
+    return;
+  }
+  openFineEditor(label + " · 罚款",
+    "罚款算进台费（跟台费一起 4 人分）；账单会显示「台费（含罚款）」、结算自动带入",
+    Number(p.fine) || 0,
+    function (v) {
+      var nv = round2(Number(v) || 0);
+      p.fine = nv;
+      save();
+      try { fbPendChanged(); } catch (e) { render(); }
+      try {
+        toast(nv > 0.005
+          ? "罚款 $" + nv.toFixed(2) + " 已记到这条待结算（并入台费 · 每人 $" + round2(nv / 4).toFixed(2) + "）"
+          : "这条待结算没有罚款");
+      } catch (e) {}
+      try { logOp("设罚款", label + "（待结算）　$" + nv.toFixed(2)); } catch (e) {}
+    });
+}
+
 // 待结算【看账单】：临时挂一张虚拟桌，复用主版的 openRmbBill
 function fbPendBill(id) {
   var p = fbPendFind(id);
@@ -22090,7 +22354,8 @@ function fbPendBill(id) {
     elapsedAtPause: 0,
     extras: (p.extras || []).slice(),
     note: p.note || "",
-    mahjongType: p.mahjongType || "108"
+    mahjongType: p.mahjongType || "108",
+    fine: Number(p.fine) || 0          // ★ v3.57.0：账单台费行含罚款
   };
   try { openRmbBill(key); } catch (e) { try { toast("账单打开失败：" + e.message, "#b45309"); } catch (x) {} }
   try { delete state.tables[key]; } catch (x) {}
@@ -22117,7 +22382,10 @@ function fbRenderPending() {
       exTxt.push(esc(ex.name) + "×" + ex.qty);
     }
     exSum = round2(exSum);
-    var total = round2(fee + exSum);
+    // ★ v3.57.0：罚款是台费子类 → 台费合计 = 纯台费 + 罚款，应收 = 台费合计 + 零食
+    var fineSum = round2(Number(p.fine) || 0);
+    var feeAll = round2(fee + fineSum);
+    var total = round2(feeAll + exSum);
     var waited = Math.max(0, Date.now() - (p.movedAt || p.endTs || Date.now()));
     var wTxt = waited > 3600000 ? ("已挂 " + Math.floor(waited / 3600000) + " 小时 " + Math.floor(waited % 3600000 / 60000) + " 分")
                                 : ("已挂 " + Math.max(1, Math.floor(waited / 60000)) + " 分钟");
@@ -22128,11 +22396,18 @@ function fbRenderPending() {
          '<span style="color:#6b7280;font-size:13px;">' + esc(fmtDate(p.startTs)) + '　' + esc(fmtHM(p.startTs)) + ' → ' + esc(fmtHM(p.endTs)) + '　' + fmtHours(ms) + ' 小时</span>' +
          '<span style="color:#b45309;font-size:12px;margin-left:auto;">' + wTxt + '</span></div>' +
          '<div style="margin-top:7px;font-size:14px;">台费 <b>$' + fee.toFixed(2) + '</b>' +
+         (fineSum > 0.005
+           ? '　＋ 罚款 <b style="color:#b45309;">$' + fineSum.toFixed(2) + '</b>' +
+             '<span style="color:#92400e;font-size:12px;">（并入台费 · 每人 $' + round2(fineSum / 4).toFixed(2) + '）</span>'
+           : '') +
          (exSum > 0.005 ? '　＋ 零食 <b>$' + exSum.toFixed(2) + '</b>（' + exTxt.join("、") + '）' : '') +
-         '　＝ 应收 <b style="color:var(--green-dark);font-size:16px;">$' + total.toFixed(2) + '</b></div>' +
+         '　＝ 应收 <b style="color:var(--green-dark);font-size:16px;">$' + total.toFixed(2) + '</b>' +
+         (fineSum > 0.005 ? ' <span style="color:var(--muted);font-size:12px;">（台费合计 $' + feeAll.toFixed(2) + '）</span>' : '') +
+         '</div>' +
          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">' +
          '<button class="btn-start sm" data-fbpend="settle" data-id="' + esc(p.id) + '">💰 结算收款</button>' +
          '<button class="btn-ghost sm" data-fbpend="bill" data-id="' + esc(p.id) + '">📄 看账单</button>' +
+         '<button class="btn-ghost sm" data-fbpend="fine" data-id="' + esc(p.id) + '">⚖️ 罚款</button>' +
          ((p.extras || []).length ? '<button class="btn-ghost sm" data-fbpend="extras" data-id="' + esc(p.id) + '">✎ 改零食</button>' : '') +
          '<button class="btn-ghost sm" data-fbpend="back" data-id="' + esc(p.id) + '">↩ 搬回 ' + esc(p.tableName) + '</button>' +
          '<button class="btn-ghost sm" data-fbpend="drop" data-id="' + esc(p.id) + '">✕ 删掉</button>' +
@@ -22194,6 +22469,7 @@ if (typeof document !== "undefined" && document.addEventListener) {
     if (what === "take") { e.preventDefault(); fbPendTakeFromTable(Number(id)); }
     else if (what === "bill") { e.preventDefault(); fbPendBill(id); }
     else if (what === "extras") { e.preventDefault(); fbPendEditExtras(id); }
+    else if (what === "fine") { e.preventDefault(); fbPendSetFine(id); }
     else if (what === "settle") { e.preventDefault(); fbPendSettle(id); }
     else if (what === "back") { e.preventDefault(); fbPendRestore(id); }
     else if (what === "drop") {
