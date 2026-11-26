@@ -693,6 +693,86 @@
   #menuEditList { padding: 0 1px; }
   .me-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 36px 10px 42px; }
 
+  /* ===== v3.59.0：编辑弹窗里的「排序」视图 =====
+     主菜单卡片的 ⠿ 拖动已经去掉：手机上按住拖、还要判断"插到谁前面"，一滑就乱。
+     这里用真实卡片显示，↑↓ 一步一移（按住连续走）、「顶/底」一步到最前/最后、
+     点左上角序号直接输目标位置、还能一键整理。排完点「保存」才写回本机。 */
+  .me-sortbtn {
+    flex: 0 0 auto; border: 1px solid #b6dcc8; border-radius: 9px;
+    background: #f5fbf7; color: var(--green-dark);
+    padding: 7px 11px; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap;
+  }
+  .me-sortbtn:hover { background: #eaf5ee; }
+  .me-sortbtn.on { background: var(--green); border-color: var(--green); color: #fff; }
+  .me-modal.me-vape .me-sortbtn { display: none; }
+  /* 排序视图里搜索 / 筛选 / 新增都用不上，收起来免得点了没反应 */
+  .me-modal.sorting .me-search,
+  .me-modal.sorting .me-chips,
+  .me-modal.sorting .me-addbtn { display: none; }
+
+  .me-sort-bar {
+    position: sticky; top: 0; z-index: 3; background: var(--card);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 8px 4px; border-bottom: 1px dashed var(--line);
+  }
+  .me-sort-tip { flex: 1 1 210px; min-width: 150px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  .me-sort-auto { display: flex; gap: 5px; flex-wrap: wrap; }
+  .me-sort-auto button {
+    border: 1px solid var(--line); border-radius: 999px; background: var(--card);
+    padding: 4px 9px; font-size: 11.5px; font-weight: 700; color: var(--green-dark);
+    cursor: pointer; white-space: nowrap;
+  }
+  .me-sort-auto button:hover { border-color: #b6dcc8; background: #f5fbf7; }
+  .me-sort-auto button.undo { color: var(--muted); }
+  .me-sort .me-group { position: static; background: transparent; border-bottom: none; padding-bottom: 2px; }
+  .me-sort-grid {
+    display: grid; gap: 8px; padding: 8px 4px 4px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .me-sc {
+    position: relative; display: flex; flex-direction: column; align-items: center;
+    gap: 2px; padding: 9px 6px 7px; text-align: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  }
+  .me-sc.out { opacity: .55; filter: grayscale(.5); }
+  .me-sc-idx {
+    position: absolute; top: -6px; left: -6px; min-width: 20px; height: 20px; padding: 0 5px;
+    border-radius: 999px; border: 1px solid #fed7aa; background: #fff7ed; color: #b45309;
+    font-size: 10.5px; font-weight: 900; cursor: pointer; font-variant-numeric: tabular-nums;
+  }
+  .me-sc-idxin {
+    position: absolute; top: -9px; left: -9px; width: 46px; height: 25px; z-index: 5;
+    border: 1.5px solid var(--green) !important; border-radius: 8px; text-align: center;
+    font-size: 12.5px; font-weight: 900; color: var(--green-dark); background: var(--card) !important;
+    box-shadow: 0 0 0 3px rgba(29, 122, 79, .14); outline: none; padding: 0 !important;
+  }
+  .me-sc-sold {
+    position: absolute; top: -6px; right: -6px; padding: 1px 6px; border-radius: 999px;
+    background: #fdeaea; border: 1px solid #f7cccc; color: var(--red);
+    font-size: 9px; font-weight: 900; white-space: nowrap;
+  }
+  .me-sc-thumb {
+    width: 100%; height: 52px; margin-top: 2px; border-radius: 9px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, #f3f7f4, #e7efe9);
+  }
+  .me-sc-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .me-sc-thumb .em { font-size: 26px; line-height: 1; }
+  .me-sc-nm { width: 100%; font-size: 12.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .me-sc-pr { font-size: 12.5px; font-weight: 900; color: var(--green-dark); font-variant-numeric: tabular-nums; }
+  .me-sc-st { font-size: 10px; color: var(--muted); }
+  .me-sc.out .me-sc-st { color: var(--red); font-weight: 800; }
+  .me-sc-btns { display: flex; gap: 3px; width: 100%; margin-top: 4px; }
+  .me-sc-btns button {
+    flex: 1 1 0; min-width: 0; height: 23px; padding: 0; border: 1px solid var(--line);
+    border-radius: 6px; background: var(--card); color: var(--green-dark);
+    font-size: 11px; font-weight: 900; line-height: 1; cursor: pointer; touch-action: none;
+  }
+  .me-sc-btns button:hover { background: #eaf5ee; border-color: #b6dcc8; }
+  .me-sc-btns button:disabled { color: #cfd6d2; border-color: var(--line); cursor: default; }
+  .me-sc-btns button[data-msact="top"], .me-sc-btns button[data-msact="bottom"] { color: #b45309; background: #fffdf9; }
+  .me-sort-none { font-size: 12px; color: var(--muted); padding: 8px 8px 14px; }
+
   /* 分组标题：零食 / 饮料 ｜ 一代 / 二代（吸顶） */
   .me-group {
     display: flex; align-items: center; gap: 8px;
@@ -825,8 +905,15 @@
     .me-tools { padding: 8px 13px 9px; }
     /* 手机：第一行 搜索 + 新增，第二行 分类筛选（按钮别单独占一行） */
     .me-search { order: 1; flex: 1 1 140px; min-width: 0; }
-    .me-addbtn { order: 2; margin-left: auto; padding: 7px 10px; font-size: 12.5px; }
-    .me-chips { order: 3; flex-basis: 100%; }
+    .me-sortbtn { order: 2; padding: 6px 9px; font-size: 12.5px; }
+    .me-addbtn { order: 3; margin-left: auto; padding: 7px 10px; font-size: 12.5px; }
+    .me-chips { order: 4; flex-basis: 100%; }
+    .me-sort-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 7px 2px 3px; }
+    .me-sort-bar { padding: 7px 2px; }
+    .me-sort-tip { flex-basis: 100%; font-size: 11px; }
+    .me-sc { padding: 8px 5px 6px; }
+    .me-sc-thumb { height: 46px; }
+    .me-sc-btns button { height: 22px; font-size: 10.5px; }
     .me-add { padding: 9px 13px 11px; }
     .me-add-row { grid-template-columns: 84px minmax(0, 1fr) 66px 66px; }
     .me-modal.me-vape .me-add-row { grid-template-columns: 84px minmax(0, 1fr) 66px; }
@@ -4171,6 +4258,8 @@
           <button type="button" id="meSearchClear" class="me-search-x" style="display:none;" title="清除">✕</button>
         </label>
         <div class="me-chips" id="meChips"></div>
+        <!-- ★ v3.59.0：排序入口（主菜单卡片的 ⠿ 拖动已去掉，排序统一来这里） -->
+        <button type="button" id="meSortOpen" class="me-sortbtn" title="调整商品在菜单里的显示顺序（只改本机）">≡ 排序</button>
         <button type="button" id="meAddOpen" class="me-addbtn">＋ 新增商品</button>
       </div>
       <!-- 快速添加：默认收起，点「＋ 新增」展开；填完点「＋ 添加」就进列表（保存后才生效） -->
@@ -4192,6 +4281,20 @@
       <div class="me-body">
         <div id="menuEditList"></div>
         <div class="me-empty" id="meEmpty" style="display:none;">没有匹配的商品</div>
+        <!-- ★ v3.59.0 排序视图：真实卡片 + ↑↓（按住连续）/ 顶·底 / 点序号输目标位置 / 一键整理 -->
+        <div class="me-sort" id="meSortWrap" style="display:none;">
+          <div class="me-sort-bar">
+            <span class="me-sort-tip" id="meSortTip"></span>
+            <span class="me-sort-auto">
+              <button type="button" data-meautosort="name">按名称</button>
+              <button type="button" data-meautosort="price">按价格</button>
+              <button type="button" data-meautosort="stock">按库存</button>
+              <button type="button" data-meautosort="out">售罄沉底</button>
+              <button type="button" class="undo" data-mesortundo="1" title="撤销上一步排序">↩ 撤销</button>
+            </span>
+          </div>
+          <div id="meSortList"></div>
+        </div>
       </div>
       <div class="error" id="menuEditError" style="display:none;"></div>
       <div class="modal-actions me-actions">
@@ -5801,8 +5904,8 @@
   // ------------------------------------------------------------
   //  v2.6.1  之前的版本
   // ============================================================
-  var APP_VER = "v3.58.0";
-  var APP_DATE = "2026-11-24";
+  var APP_VER = "v3.59.0";
+  var APP_DATE = "2026-11-27";
 
   // >>> APP_CHANGELOG BEGIN（自动生成，勿手改）
   // ============================================================
@@ -5813,6 +5916,14 @@
   //     完整历史在 版本记录.md（弹窗底部有 GitHub 链接）
   // ============================================================
   var APP_CHANGELOG = [
+    { ver: "v3.59.0", date: "2026-11-27", sum: "商品排序改成编辑弹窗里用卡片排", items: [
+      "新增 编辑商品菜单工具条加「≡ 排序」，切换到真实卡片视图（照片 / 名称 / 单价 / 库存 + 本组序号），卡片上 ↑↓ 一步一移且按住不放连续挪、顶 / 底 一步到本组最前最后、点序号直接输目标位置、工具条一键整理（按名称 / 按价格 / 按库存 / 售罄沉底）并支持撤销",
+      "调整 主菜单零食卡片去掉 ⠿ 拖动把手，卡片整块点一下即加购，排序入口统一收进编辑弹窗",
+      "调整 排序只在同分类内生效，售罄卡标灰并注明「售罄·会沉底」，保存按钮在有顺序改动时显示「保存顺序」",
+      "优化 排序与改价 / 库存走同一个保存链路，关闭弹窗前提示顺序改动",
+      "移除 主菜单卡片拖动排序与拖动自动滚动逻辑（鸭嘴兽口味仍保留拖动）",
+      "测试 界面测试用「编辑弹窗排序」用例替换原拖动用例，覆盖 ↑↓ / 顶底 / 序号跳位 / 保存前后顺序与零网络请求"
+    ] },
     { ver: "v3.58.0", date: "2026-11-24", sum: "日志弹窗改为一版一行、点开看详情", items: [
       "新增 更新日志弹窗默认收起，每个版本一行显示版本号、日期、改动条数与摘要，点一行展开这版全部要点，再点收起，同时只展开一个",
       "调整 日志文案统一格式，摘要由人工概括且不超过 28 字，详情按类型词分条，去掉表情符号与口语化表达",
@@ -5894,11 +6005,6 @@
     { ver: "v3.55.1", date: "2026-11-11", sum: "移除预约记录中的自定义姓名", items: [
       "移除 预约记录中的自定义姓名，谁确认到店、谁修改、谁新增统一显示「店员」，客服模式显示「客服」",
       "移除 营业参数中的姓名输入框，参数恢复为 4 个"
-    ] },
-    { ver: "v3.55.0", date: "2026-11-11", sum: "移除店铺待办，姓名设置移入营业参数", items: [
-      "移除 店铺待办功能，包括顶部按钮、菜单入口与待办面板，同步字段 `set_staffnotes` 不再上传，云端旧数据保留但不读取不上传",
-      "调整 「我的名字」输入移入营业参数，预约台账仍使用它，旧名字沿用本机缓存",
-      "优化 清理相关代码、样式与测试共 300 多行，桌面工具栏图标从 7 个减为 6 个，手机菜单剩 3 项"
     ] },
   ];
   // <<< APP_CHANGELOG END（自动生成，勿手改）
@@ -13728,9 +13834,14 @@ jsonpGet(t, onRes);
   function syncMeDirty() {
     var el = document.getElementById("meDirty");
     var n = meDirtyCount(), i;
-    if (el) el.innerHTML = n ? "还有 <b>" + n + "</b> 项改动没保存" : "";
+    var ord = meSortDirty();                 // ★ v3.59.0：排序也算改动
+    var txt = "";
+    if (n) txt += "还有 <b>" + n + "</b> 项改动";
+    if (ord) txt += (txt ? "，" : "") + "顺序有改动";
+    if (txt) txt += "没保存";
+    if (el) el.innerHTML = txt;
     var sv = document.getElementById("menuEditSave");
-    if (sv) sv.textContent = n ? "保存（" + n + "）" : "保存";
+    if (sv) sv.textContent = n ? "保存（" + n + "）" : (ord ? "保存顺序" : "保存");
     var rows = document.getElementById("menuEditList").querySelectorAll(".me-row");
     for (i = 0; i < rows.length; i++) {
       var idx = Number(rows[i].getAttribute("data-mi"));
@@ -13739,6 +13850,9 @@ jsonpGet(t, onRes);
     }
   }
   function renderMenuEdit() {
+    // ★ v3.59.0：排序模式下也要重建列表（它只是隐藏着）——
+    //   列表每行的 data-mi 是 meRows 下标，排序改了顺序就必须一起对齐，
+    //   否则保存时 meRead() 会按旧下标把值写到别的商品上。
     var box = document.getElementById("menuEditList");
     var sorted = meSorted(meFiltered());
     var h = "", lastTitle = null, n, m;
@@ -13756,10 +13870,11 @@ jsonpGet(t, onRes);
     box.innerHTML = h;
     var empty = document.getElementById("meEmpty");
     if (empty) {
-      empty.style.display = sorted.length ? "none" : "block";
+      empty.style.display = (meSortMode || sorted.length) ? "none" : "block";
       empty.textContent = meQuery ? "没有搜到「" + meQuery + "」" : "还没有商品，点右上「＋ 新增商品」";
     }
     renderMeChips();
+    if (meSortMode) { renderMeSort(); syncMeDirty(); return; }
     syncMeDirty();
   }
   function meRead() {                       // DOM → meRows（不覆盖标记删除的）
@@ -13782,10 +13897,14 @@ jsonpGet(t, onRes);
   function closeMenuEdit(force) {
     if (!force) {
       var n = meDirtyCount();
-      if (n > 0 && !window.confirm("还有 " + n + " 项改动没保存，确定放弃吗？")) return;
+      var dirtyTxt = n ? ("还有 " + n + " 项改动没保存") : "";
+      if (meSortDirty()) dirtyTxt += (dirtyTxt ? "、" : "") + "顺序也有改动";
+      if (dirtyTxt && !window.confirm(dirtyTxt + "，确定放弃吗？")) return;
     }
     meOpenMenu = -1;
     meQuery = ""; meFilter = "all";
+    meSortMode = false; meSortHist = []; meSortPos = null; meSortHoldStop();
+    meSyncSortUI();
     document.getElementById("menuEditOverlay").classList.remove("show");
   }
   function saveMenuEdit() {
@@ -13828,6 +13947,277 @@ jsonpGet(t, onRes);
     closeMenuEdit(true);
     toast(meKind === "vape" ? "口味已保存" : "商品菜单已保存", "var(--green-dark)");
   }
+  // ===== v3.59.0：编辑弹窗里的「排序」视图 =====
+  // 为什么这么改：主菜单卡片右上角那个 ⠿ 要按住拖，网格里还得判断"插到谁前面"，
+  // 手机上手指一滑就乱。改成在编辑弹窗里用真实卡片排：
+  //   · ↑ ↓ 一步一移（按住不放连续走）
+  //   · 「顶 / 底」一步到本组最前 / 最后
+  //   · 点左上角序号 → 直接输目标位置
+  //   · 一键整理（按名称 / 按价格 / 按库存 / 售罄沉底）
+  // 排序只动 meRows 的顺序，和改价 / 库存一样点「保存」才写回 state.snackMenu（只改本机）。
+  var meSortMode = false;       // 是否正在排序视图
+  var meSortHist = [];          // 排序撤销栈（存 meRows 的顺序快照）
+  var meSortPos = null;         // 正在输入目标位置的那一行
+  var meSortOrder0 = "";        // 打开弹窗时的顺序签名（判断「顺序有改动」）
+  var meSortHold = null;        // 长按 ↑↓ 连续移动
+
+  // 顺序签名：只认 id（新增行还没 id，用序号兜底）
+  function meSortSig() {
+    var ids = [], i;
+    for (i = 0; i < meRows.length; i++) ids.push(meRows[i].id || ("#" + i));
+    return ids.join(",");
+  }
+  function meSortDirty() {
+    if (meKind === "vape") return false;
+    return meSortSig() !== meSortOrder0;
+  }
+  // 某一组里「没被标记删除」的行（按 meRows 当前顺序）
+  function meSortRowsOf(cat) {
+    var out = [], i;
+    for (i = 0; i < meRows.length; i++) {
+      if (meRows[i].kill) continue;
+      if (meCatOf(meRows[i]) !== cat) continue;
+      out.push(meRows[i]);
+    }
+    return out;
+  }
+  // 把一行挪到本组第 pos 位（1 起）；只重排本组「没被删」的行占的槽位，标记删除的行原地不动
+  function meSortMoveTo(row, pos) {
+    if (meKind === "vape") return false;
+    var cat = meCatOf(row), slots = [], arr = [], i;
+    for (i = 0; i < meRows.length; i++) {
+      if (meRows[i].kill || meCatOf(meRows[i]) !== cat) continue;
+      slots.push(i);
+      arr.push(meRows[i]);
+    }
+    var from = arr.indexOf(row);
+    if (from < 0) return false;
+    var to = Math.max(0, Math.min(arr.length - 1, pos - 1));
+    if (to === from) return false;
+    arr.splice(from, 1);
+    arr.splice(to, 0, row);
+    for (i = 0; i < slots.length; i++) meRows[slots[i]] = arr[i];
+    return true;
+  }
+  function meSortStep(row, dir) {
+    var arr = meSortRowsOf(meCatOf(row));
+    var i = arr.indexOf(row);
+    if (i < 0) return false;
+    return meSortMoveTo(row, i + 1 + dir);
+  }
+  function meSortPush() {
+    meSortHist.push(meRows.slice());
+    if (meSortHist.length > 40) meSortHist.shift();
+  }
+  function meSortUndo() {
+    if (!meSortHist.length) return false;
+    meRows = meSortHist.pop();
+    return true;
+  }
+  // 序号输入框：回车 / 失焦 → 挪到第 pos 位
+  function meSortApplyPos(ip) {
+    if (!meSortPos) return;
+    var row = meSortPos;
+    meSortPos = null;
+    var v = parseInt(ip && ip.value, 10);
+    if (isNaN(v)) { renderMenuEdit(); return; }
+    meSortPush();
+    if (!meSortMoveTo(row, v)) meSortHist.pop();
+    renderMenuEdit();
+  }
+  // 一键整理（只排本组，标记删除的跳过）
+  function meAutoSort(mode) {
+    if (meKind === "vape") return;
+    meSortPush();
+    var groups = meGroupOrder(), gi, i, cat, slots, arr, changed = false;
+    for (gi = 0; gi < groups.length; gi++) {
+      cat = groups[gi].k;
+      slots = []; arr = [];
+      for (i = 0; i < meRows.length; i++) {
+        if (meRows[i].kill || meCatOf(meRows[i]) !== cat) continue;
+        slots.push(i);
+        arr.push(meRows[i]);
+      }
+      arr.sort(function (a, b) {
+        if (mode === "name") return String(a.name || "").localeCompare(String(b.name || ""), "zh");
+        if (mode === "price") return (Number(a.price) || 0) - (Number(b.price) || 0);
+        if (mode === "stock") return (Number(b.stock) || 0) - (Number(a.stock) || 0);
+        return (meStockOf(a) <= 0 ? 1 : 0) - (meStockOf(b) <= 0 ? 1 : 0);   // out：有货在前
+      });
+      for (i = 0; i < slots.length; i++) {
+        if (meRows[slots[i]] !== arr[i]) changed = true;
+        meRows[slots[i]] = arr[i];
+      }
+    }
+    if (!changed) { meSortHist.pop(); toast("顺序已经是最新的了", "var(--muted)"); return; }
+    renderMenuEdit();
+  }
+  function meSortCardHtml(r, idx, total) {
+    var out = meStockOf(r) <= 0;
+    var ph = String(r.photo || "");
+    var hasPh = ph.length > 40;
+    var mi = meRows.indexOf(r);
+    var h = '<div class="me-sc' + (out ? " out" : "") + '" data-msi="' + mi + '">';
+    if (meSortPos === r) {
+      h += '<input type="number" class="me-sc-idxin" data-mspos="1" min="1" max="' + total +
+           '" value="' + idx + '" inputmode="numeric">';
+    } else {
+      h += '<button type="button" class="me-sc-idx" data-msidx="1" title="点一下，直接输入它要排第几">' + idx + "</button>";
+    }
+    if (out) h += '<span class="me-sc-sold">售罄·会沉底</span>';
+    h += '<div class="me-sc-thumb">' +
+           (hasPh ? '<img src="' + ph + '" alt="">' : '<span class="em">' + snackEmojiOf(r) + "</span>") +
+         "</div>" +
+         '<div class="me-sc-nm">' + esc(r.name || "") + "</div>" +
+         '<div class="me-sc-pr">' + snackPriceTxt(r.price) + "</div>" +
+         '<div class="me-sc-st">' + (out ? "售罄" : "剩 " + (Number(r.stock) || 0)) + "</div>" +
+         '<div class="me-sc-btns">' +
+           '<button type="button" data-msact="up" title="上移一格（按住不放连续挪）"' + (idx === 1 ? " disabled" : "") + ">↑</button>" +
+           '<button type="button" data-msact="down" title="下移一格（按住不放连续挪）"' + (idx === total ? " disabled" : "") + ">↓</button>" +
+           '<button type="button" data-msact="top" title="移到本组最前">顶</button>' +
+           '<button type="button" data-msact="bottom" title="移到本组最后">底</button>' +
+         "</div></div>";
+    return h;
+  }
+  function renderMeSort() {
+    var box = document.getElementById("meSortList");
+    if (!box) return;
+    var groups = meGroupOrder(), h = "", gi, i, rows;
+    for (gi = 0; gi < groups.length; gi++) {
+      rows = meSortRowsOf(groups[gi].k);
+      h += '<div class="me-group">' + groups[gi].t + '<span class="c">（' + rows.length + "）</span></div>";
+      if (!rows.length) { h += '<div class="me-sort-none">这一组还没有商品</div>'; continue; }
+      h += '<div class="me-sort-grid">';
+      for (i = 0; i < rows.length; i++) h += meSortCardHtml(rows[i], i + 1, rows.length);
+      h += "</div>";
+    }
+    box.innerHTML = h;
+    var tip = document.getElementById("meSortTip");
+    if (tip) tip.textContent = "↑↓ 挪一格（按住连续）· 顶/底 到最前/最后 · 点序号输位置";
+    if (meSortPos) {
+      var ip = box.querySelector(".me-sc-idxin");
+      if (ip) { ip.focus(); try { ip.select(); } catch (e) {} }
+    }
+  }
+  function meSortHoldStop() {
+    if (!meSortHold) return;
+    clearTimeout(meSortHold.arm);
+    if (meSortHold.tick) clearInterval(meSortHold.tick);
+    meSortHold = null;
+  }
+  // 排序视图 ↔ 列表视图 的界面切换（按钮文案、列头、新增条都跟着变）
+  function meSyncSortUI() {
+    var open = document.getElementById("meSortOpen");
+    if (open) { open.classList.toggle("on", meSortMode); open.textContent = meSortMode ? "← 返回列表" : "≡ 排序"; }
+    var cancel = document.getElementById("menuEditCancel");
+    // 排序模式下底部不再放「返回列表」（顶部 button 已经能返回），底部只留「保存」
+    if (cancel) { cancel.style.display = meSortMode ? "none" : ""; cancel.textContent = "取消"; }
+    var hnt = document.getElementById("menuEditHint");
+    if (hnt && meKind !== "vape") {
+      hnt.innerHTML = meSortMode
+        ? "用 <b>↑ ↓</b> 挪一格（按住不放连续挪）· <b>顶 / 底</b> 一步到本组最前 / 最后 · 点左上角<b>序号</b>直接输它要排第几。排完点「保存」，主菜单就按这个顺序显示。"
+        : "点<b>名称 / 单价 / 库存</b>直接改，库存用 <b>− ＋</b> 调（补货点两下）。行尾 <b>⋯</b> 里改分类、换照片、删除。改完点「保存」才生效。";
+    }
+    var head = document.getElementById("meHead");
+    if (head) head.style.display = meSortMode ? "none" : "";
+    var addBox = document.getElementById("meAddBox");
+    if (addBox && meSortMode) addBox.style.display = "none";
+    var wrap = document.getElementById("meSortWrap");
+    if (wrap) wrap.style.display = meSortMode ? "block" : "none";
+    var list = document.getElementById("menuEditList");
+    if (list) list.style.display = meSortMode ? "none" : "";
+    var empty = document.getElementById("meEmpty");
+    if (empty && meSortMode) empty.style.display = "none";
+    var modal = document.querySelector("#menuEditOverlay .me-modal");
+    if (modal) modal.classList.toggle("sorting", meSortMode);
+  }
+  function meToggleSort(on) {
+    meSortMode = !!on && meKind !== "vape";
+    meOpenMenu = -1;
+    meSortPos = null;
+    meSortHoldStop();
+    if (meSortMode) meRead();        // 先把列表里已改的价格 / 库存读进来
+    meSyncSortUI();
+    renderMenuEdit();
+  }
+  // 排序视图的事件：点序号 / ↑↓ 顶底 / 一键整理 / 撤销
+  (function () {
+    var wrap = document.getElementById("meSortWrap");
+    if (!wrap) return;
+    wrap.addEventListener("click", function (e) {
+      if (!e.target || !e.target.closest) return;
+      var t = e.target;
+      var und = t.closest("[data-mesortundo]");
+      if (und) {
+        if (meSortUndo()) { renderMenuEdit(); } else { toast("没有可以撤销的排序", "var(--muted)"); }
+        return;
+      }
+      var auto = t.closest("[data-meautosort]");
+      if (auto) { meAutoSort(auto.getAttribute("data-meautosort")); return; }
+      var idxBtn = t.closest("[data-msidx]");
+      if (idxBtn) {
+        var r0 = meRows[Number(idxBtn.closest(".me-sc").getAttribute("data-msi"))];
+        if (r0) { meSortPos = r0; renderMeSort(); }
+        return;
+      }
+      var act = t.closest("[data-msact]");
+      if (act && !act.disabled) {
+        var a = act.getAttribute("data-msact");
+        if (a === "up" || a === "down") return;      // ↑↓ 交给 pointerup（长按连续）
+        var r1 = meRows[Number(act.closest(".me-sc").getAttribute("data-msi"))];
+        if (!r1) return;
+        var total = meSortRowsOf(meCatOf(r1)).length;
+        meSortPush();
+        if (!meSortMoveTo(r1, a === "top" ? 1 : total)) meSortHist.pop();
+        renderMenuEdit();
+      }
+    });
+    // 长按 ↑↓：按住 240ms 后每 90ms 挪一格
+    wrap.addEventListener("pointerdown", function (e) {
+      if (!e.target || !e.target.closest) return;
+      var act = e.target.closest("[data-msact]");
+      if (!act || act.disabled) return;
+      var a = act.getAttribute("data-msact");
+      if (a !== "up" && a !== "down") return;
+      var row = meRows[Number(act.closest(".me-sc").getAttribute("data-msi"))];
+      if (!row) return;
+      e.preventDefault();
+      meSortHoldStop();
+      meSortHold = { row: row, dir: a === "up" ? -1 : 1, arm: null, tick: null };
+      meSortHold.arm = setTimeout(function () {
+        if (!meSortHold) return;
+        meSortHold.tick = setInterval(function () {
+          if (!meSortHold) return;
+          if (!meSortStep(meSortHold.row, meSortHold.dir)) { meSortHoldStop(); return; }
+          renderMenuEdit();
+        }, 90);
+      }, 240);
+    });
+    // 序号输入框：回车 / 失焦就跳位
+    wrap.addEventListener("keydown", function (e) {
+      var ip = e.target;
+      if (!ip || !ip.classList || !ip.classList.contains("me-sc-idxin")) return;
+      if (e.key === "Enter") { e.preventDefault(); meSortApplyPos(ip); }
+      else if (e.key === "Escape") { e.preventDefault(); meSortPos = null; renderMeSort(); }
+    });
+    wrap.addEventListener("focusout", function (e) {
+      var ip = e.target;
+      if (!ip || !ip.classList || !ip.classList.contains("me-sc-idxin")) return;
+      setTimeout(function () { if (meSortPos) meSortApplyPos(ip); }, 80);
+    });
+  })();
+  document.addEventListener("pointerup", function () {
+    if (!meSortHold) return;
+    var h = meSortHold;
+    meSortHoldStop();
+    if (h.tick) return;                       // 长按已经挪过了，别再挪一格
+    meSortPush();
+    if (!meSortStep(h.row, h.dir)) meSortHist.pop();
+    else { renderMenuEdit(); }
+  });
+  document.addEventListener("pointercancel", meSortHoldStop);
+  document.getElementById("meSortOpen").addEventListener("click", function () { meToggleSort(!meSortMode); });
+
   function openMenuEdit(kind, seed) {
     meKind = (kind === "vape") ? "vape" : "snack";
     meRows = [];
@@ -13852,6 +14242,10 @@ jsonpGet(t, onRes);
     // 记下每行打开时的样子：算「还有 N 项没保存」、标绿条都靠它
     for (i = 0; i < meRows.length; i++) meRows[i].__snap = meRowSnap(meRows[i]);
     var isVape = meKind === "vape";
+    // ★ v3.59.0：每次打开都从「列表视图」开始；记下初始顺序，排序视图里靠它判断「顺序有改动」
+    meSortMode = false; meSortHist = []; meSortPos = null; meSortHoldStop();
+    meSortOrder0 = meSortSig();
+    meSyncSortUI();
     document.getElementById("menuEditTitle").textContent = isVape ? "编辑鸭嘴兽口味" : "编辑商品菜单";
     document.getElementById("menuEditHint").innerHTML = isVape
       ? "点名称改口味、第二行填<b>英文名</b>（实物包装上写的，方便对货）；库存用 <b>− ＋</b> 调。行尾 <b>⋯</b> 里改代别、换照片、删除。改完点「保存」。"
@@ -14079,7 +14473,11 @@ jsonpGet(t, onRes);
       renderMenuEdit();
     }
   });
-  document.getElementById("menuEditCancel").addEventListener("click", function () { closeMenuEdit(); });
+  document.getElementById("menuEditCancel").addEventListener("click", function () {
+    // ★ v3.59.0：排序视图里「取消」= 回到列表视图，不关弹窗
+    if (meSortMode) { meToggleSort(false); return; }
+    closeMenuEdit();
+  });
   document.getElementById("menuEditClose").addEventListener("click", function () { closeMenuEdit(); });
   document.getElementById("menuEditSave").addEventListener("click", saveMenuEdit);
   document.getElementById("menuEditOverlay").addEventListener("click", function (e) {
@@ -14239,7 +14637,9 @@ jsonpGet(t, onRes);
   }
   function snackPriceTxt(v) { return "" + fmtMoney((Number(v) || 0)).replace(/\.00$/, ""); }
 
-  // 一张商品卡片（点卡片 = 加一份；右上角 ⠿ = 拖动排序；库存旁「盘」= 盘点）
+  // 一张商品卡片（点卡片 = 加一份；库存旁「盘」= 盘点）
+  // ★ v3.59.0：右上角 ⠿ 拖动把手去掉了 —— 手机上按住拖很难操作，
+  //   排序统一挪到编辑弹窗的「≡ 排序」里（真实卡片 + ↑↓），卡片整块点一下就是加购。
   function snackCardHtml(it) {
     var out = (Number(it.stock) || 0) <= 0;
     var n = snackCartQty(it.id);
@@ -14248,7 +14648,6 @@ jsonpGet(t, onRes);
       ' data-dragid="' + it.id + '" data-dragcat="' + cat + '" data-snackid="' + it.id + '">' +
       '<span class="snack-tag ' + (cat === "drink" ? "t-drink" : "t-snack") + '">' +
         (cat === "drink" ? "饮料" : "零食") + "</span>" +
-      '<button type="button" class="snack-drag" title="按住拖动排序（同分类内）">⠿</button>' +
       '<div class="snack-thumb">' + snackThumbHtml(it) + "</div>" +
       '<div class="snack-nm">' + esc(it.name) + "</div>" +
       '<div class="snack-pr">' + snackPriceTxt(it.price) + "</div>" +
@@ -15184,15 +15583,11 @@ function sDragFinish() {
       if (fl.parentNode) fl.parentNode.removeChild(fl);
       if (ph.parentNode) ph.parentNode.removeChild(ph);
       card.style.display = "";
-      if (d.kind === "vape") vapeReorderByBefore(d.id, d.cat, beforeId);
-      else snackReorderByBefore(d.id, d.cat, beforeId);
+      vapeReorderByBefore(d.id, d.cat, beforeId);
     }, 175);
   })(d.float, d.ph, d.card);
 }
-document.getElementById("snackMenu").addEventListener("pointerdown", function (e) {
-  var h = e.target && e.target.closest ? e.target.closest(".snack-drag") : null;
-  if (h) sDragStart(e, h, "snack");
-});
+// ★ v3.59.0：零食菜单不再挂拖动（卡片上没有 ⠿ 了，排序走编辑弹窗的「≡ 排序」）
 document.getElementById("vapeMenu").addEventListener("pointerdown", function (e) {
   var h = e.target && e.target.closest ? e.target.closest(".snack-drag") : null;
   if (h) sDragStart(e, h, "vape");
@@ -15225,34 +15620,6 @@ function vapeReorderByBefore(fromId, cat, beforeId) {
   renderVapes();
   toast("已调整顺序（只改本机显示，不动云端）", "var(--green-dark)");
 }
-
-// 松手后按"插到哪一行前面"写回数据
-function snackReorderByBefore(fromId, cat, beforeId) {
-  var same = [], i;
-  for (i = 0; i < state.snackMenu.length; i++) {
-    if (snackCatOf(state.snackMenu[i]) === cat) same.push(state.snackMenu[i]);
-  }
-  var fi = -1;
-  for (i = 0; i < same.length; i++) if (same[i].id === fromId) { fi = i; break; }
-  if (fi < 0) return;
-  var moved = same.splice(fi, 1)[0];
-  var ti = same.length;
-  if (beforeId) { for (i = 0; i < same.length; i++) if (same[i].id === beforeId) { ti = i; break; } }
-  same.splice(ti, 0, moved);
-  var out = [], si = 0;
-  for (i = 0; i < state.snackMenu.length; i++) {
-    if (snackCatOf(state.snackMenu[i]) === cat) out.push(same[si++]);
-    else out.push(state.snackMenu[i]);
-  }
-  state.snackMenu = out;
-  save();
-  renderSnacks();
-  // ⚠️ 这里【故意不推表格】：拖动只是本机看着顺手的排法，
-  //    推一次就是整表 replaceAll 覆盖商品库存，风险远大于收益。
-  //    自动同步那条路是按 id 差分的，只改顺序不会发任何请求，所以就停在本机。
-  toast("已调整顺序（只改本机显示，不动表格）", "var(--green-dark)");
-}
-
 
   document.getElementById("snackMenu").addEventListener("click", function (e) {
     var btn = e.target.closest("button[data-menu]");
